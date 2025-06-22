@@ -13,9 +13,6 @@ class Lexer {
   var line = 1
   var column = 1
 
-  var kind: Token.Kind = null
-  var lexeme = ""
-
   val keywordLookup = Map (
     "and" -> Token.Kind.AND,
     "break" -> Token.Kind.BREAK
@@ -41,6 +38,10 @@ class Lexer {
     print(t.kind)
 
   def getToken (): Token =
+
+    var kind: Token.Kind = null
+    var lexeme = ""
+
     while current != EOF do
 
       if current == '=' then
