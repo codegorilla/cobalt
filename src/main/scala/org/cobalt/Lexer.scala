@@ -15,7 +15,8 @@ class Lexer {
 
   val keywordLookup = Map (
     "and" -> Token.Kind.AND,
-    "break" -> Token.Kind.BREAK
+    "break" -> Token.Kind.BREAK,
+    "var" -> Token.Kind.VAR
   )
 
   def setInput (input: String) =
@@ -32,10 +33,6 @@ class Lexer {
     current = if position < input.length then input(position) else EOF
     column += 1
   }
-
-  def test () =
-    val t = Token(Token.Kind.EQUAL_EQUAL, "for", 0, 1, 1)
-    print(t.kind)
 
   def getToken (): Token =
 
@@ -136,7 +133,7 @@ class Lexer {
           lexeme = "<"
         return Token(kind, lexeme, position, line, column)
 
-      if current == '+' then
+      else if current == '+' then
         consume()
         if current == '=' then
           consume()
@@ -147,7 +144,7 @@ class Lexer {
           lexeme = "+"
         return Token(kind, lexeme, position, line, column)
 
-      if current == '-' then
+      else if current == '-' then
         consume()
         if current == '=' then
           consume()
@@ -158,7 +155,7 @@ class Lexer {
           lexeme = "-"
         return Token(kind, lexeme, position, line, column)
 
-      if current == '*' then
+      else if current == '*' then
         consume()
         if current == '=' then
           consume()
@@ -170,7 +167,7 @@ class Lexer {
         return Token(kind, lexeme, position, line, column)
 
       // To do: Need to account for comments
-      if current == '/' then
+      else if current == '/' then
         consume()
         if current == '=' then
           consume()
@@ -181,7 +178,7 @@ class Lexer {
           lexeme = "/"
         return Token(kind, lexeme, position, line, column)
 
-      if current == '%' then
+      else if current == '%' then
         consume()
         if current == '=' then
           consume()
@@ -192,7 +189,7 @@ class Lexer {
           lexeme = "%"
         return Token(kind, lexeme, position, line, column)
 
-      if current == '!' then
+      else if current == '!' then
         consume()
         if current == '=' then
           consume()
@@ -203,7 +200,7 @@ class Lexer {
           lexeme = "!"
         return Token(kind, lexeme, position, line, column)
       
-      if current == '~' then
+      else if current == '~' then
         consume()
         if current == '=' then
           consume()
@@ -214,24 +211,19 @@ class Lexer {
           lexeme = "~"
         return Token(kind, lexeme, position, line, column)
 
-
-
-
-
       else if current.isLetter || current == '_' then
         // Not sure if this can be a val - does it get re-created each time?
         // Might need to change to var
         val begin = position
         consume()
-        // Todo: The end should occur before the consume?
-        while current.isLetter || current.isDigit || current == '_' do
+        while (position < input.length) && (current.isLetter || current.isDigit || current == '_') do
           consume()
+        // End index of slice is excluded from result
         val end = position
-        val id = input.slice(begin, end)
-        if keywordLookup.contains(id) then
-          return Token(keywordLookup(id), id, position, line, column)
-        else
-          return Token(Token.Kind.IDENTIFIER, id, position, line, column)
+        lexeme = input.slice(begin, end)
+        kind = if keywordLookup.contains(lexeme) then keywordLookup(lexeme) else Token.Kind.IDENTIFIER
+        print(lexeme)
+        return Token(kind, lexeme, position, line, column)
 
       else if current.isDigit then
         return number()

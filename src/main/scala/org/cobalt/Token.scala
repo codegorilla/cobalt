@@ -25,6 +25,7 @@ object Token {
         case GREATER_EQUAL
         case GREATER_GREATER
         case GREATER_GREATER_EQUAL
+        case IDENTIFIER
         case LESS
         case LESS_EQUAL
         case LESS_LESS
@@ -41,7 +42,7 @@ object Token {
         case STRING_LITERAL
         case TILDE
         case TILDE_EQUAL
-        case IDENTIFIER
+        case VAR
     }
 
 }
