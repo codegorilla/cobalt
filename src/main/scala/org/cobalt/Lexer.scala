@@ -1,5 +1,7 @@
 package org.cobalt
 
+import scala.compiletime.ops.double
+
 class Lexer {
 
   // Only supports ASCII for now
@@ -31,6 +33,8 @@ class Lexer {
   def consume () = {
     position += 1
     current = if position < input.length then input(position) else EOF
+    // To do: Change so don't need to check on position
+    // current = input(position)
     column += 1
   }
 
@@ -211,6 +215,39 @@ class Lexer {
           lexeme = "~"
         return Token(kind, lexeme, position, line, column)
 
+
+      // case ' ' | '\t':
+      //     # Skip spaces and tabs
+      //     while self.current == ' ' or self.current == '\t':
+      //       self.consume(
+
+      //       )
+
+      else if current == ' ' || current == '\t' then
+        // Skip spaces and tabs
+        while current == ' ' || current == '\t' do
+          consume()
+
+      else if current == '\n' then
+        // Skip line feed (LF) characters
+        while current == '\n' do
+          consume()
+          line += 1
+          column = 0
+
+      else if current == '\r' then
+        // skip carriage return + line feed (CR+LF) pairs
+        while current == '\r' do
+          consume()
+          if current == '\n' then
+            consume()
+            line += 1
+            column = 0
+          else
+            // Should return error token here maybe
+            // Found carriage return by itself, which is invalid (except on mac?)
+            print("error: invalid line ending")
+
       else if current.isLetter || current == '_' then
         // Not sure if this can be a val - does it get re-created each time?
         // Might need to change to var
@@ -222,7 +259,6 @@ class Lexer {
         val end = position
         lexeme = input.slice(begin, end)
         kind = if keywordLookup.contains(lexeme) then keywordLookup(lexeme) else Token.Kind.IDENTIFIER
-        print(lexeme)
         return Token(kind, lexeme, position, line, column)
 
       else if current.isDigit then
