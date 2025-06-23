@@ -5,9 +5,17 @@ package org.cobalt
   println(msg)
   var lexer = new Lexer()
   lexer.error("Invalid cast.")
-  lexer.setInput("var")
+  lexer.setInput("var x: int;")
   var t = lexer.getToken()
-  print(t.kind)
+  println(t)
+  t = lexer.getToken()
+  println(t)
+  t = lexer.getToken()
+  println(t)
+  t = lexer.getToken()
+  println(t)
+  t = lexer.getToken()
+  println(t)
 }
 
 def msg = "I was compiled by Scala 3. :)"

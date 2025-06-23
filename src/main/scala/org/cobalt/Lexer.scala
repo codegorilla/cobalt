@@ -15,10 +15,46 @@ class Lexer {
   var line = 1
   var column = 1
 
+
   val keywordLookup = Map (
     "and" -> Token.Kind.AND,
     "break" -> Token.Kind.BREAK,
-    "var" -> Token.Kind.VAR
+    "case" -> Token.Kind.CASE,
+    "catch" -> Token.Kind.CATCH,
+    "class" -> Token.Kind.CLASS,
+    "const" -> Token.Kind.CONST,
+    "continue" -> Token.Kind.CONTINUE,
+    "def" -> Token.Kind.DEF,
+    "default" -> Token.Kind.DEFAULT,
+    "delete" -> Token.Kind.DELETE,
+    "do" -> Token.Kind.DO,
+    "else" -> Token.Kind.ELSE,
+    "end" -> Token.Kind.END,
+    "enum" -> Token.Kind.ENUM,
+    "extends" -> Token.Kind.EXTENDS,
+    "false" -> Token.Kind.FALSE,
+    "for" -> Token.Kind.FOR,
+    "foreach" -> Token.Kind.FOREACH,
+    "fn" -> Token.Kind.FN,
+    "fun" -> Token.Kind.FUN,
+    "if" -> Token.Kind.IF,
+    "in" -> Token.Kind.IN,
+    "loop" -> Token.Kind.LOOP,
+    "nil" -> Token.Kind.NIL,
+    "null" -> Token.Kind.NULL,
+    "or" -> Token.Kind.OR,
+    "package" -> Token.Kind.PACKAGE,
+    "return" -> Token.Kind.RETURN,
+    "struct" -> Token.Kind.STRUCT,
+    "then" -> Token.Kind.THEN,
+    "true" -> Token.Kind.TRUE,
+    "typealias" -> Token.Kind.TYPEALIAS,
+    "union" -> Token.Kind.UNION,
+    "val" -> Token.Kind.VAL,
+    "var" -> Token.Kind.VAR,
+    "while" -> Token.Kind.WHILE,
+
+    "int" -> Token.Kind.INT
   )
 
   def setInput (input: String) =
@@ -215,13 +251,17 @@ class Lexer {
           lexeme = "~"
         return Token(kind, lexeme, position, line, column)
 
+      // Do strings and characters here
 
-      // case ' ' | '\t':
-      //     # Skip spaces and tabs
-      //     while self.current == ' ' or self.current == '\t':
-      //       self.consume(
+      else if current == ':' then
+        consume()
+        return Token(Token.Kind.COLON, ":", position, line, column)
 
-      //       )
+      else if current == ';' then
+        consume()
+        return Token(Token.Kind.SEMICOLON, ";", position, line, column)
+
+
 
       else if current == ' ' || current == '\t' then
         // Skip spaces and tabs
