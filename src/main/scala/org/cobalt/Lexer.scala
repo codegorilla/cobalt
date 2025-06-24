@@ -246,7 +246,24 @@ class Lexer {
           lexeme = "~"
         return Token(kind, lexeme, position, line, column)
 
-      // Do strings and characters here
+      else if current == '"' then
+        // String
+        val begin = position
+        consume()
+        while current != '"' && current != EOF do
+          // Might need to put some logic in here to increment line
+          // number and reset position if a newline is encountered
+          consume()
+        if current == '"' then
+          consume()
+          val end = position
+          val value = input.slice(begin, end)
+          return Token(Token.Kind.STRING_LITERAL, value, position, line, column)
+        else if current == EOF then
+          // To do: probably should pretend terminator is there and return token
+          print("error: missing string terminator")
+
+
 
       else if current == ':' then
         consume()
@@ -256,7 +273,43 @@ class Lexer {
         consume()
         return Token(Token.Kind.SEMICOLON, ";", position, line, column)
 
+      else if current == '.' then
+        consume()
+        if current == '.' then
+          consume()
+          return Token(Token.Kind.PERIOD_PERIOD, "..", position, line, column)
+        else if current.isDigit then
+          return number()
+        else
+          return Token(Token.Kind.PERIOD, ".", position, line, column)
 
+      else if current == ',' then
+        consume()
+        return Token(Token.Kind.COMMA, ",", position, line, column)
+
+      else if current == '{' then
+        consume()
+        return Token(Token.Kind.L_BRACE, "{", position, line, column)
+
+      else if current == '}' then
+        consume()
+        return Token(Token.Kind.R_BRACE, "}", position, line, column)
+
+      else if current == '[' then
+        consume()
+        return Token(Token.Kind.L_BRACKET, "[", position, line, column)
+
+      else if current == ']' then
+        consume()
+        return Token(Token.Kind.R_BRACKET, "]", position, line, column)
+
+      else if current == '(' then
+        consume()
+        return Token(Token.Kind.L_PARENTHESIS, ")", position, line, column)
+
+      else if current == ')' then
+        consume()
+        return Token(Token.Kind.R_PARENTHESIS, ")", position, line, column)
 
       else if current == ' ' || current == '\t' then
         // Skip spaces and tabs
@@ -284,8 +337,6 @@ class Lexer {
             print("error: invalid line ending")
 
       else if current.isLetter || current == '_' then
-        // Not sure if this can be a val - does it get re-created each time?
-        // Might need to change to var
         val begin = position
         consume()
         while (position < input.length) && (current.isLetter || current.isDigit || current == '_') do
