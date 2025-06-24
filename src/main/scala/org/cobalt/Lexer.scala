@@ -263,7 +263,22 @@ class Lexer {
           // To do: probably should pretend terminator is there and return token
           print("error: missing string terminator")
 
-
+      else if current == '\'' then
+        // Character
+        val begin = position
+        consume()
+        while current != '\'' && current != EOF do
+          // Might need to put some logic in here to increment line
+          // number and reset position if a newline is encountered
+          consume()
+        if current == '\'' then
+          consume()
+          val end = position
+          val value = input.slice(begin, end)
+          return Token(Token.Kind.CHARACTER_LITERAL, value, position, line, column)
+        else if current == EOF then
+          // To do: probably should pretend terminator is there and return token
+          print("error: missing character terminator")
 
       else if current == ':' then
         consume()
