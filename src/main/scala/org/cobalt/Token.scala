@@ -111,6 +111,9 @@ object Token {
         case STRING_LITERAL
         case TILDE
         case TILDE_EQUAL
+
+        // End of file
+        case EOF
     }
 
 }

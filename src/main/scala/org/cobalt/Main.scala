@@ -16,6 +16,8 @@ package org.cobalt
   println(t)
   t = lexer.getToken()
   println(t)
+  t = lexer.getToken()
+  println(t)
 }
 
 def msg = "I was compiled by Scala 3. :)"

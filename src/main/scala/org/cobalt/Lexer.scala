@@ -4,17 +4,14 @@ import scala.compiletime.ops.double
 
 class Lexer {
 
-  // Only supports ASCII for now
-  val EOF: Char = 1000
+  // Define end of file (EOF)
+  val EOF = (-1).toChar
 
   var input = ""
   var position = 0
   var current = EOF
-  var start = 0
-  var end = 0
   var line = 1
   var column = 1
-
 
   val keywordLookup = Map (
     "and" -> Token.Kind.AND,
@@ -69,8 +66,6 @@ class Lexer {
   def consume () = {
     position += 1
     current = if position < input.length then input(position) else EOF
-    // To do: Change so don't need to check on position
-    // current = input(position)
     column += 1
   }
 
@@ -310,7 +305,7 @@ class Lexer {
     end while
 
     // Placeholder to avoid error
-    return Token(Token.Kind.EQUAL, "=", position, line, column)
+    return Token(Token.Kind.EOF, "<EOF>", position, line, column)
 
   // Todo: Fix
   def number (): Token =
