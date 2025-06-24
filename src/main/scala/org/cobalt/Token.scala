@@ -80,6 +80,7 @@ object Token {
         case COLON
         case COMMA
         case EQUAL
+        case EQUAL_X2
         case EQUAL_EQUAL
         case EXCLAMATION
         case EXCLAMATION_EQUAL

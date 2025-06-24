@@ -1,11 +1,9 @@
 package org.cobalt
 
-@main def hello(): Unit = {
-  println("Hello world!")
-  println(msg)
+@main def hello () = {
   var lexer = new Lexer()
-  lexer.error("Invalid cast.")
-  lexer.setInput("var x: int;")
+  lexer.setInput("var x: int = 0;")
+
   var t = lexer.getToken()
   println(t)
   t = lexer.getToken()
@@ -19,5 +17,3 @@ package org.cobalt
   t = lexer.getToken()
   println(t)
 }
-
-def msg = "I was compiled by Scala 3. :)"

@@ -80,7 +80,7 @@ class Lexer {
         consume()
         if current == '=' then
           consume()
-          kind = Token.Kind.EQUAL_EQUAL
+          kind = Token.Kind.EQUAL_X2
           lexeme = "=="
         else
           kind = Token.Kind.EQUAL
@@ -181,7 +181,11 @@ class Lexer {
 
       else if current == '-' then
         consume()
-        if current == '=' then
+        if current == '>' then
+          consume()
+          kind = Token.Kind.MINUS_GREATER
+          lexeme = "->"
+        else if current == '=' then
           consume()
           kind = Token.Kind.MINUS_EQUAL
           lexeme = "-="
