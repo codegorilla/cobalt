@@ -44,6 +44,8 @@ object Token {
 
         // Basic types
         case BOOL
+        case DOUBLE
+        case FLOAT
         case FLOAT32
         case FLOAT64
         case INT
@@ -51,7 +53,10 @@ object Token {
         case INT16
         case INT32
         case INT64
+        case LONG
         case NULL_T
+        case SHORT
+        case UINT
         case UINT8
         case UINT16
         case UINT32
@@ -62,6 +67,7 @@ object Token {
         case IDENTIFIER
 
         // Numbers
+        case BINARY_INT32_LITERAL
         case INT32_LITERAL
         case INT64_LITERAL
 

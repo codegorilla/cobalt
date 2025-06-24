@@ -1,7 +1,5 @@
 package org.cobalt
 
-import scala.compiletime.ops.double
-
 class Lexer {
 
   // Define end of file (EOF)
@@ -51,7 +49,17 @@ class Lexer {
     "var" -> Token.Kind.VAR,
     "while" -> Token.Kind.WHILE,
 
-    "int" -> Token.Kind.INT
+    "int" -> Token.Kind.INT,
+    "int8" -> Token.Kind.INT8,
+    "int16" -> Token.Kind.INT16,
+    "int32" -> Token.Kind.INT32,
+    "int64" -> Token.Kind.INT64,
+
+    "uint" -> Token.Kind.UINT,
+    "uint8" -> Token.Kind.UINT8,
+    "uint16" -> Token.Kind.UINT16,
+    "uint32" -> Token.Kind.UINT32,
+    "uint64" -> Token.Kind.UINT64,
   )
 
   def setInput (input: String) =
@@ -63,11 +71,15 @@ class Lexer {
     val coords = s"(${line},${column})"
     println(s"${coords}: error: ${message}")
 
-  def consume () = {
+  def consume () =
     position += 1
     current = if position < input.length then input(position) else EOF
     column += 1
-  }
+
+  def backup () =
+    position -= 1
+    current = input(position)
+    column -= 1
 
   def getToken (): Token =
 
@@ -330,6 +342,21 @@ class Lexer {
         consume()
         return Token(Token.Kind.R_PARENTHESIS, ")", position, line, column)
 
+      else if current == '0' then
+        consume()
+        if current == 'b' then
+          backup()
+          return binaryInteger()
+        else if current == 'o' then
+          backup()
+          //return octalInteger()
+        else if current == 'x' then
+          backup()
+          //return hexadecimalNumber()
+        else
+          backup()
+          return number()
+
       else if current == ' ' || current == '\t' then
         // Skip spaces and tabs
         while current == ' ' || current == '\t' do
@@ -376,6 +403,18 @@ class Lexer {
 
     // Placeholder to avoid error
     return Token(Token.Kind.EOF, "<EOF>", position, line, column)
+
+  end getToken
+
+  def binaryInteger (): Token =
+    // Note: We arrive at this function after lookahead or
+    // backtracking, so we really should never fail to match the '0b'
+    // portion, unless there is a bug in this program.
+    var begin = position
+    var state = State.BIN_START
+    var kind = Token.Kind.BINARY_INT32_LITERAL
+    var lexeme = "0b0001"
+    return Token(kind, lexeme, position, line, column)
 
   // Todo: Fix
   def number (): Token =
