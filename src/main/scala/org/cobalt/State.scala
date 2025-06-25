@@ -9,5 +9,6 @@ enum State {
   case BIN_500
   case BIN_600
   case BIN_700
+  case BIN_800
   case BIN_ERROR
 }

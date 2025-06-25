@@ -422,8 +422,9 @@ class Lexer {
     // Note: We arrive at this function after lookahead or
     // backtracking, so we really should never fail to match the '0b'
     // portion, unless there is a bug in this program.
-    var begin = position
+    val begin = position
     var state = State.BIN_START
+    var token: Token = null
     while true do
       state match
         case State.BIN_START =>
@@ -449,7 +450,7 @@ class Lexer {
             state = State.BIN_300
           else
             // Pretend we got an underscore or digit for error recovery purposes
-            error(s"invalid number: found '${current}', expected underscore or binary digit")
+            error(s"invalid number: found '${current}', expected binary digit or underscore")
             consume()
             state = State.BIN_400
         case State.BIN_300 =>
@@ -476,11 +477,49 @@ class Lexer {
           else
             // Accept
             val end = position
-            val value = input.slice(begin, end)
-            return Token(Token.Kind.BINARY_INT32_LITERAL, value, position, line, column)
+            val lexeme = input.slice(begin, end)
+            return Token(Token.Kind.BINARY_INT32_LITERAL, lexeme, position, line, column)
+        case State.BIN_500 =>
+          if isBinaryDigit(current) then
+            consume()
+            state = State.BIN_400
+          else if current == 'L' then
+            consume()
+            state = State.BIN_600
+          else if current == 'u' then
+            consume()
+            state = State.BIN_700
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected binary digit")
+            consume()
+            state = State.BIN_400
+        case State.BIN_600 =>
+          if current == 'u' then
+            consume()
+            state = State.BIN_800
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            return Token(Token.Kind.BINARY_INT64_LITERAL, lexeme, position, line, column)
+        case State.BIN_700 =>
+          if current == 'L' then
+            consume()
+            state = State.BIN_800
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            return Token(Token.Kind.BINARY_UINT32_LITERAL, lexeme, position, line, column)
+        case State.BIN_800 =>
+          // Accept
+          val end = position
+          val lexeme = input.slice(begin, end)
+          return Token(Token.Kind.BINARY_UINT64_LITERAL, lexeme, position, line, column)
         case _ =>
-          println("hello")
-          return Token(Token.Kind.EOF, "<EOF>", position, line, column)
+          // Invalid state. Can only be reached through a lexer bug.
+          print("error: Invalid state.")
     // Dummy value - remove
     var kind = Token.Kind.BINARY_INT32_LITERAL
     var lexeme = "0b0001"
