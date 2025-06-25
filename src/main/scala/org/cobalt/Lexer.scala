@@ -425,7 +425,8 @@ class Lexer {
     val begin = position
     var state = State.BIN_START
     var token: Token = null
-    while true do
+    var done = false
+    while !done do
       state match
         case State.BIN_START =>
           if current == '0' then
@@ -442,7 +443,6 @@ class Lexer {
         case State.BIN_200 =>
           consume()
           if isBinaryDigit(current) then
-            println("is bin digit")
             consume()
             state = State.BIN_400
           else if current == '_' then
@@ -478,7 +478,8 @@ class Lexer {
             // Accept
             val end = position
             val lexeme = input.slice(begin, end)
-            return Token(Token.Kind.BINARY_INT32_LITERAL, lexeme, position, line, column)
+            token = Token(Token.Kind.BINARY_INT32_LITERAL, lexeme, position, line, column)
+            done = true
         case State.BIN_500 =>
           if isBinaryDigit(current) then
             consume()
@@ -502,7 +503,8 @@ class Lexer {
             // Accept
             val end = position
             val lexeme = input.slice(begin, end)
-            return Token(Token.Kind.BINARY_INT64_LITERAL, lexeme, position, line, column)
+            token = Token(Token.Kind.BINARY_INT64_LITERAL, lexeme, position, line, column)
+            done = true
         case State.BIN_700 =>
           if current == 'L' then
             consume()
@@ -511,19 +513,47 @@ class Lexer {
             // Accept
             val end = position
             val lexeme = input.slice(begin, end)
-            return Token(Token.Kind.BINARY_UINT32_LITERAL, lexeme, position, line, column)
+            token = Token(Token.Kind.BINARY_UINT32_LITERAL, lexeme, position, line, column)
+            done = true
         case State.BIN_800 =>
           // Accept
           val end = position
           val lexeme = input.slice(begin, end)
-          return Token(Token.Kind.BINARY_UINT64_LITERAL, lexeme, position, line, column)
+          token = Token(Token.Kind.BINARY_UINT64_LITERAL, lexeme, position, line, column)
+          done = true
         case _ =>
           // Invalid state. Can only be reached through a lexer bug.
           print("error: Invalid state.")
-    // Dummy value - remove
-    var kind = Token.Kind.BINARY_INT32_LITERAL
-    var lexeme = "0b0001"
-    return Token(kind, lexeme, position, line, column)
+    end while
+    return token
+
+  def octalInteger (): Token =
+    // Note: We arrive at this function after lookahead or
+    // backtracking, so we really should never fail to match the '0o'
+    // portion, unless there is a bug in this program.
+    val begin = position
+    var state = State.OCT_START
+    var token: Token = null
+    var done = false
+    while !done do
+      state match
+        case State.OCT_START =>
+          if current == '0' then
+            consume()
+            state = State.OCT_100
+          else
+            state = State.OCT_ERROR
+        case State.OCT_100 =>
+          if current == 'o' then
+            consume()
+            state = State.OCT_200
+          else
+            state = State.OCT_ERROR
+        case _ =>
+          // Invalid state. Can only be reached through a lexer bug.
+          print("error: Invalid state.")
+    end while
+    return token
 
   // Todo: Fix
   def number (): Token =

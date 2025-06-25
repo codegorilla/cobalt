@@ -2,7 +2,7 @@ package org.cobalt
 
 @main def hello () = {
   var lexer = new Lexer()
-  lexer.setInput("var x: int = 0b001;")
+  lexer.setInput("var x: int = 0b_001u;")
 
   var t = lexer.getToken()
   println(t)
