@@ -406,12 +406,82 @@ class Lexer {
 
   end getToken
 
+  def isBinaryDigit (ch: Char) =
+    ch == '0' || ch == '1'
+
+  def isOctalDigit (ch: Char) =
+    ch >= '0' && ch <= '7'
+
+  def isDecimalDigit (ch: Char) =
+    ch >= '0' && ch <= '9'
+
+  def isHexadecimalDigit (ch: Char) =
+    (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'z' && ch <= 'z')
+
   def binaryInteger (): Token =
     // Note: We arrive at this function after lookahead or
     // backtracking, so we really should never fail to match the '0b'
     // portion, unless there is a bug in this program.
     var begin = position
     var state = State.BIN_START
+    while true do
+      state match
+        case State.BIN_START =>
+          if current == '0' then
+            consume()
+            state = State.BIN_100
+          else
+            state = State.BIN_ERROR
+        case State.BIN_100 =>
+          if current == 'b' then
+            consume()
+            state = State.BIN_200
+          else
+            state = State.BIN_ERROR
+        case State.BIN_200 =>
+          consume()
+          if isBinaryDigit(current) then
+            println("is bin digit")
+            consume()
+            state = State.BIN_400
+          else if current == '_' then
+            consume()
+            state = State.BIN_300
+          else
+            // Pretend we got an underscore or digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected underscore or binary digit")
+            consume()
+            state = State.BIN_400
+        case State.BIN_300 =>
+          if isBinaryDigit(current) then
+            consume()
+            state = State.BIN_400
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected binary digit")
+            consume()
+            state = State.BIN_400
+        case State.BIN_400 =>
+          if isBinaryDigit(current) then
+            consume()
+          else if current == '_' then
+            consume()
+            state = State.BIN_500
+          else if current == 'L' then
+            consume()
+            state = State.BIN_600
+          else if current == 'u' then
+            consume()
+            state = State.BIN_700
+          else
+            // Accept
+            val end = position
+            val value = input.slice(begin, end)
+            return Token(Token.Kind.BINARY_INT32_LITERAL, value, position, line, column)
+        case _ =>
+          println("hello")
+          return Token(Token.Kind.EOF, "<EOF>", position, line, column)
+    // Dummy value - remove
     var kind = Token.Kind.BINARY_INT32_LITERAL
     var lexeme = "0b0001"
     return Token(kind, lexeme, position, line, column)
