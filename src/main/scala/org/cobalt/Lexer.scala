@@ -352,7 +352,7 @@ class Lexer {
           return octalInteger()
         else if current == 'x' then
           backup()
-          //return hexadecimalNumber()
+          return hexadecimalNumber()
         else
           backup()
           return number()
@@ -530,7 +530,6 @@ class Lexer {
     var state = State.OCT_START
     var token: Token = null
     while token == null do
-      println(state)
       state match
         case State.OCT_START =>
           if current == '0' then
@@ -615,6 +614,195 @@ class Lexer {
           val end = position
           val lexeme = input.slice(begin, end)
           token = Token(Token.Kind.OCTAL_UINT64_LITERAL, lexeme, position, line, column)
+        case _ =>
+          // Invalid state. Can only be reached through a lexer bug.
+          print("error: Invalid state.")
+    end while
+    return token
+
+  def hexadecimalNumber (): Token =
+    // This scans for a hexadecimal integer or floating point number.
+    val begin = position
+    var state = State.HEX_START
+    var token: Token = null
+    while token == null do
+      state match
+        case State.HEX_START =>
+          if current == '0' then
+            consume()
+            state = State.HEX_10
+          else
+            state = State.HEX_ERROR
+        case State.HEX_10 =>
+          if current == 'x' then
+            consume()
+            state = State.HEX_20
+          else
+            state = State.HEX_ERROR
+        case State.HEX_20 =>
+          if isHexadecimalDigit(current) then
+            consume()
+            state = State.HEX_100
+          else if current == '_' then
+            consume()
+            state = State.HEX_30
+          else if current == '.' then
+            consume()
+            state = State.HEX_300
+          else
+            // Pretend we got a digit, dot, or underscore for error recovery purposes
+            error(s"invalid number: found '${current}', expected hexadecimal digit, dot, or underscore")
+            consume()
+            state = State.HEX_100
+        case State.HEX_30 =>
+          if isHexadecimalDigit(current) then
+            consume()
+            state = State.HEX_100
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected hexadecimal digit")
+            consume()
+            state = State.HEX_100
+        case State.HEX_100 =>
+          if isHexadecimalDigit(current) then
+            consume()
+          else if current == '_' then
+            consume()
+            state = State.HEX_200
+          else if current == 'L' then
+            consume()
+            state = State.HEX_210
+          else if current == 'u' then
+            consume()
+            state = State.HEX_220
+          else if current == '.' then
+            consume()
+            state = State.HEX_300
+          else if current == 'p' then
+            consume()
+            state = State.HEX_600
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.HEXADECIMAL_INT32_LITERAL, lexeme, position, line, column)
+        case State.HEX_200 =>
+          if isHexadecimalDigit(current) then
+            consume()
+            state = State.HEX_100
+          else if current == 'L' then
+            consume()
+            state = State.HEX_210
+          else if current == 'u' then
+            consume()
+            state = State.HEX_220
+          else if current == 'p' then
+            consume()
+            state = State.HEX_600
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected 'L', 'u', 'p', or hexadecimal digit")
+            consume()
+            state = State.HEX_100
+        case State.HEX_210 =>
+          if current == 'u' then
+            consume()
+            state = State.HEX_230
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.HEXADECIMAL_INT64_LITERAL, lexeme, position, line, column)
+        case State.HEX_220 =>
+          if current == 'L' then
+            consume()
+            state = State.HEX_230
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.HEXADECIMAL_UINT32_LITERAL, lexeme, position, line, column)
+        case State.HEX_230 =>
+          // Accept
+          val end = position
+          val lexeme = input.slice(begin, end)
+          token = Token(Token.Kind.HEXADECIMAL_UINT64_LITERAL, lexeme, position, line, column)
+        case State.HEX_300 =>
+          if isHexadecimalDigit(current) then
+            consume()
+            state = State.HEX_400
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected hexadecimal digit")
+            consume()
+            // Do we need to change states here?
+        case State.HEX_400 =>
+          if isHexadecimalDigit(current) then
+            consume()
+          else if current == '_' then
+            consume()
+            state = State.HEX_500
+          else if current == 'p' then
+            consume()
+            state = State.HEX_600
+          else
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.HEXADECIMAL_FLOAT64_LITERAL, lexeme, position, line, column)
+        case State.HEX_500 =>
+          if isHexadecimalDigit(current) then
+            consume()
+            state = State.HEX_400
+          else if current == 'p' then
+            consume()
+            state = State.HEX_600
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected 'p' or hexadecimal digit")
+            consume()
+            state = State.HEX_400
+        case State.HEX_600 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.HEX_800
+          else if current == '+' || current == '-' then
+            consume()
+            state = State.HEX_700
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected '+', '-', or decimal digit")
+            consume()
+            state = State.HEX_800
+        case State.HEX_700 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.HEX_800
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected decimal digit")
+            consume()
+            state = State.HEX_800
+        case State.HEX_800 =>
+          if isDecimalDigit(current) then
+            consume()
+          else if current == 'd' then
+            consume()
+            state = State.HEX_810
+          else if current == 'f' then
+            consume()
+            state = State.HEX_820
+          else
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.HEXADECIMAL_FLOAT64_LITERAL, lexeme, position, line, column)
+        case State.HEX_810 =>
+          val end = position
+          val lexeme = input.slice(begin, end)
+          token = Token(Token.Kind.HEXADECIMAL_FLOAT64_LITERAL, lexeme, position, line, column)
+        case State.HEX_820 =>
+          val end = position
+          val lexeme = input.slice(begin, end)
+          token = Token(Token.Kind.HEXADECIMAL_FLOAT32_LITERAL, lexeme, position, line, column)
         case _ =>
           // Invalid state. Can only be reached through a lexer bug.
           print("error: Invalid state.")

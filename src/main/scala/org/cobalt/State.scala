@@ -1,6 +1,7 @@
 package org.cobalt
 
 enum State {
+
   // Binary integer states
   case BIN_START
   case BIN_100
@@ -12,6 +13,27 @@ enum State {
   case BIN_700
   case BIN_800
   case BIN_ERROR
+
+  // Hexadecimal number states
+  case HEX_START
+  case HEX_10
+  case HEX_20
+  case HEX_30
+  case HEX_100
+  case HEX_200
+  case HEX_210
+  case HEX_220
+  case HEX_230
+  case HEX_300
+  case HEX_400
+  case HEX_500
+  case HEX_600
+  case HEX_700
+  case HEX_800
+  case HEX_810
+  case HEX_820
+  case HEX_ERROR
+
   // Octal integer states
   case OCT_START
   case OCT_100
