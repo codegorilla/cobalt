@@ -809,8 +809,31 @@ class Lexer {
     end while
     return token
 
-  // Todo: Fix
   def number (): Token =
-    return Token(Token.Kind.EQUAL, "=", position, line, column)
+    // This scans for an integer or floating point number.
+    val begin = position
+    var state = State.NUM_START
+    var token: Token = null
+    while token == null do
+      state match
+        case State.NUM_START =>
+          // We are guaranteed to get a digit here unless the lexer
+          // has a bug in it.
+          if isDecimalDigit(current) then
+            consume()
+            state = State.NUM_100
+          else if current == '.' then
+            consume()
+            state = State.NUM_300
+          else
+            state = State.NUM_ERROR
+
+        // more cases...
+
+        case _ =>
+          // Invalid state. Can only be reached through a lexer bug.
+          print("error: Invalid state.")
+    end while
+    return token
 }
 

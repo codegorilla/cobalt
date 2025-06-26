@@ -34,6 +34,18 @@ enum State {
   case HEX_820
   case HEX_ERROR
 
+  // Decimal number states
+  case NUM_START
+  case NUM_100
+  case NUM_200
+  case NUM_300
+  case NUM_400
+  case NUM_500
+  case NUM_600
+  case NUM_700
+  case NUM_800
+  case NUM_ERROR
+  
   // Octal integer states
   case OCT_START
   case OCT_100

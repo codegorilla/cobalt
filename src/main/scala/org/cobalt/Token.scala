@@ -83,6 +83,8 @@ object Token {
         case OCTAL_UINT64_LITERAL
 
         // Floating-point literals
+        case FLOAT32_LITERAL
+        case FLOAT64_LITERAL
         case HEXADECIMAL_FLOAT32_LITERAL
         case HEXADECIMAL_FLOAT64_LITERAL
 
