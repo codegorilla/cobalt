@@ -66,13 +66,17 @@ object Token {
         // Identifiers
         case IDENTIFIER
 
-        // Numbers
+        // Number literals
         case BINARY_INT32_LITERAL
         case BINARY_INT64_LITERAL
         case BINARY_UINT32_LITERAL
         case BINARY_UINT64_LITERAL
         case INT32_LITERAL
         case INT64_LITERAL
+        case OCTAL_INT32_LITERAL
+        case OCTAL_INT64_LITERAL
+        case OCTAL_UINT32_LITERAL
+        case OCTAL_UINT64_LITERAL
 
         // Operators and Punctuation
         case AMPERSAND
