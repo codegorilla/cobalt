@@ -38,12 +38,17 @@ enum State {
   case NUM_START
   case NUM_100
   case NUM_200
+  case NUM_210
+  case NUM_220
+  case NUM_230
   case NUM_300
   case NUM_400
   case NUM_500
   case NUM_600
   case NUM_700
   case NUM_800
+  case NUM_810
+  case NUM_820
   case NUM_ERROR
   
   // Octal integer states

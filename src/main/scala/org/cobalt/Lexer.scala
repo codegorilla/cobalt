@@ -827,13 +827,175 @@ class Lexer {
             state = State.NUM_300
           else
             state = State.NUM_ERROR
-
-        // more cases...
-
+        case State.NUM_100 =>
+          if isDecimalDigit(current) then
+            consume()
+          else if current == '_' then
+            consume()
+            state = State.NUM_200
+          else if current == 'L' then
+            consume()
+            state = State.NUM_210
+          else if current == 'u' then
+            consume()
+            state = State.NUM_220
+          else if current == '.' then
+            consume()
+            state = State.NUM_300
+          else if current == 'e' then
+            consume()
+            state = State.NUM_600
+          else if current == 'd' then
+            consume()
+            state = State.NUM_810
+          else if current == 'f' then
+            consume()
+            state = State.NUM_820
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.INT32_LITERAL, lexeme, position, line, column)
+        case State.NUM_200 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.NUM_100
+          else if current == 'e' then
+            consume()
+            state = State.NUM_600
+          else if current == 'd' then
+            consume()
+            state = State.NUM_810
+          else if current == 'f' then
+            consume()
+            state = State.NUM_820
+          else if current == 'L' then
+            consume()
+            state = State.NUM_210
+          else if current == 'u' then
+            consume()
+            state = State.NUM_220
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected 'd', 'f', 'e', 'L', 'u', or decimal digit")
+            consume()
+            state = State.NUM_100
+        case State.NUM_210 =>
+          if current == 'u' then
+            consume()
+            state = State.NUM_230
+          else
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.INT64_LITERAL, lexeme, position, line, column)
+        case State.NUM_220 =>
+          if current == 'L' then
+            consume()
+            state = State.NUM_230
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.UINT32_LITERAL, lexeme, position, line, column)
+        case State.NUM_230 =>
+          // Accept
+          val end = position
+          val lexeme = input.slice(begin, end)
+          token = Token(Token.Kind.UINT64_LITERAL, lexeme, position, line, column)
+        case State.NUM_300 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.NUM_400
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected decimal digit")
+            consume()
+        case State.NUM_400 =>
+          if isDecimalDigit(current) then
+            consume()
+          else if current == '_' then
+            consume()
+            state = State.NUM_500
+          else if current == 'e' then
+            consume()
+            state = State.NUM_600
+          else if current == 'd' then
+            consume()
+            state = State.NUM_810
+          else if current == 'f' then
+            consume()
+            state = State.NUM_820
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.FLOAT64_LITERAL, lexeme, position, line, column)
+        case State.NUM_500 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.NUM_400
+          else if current == 'e' then
+            consume()
+            state = State.NUM_600
+          else if current == 'd' then
+            consume()
+            state = State.NUM_810
+          else if current == 'f' then
+            consume()
+            state = State.NUM_820
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected decimal digit")
+            consume()
+            state = State.NUM_400
+        case State.NUM_600 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.NUM_800
+          else if current == '+' || current == '-' then
+            consume()
+            state = State.NUM_700
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected '+', '-', or decimal digit")
+            consume()
+            state = State.NUM_800
+        case State.NUM_700 =>
+          if isDecimalDigit(current) then
+            consume()
+            state = State.NUM_800
+          else
+            // Pretend we got a digit for error recovery purposes
+            error(s"invalid number: found '${current}', expected decimal digit")
+            consume()
+            state = State.NUM_800
+        case State.NUM_800 =>
+          if isDecimalDigit(current) then
+            consume()
+          else if current == 'd' then
+            consume()
+            state = State.NUM_810
+          else if current == 'f' then
+            consume()
+            state = State.NUM_820
+          else
+            // Accept
+            val end = position
+            val lexeme = input.slice(begin, end)
+            token = Token(Token.Kind.FLOAT64_LITERAL, lexeme, position, line, column)
+        case State.NUM_810 =>
+          // Accept
+          val end = position
+          val lexeme = input.slice(begin, end)
+          token = Token(Token.Kind.FLOAT64_LITERAL, lexeme, position, line, column)
+        case State.NUM_820 =>
+          // Accept
+          val end = position
+          val lexeme = input.slice(begin, end)
+          token = Token(Token.Kind.FLOAT32_LITERAL, lexeme, position, line, column)
         case _ =>
           // Invalid state. Can only be reached through a lexer bug.
           print("error: Invalid state.")
     end while
     return token
 }
-
