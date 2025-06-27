@@ -1,19 +1,22 @@
 package org.cobalt
 
 @main def hello () = {
-  var lexer = new Lexer()
+  val lexer = new Lexer()
   lexer.setInput("var x: int = 0b_001u;")
 
-  var t = lexer.getToken()
-  println(t)
-  t = lexer.getToken()
-  println(t)
-  t = lexer.getToken()
-  println(t)
-  t = lexer.getToken()
-  println(t)
-  t = lexer.getToken()
-  println(t)
-  t = lexer.getToken()
-  println(t)
+  val parser = new Parser()
+  parser.setInput(lexer)
+
+  // var t = lexer.getToken()
+  // println(t)
+  // t = lexer.getToken()
+  // println(t)
+  // t = lexer.getToken()
+  // println(t)
+  // t = lexer.getToken()
+  // println(t)
+  // t = lexer.getToken()
+  // println(t)
+  // t = lexer.getToken()
+  // println(t)
 }
