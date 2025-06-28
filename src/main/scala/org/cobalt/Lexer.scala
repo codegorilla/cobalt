@@ -81,6 +81,18 @@ class Lexer {
     current = input(position)
     column -= 1
 
+  def process (): List[Token] =
+    // We might eventually require a client to perform the
+    // construction of this list. For now just have the lexer do it.
+    var tokens = List[Token]()
+    var token = getToken()
+    tokens = token :: tokens
+    while token.kind != Token.Kind.EOF do
+      token = getToken()
+      tokens = token :: tokens
+    tokens = tokens.reverse
+    return tokens
+
   def getToken (): Token =
 
     var kind: Token.Kind = null

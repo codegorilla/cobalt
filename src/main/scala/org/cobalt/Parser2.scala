@@ -15,8 +15,8 @@ import org.cobalt.AstNode.Kind
 
 // First pass parser just looks for classes
 
-class Parser {
-  
+class Parser2 {
+
   val symbolTable = SymbolTable()
 
   var input: List[Token] = null
@@ -27,7 +27,7 @@ class Parser {
     this.input = input
     lookahead = input(position)
 
-  def pmatch (kind: Token.Kind) =
+  def matchp (kind: Token.Kind) =
     if lookahead.kind == kind then
       consume()
     else
@@ -37,32 +37,29 @@ class Parser {
     position += 1
     lookahead = input(position)
 
-  def process (): SymbolTable =
-    translationUnit()
-    return symbolTable
 
-  def translationUnit () =
+  def translationUnit (): AstNode = {
+    val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
-      // Infinite loop
+      // Infinite loop, need to consume
       Thread.sleep(10)
-      declaration()
+      //println(lookahead)
+      n.addChild(declaration())
+    return n
+  }
 
-  def declaration () =
-    while lookahead.kind != Token.Kind.CLASS && lookahead.kind != Token.Kind.EOF do
-      consume()
+  def declaration (): AstNode = {
+
     if lookahead.kind == Token.Kind.CLASS then
-      classDeclaration()
 
-  def classDeclaration () =
-    pmatch(Token.Kind.CLASS)
-    if lookahead.kind == Token.Kind.IDENTIFIER then
-      identifier()
-    pmatch(Token.Kind.L_BRACE)
-    pmatch(Token.Kind.R_BRACE)
+      symbolTable.insert(new Symbol("hello"))
+    // lookahead.kind match
+    //   case Token.Kind.VAR =>
+    //     println("Found var!")
+    //   case _ =>
+    //     println("Found something else!")
 
-  def identifier () =
-    val name = lookahead.lexeme
-    pmatch(Token.Kind.IDENTIFIER)
-    symbolTable.insert(new Symbol(name))
+    return AstNode(AstNode.Kind.VAR)
+  }
 
 }
