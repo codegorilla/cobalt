@@ -13,9 +13,11 @@ import org.cobalt.AstNode.Kind
 // cannot tell if L[X] is an array dereference or the beginning of a
 // static method call. (Same issue arises with List<int>.)
 
-// First pass parser just looks for classes
+// First pass parser just looks for the pattern 'class Name [', which
+// indicates a class template. These get added to the symbol table so
+// that they can serve as semantic predicates in later parsing.
 
-class Parser {
+class Parser1 {
   
   val symbolTable = SymbolTable()
 
@@ -54,15 +56,19 @@ class Parser {
       classDeclaration()
 
   def classDeclaration () =
+    // A lookahead of 2 would be helpful here because it would avoid
+    // saving the name before we know if its even needed. This is
+    // because we only need to create the symbol table entry if this
+    // is a class template.
     pmatch(Token.Kind.CLASS)
     if lookahead.kind == Token.Kind.IDENTIFIER then
-      identifier()
-    pmatch(Token.Kind.L_BRACE)
-    pmatch(Token.Kind.R_BRACE)
+      val name = identifier()
+      if lookahead.kind == Token.Kind.L_BRACKET then
+        pmatch(Token.Kind.L_BRACKET)
+        symbolTable.insert(new Symbol(name))
 
-  def identifier () =
+  def identifier (): String =
     val name = lookahead.lexeme
     pmatch(Token.Kind.IDENTIFIER)
-    symbolTable.insert(new Symbol(name))
-
+    return name
 }
