@@ -117,21 +117,25 @@ class Parser2 {
     return AstNode(AstNode.Kind.PLACEHOLDER)
 
   // To do: Implement type inference
-  def variableDeclarationFinal (modifiers: AstNode): AstNode =
-    modifiers.addChild(finalModifier())
-    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
-    matchp(Token.Kind.VAL)
-    n.addChild(modifiers)
-    n.addChild(identifier())
-    matchp(Token.Kind.COLON)
-    n.addChild(typeRoot())
-    matchp(Token.Kind.SEMICOLON)
-    return n
+  // def variableDeclarationFinal (modifiers: AstNode): AstNode =
+  //   modifiers.addChild(finalModifier())
+  //   val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
+  //   matchp(Token.Kind.VAL)
+  //   n.addChild(modifiers)
+  //   n.addChild(identifier())
+  //   matchp(Token.Kind.COLON)
+  //   n.addChild(typeRoot())
+  //   matchp(Token.Kind.SEMICOLON)
+  //   return n
 
   // To do: Implement type inference
   def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
-    match_(Token.Kind.VAR)
+    if finalFlag then
+      match_(Token.Kind.VAL)
+      modifiers.addChild(finalModifier())
+    else
+      match_(Token.Kind.VAR)
     n.addChild(modifiers)
     n.addChild(identifier())
     if lookahead.kind == Token.Kind.COLON then
@@ -163,8 +167,23 @@ class Parser2 {
 
   def type_ (): AstNode =
     val combined = directType()
+    println(combined)
     // Pop base type node
-    null
+    var n = combined.removeFirst()
+    // Pop each type node from list, constructing chain of pointers
+    // and arrays as we go. When done, the list should be empty.
+    while combined.size() > 0 do
+      val p = combined.removeFirst()
+      p.getKind() match
+        case AstNode.Kind.POINTER_TYPE =>
+          p.addChild(n)
+          n = p
+        case AstNode.Kind.ARRAY_TYPE =>
+          p.addChild(n)
+          n = p
+        case _ =>
+          println("error: This is not possible without a parser error.")
+    return n
 
   def directType (): LinkedList[AstNode] =
     // Build fragments
@@ -173,9 +192,9 @@ class Parser2 {
     val right  = rightFragment()
     // Assemble fragments
     val combined = LinkedList[AstNode]()
-    combined.addAll(left)
     combined.addAll(center)
     combined.addAll(right)
+    combined.addAll(left)
     return combined
 
   def leftFragment (): LinkedList[AstNode] =
@@ -259,7 +278,6 @@ class Parser2 {
     return n
 
   def primitiveType (): AstNode =
-    println("PRIMITIVE TYPE")
     val n = AstNode(AstNode.Kind.PRIMITIVE_TYPE)
     n.setToken(lookahead)
     match_(lookahead.kind)

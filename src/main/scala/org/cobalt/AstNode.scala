@@ -12,11 +12,17 @@ class AstNode (kind: AstNode.Kind):
   def addChild (node: AstNode) =
     children += node
 
+  def getKind (): AstNode.Kind =
+    return kind
+
   def setAttribute (name: String, value: Any) =
     attributes += (name -> value)
 
   def setToken (token: Token) =
     this.token = token
+
+  override def toString (): String =
+    return s"AstNode(${kind}, ${token})"
 
 
 object AstNode:
