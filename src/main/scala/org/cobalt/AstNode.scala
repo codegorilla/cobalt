@@ -3,7 +3,7 @@ package org.cobalt
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
-class AstNode (kind: AstNode.Kind) {
+class AstNode (kind: AstNode.Kind):
 
   var children = ListBuffer[AstNode]()
   var token: Token = null
@@ -17,18 +17,25 @@ class AstNode (kind: AstNode.Kind) {
 
   def setToken (token: Token) =
     this.token = token
-}
 
-object AstNode {
-  enum Kind {
+
+object AstNode:
+  enum Kind:
     case PLACEHOLDER
-
     case TRANSLATION_UNIT
+
+    // Declarations
     case CLASS_DECLARATION
     case DEF
+    case FINAL_MODIFIER
     case IDENTIFIER
     case MODIFIERS
-    case PUBLIC
+    case PUBLIC_MODIFIER
+    case STATIC_MODIFIER
     case VARIABLE_DECLARATION
-  }
-}
+
+    // Type expressions
+    case TYPE_ROOT
+    case ARRAY_TYPE
+    case POINTER_TYPE
+    case PRIMITIVE_TYPE

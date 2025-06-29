@@ -2,6 +2,7 @@ package org.cobalt
 
 import org.cobalt.AstNode.Kind
 
+import scala.collection.mutable.ArrayDeque
 import scala.collection.mutable.Map
 
 // This first parser just needs to create a class table so we know if
@@ -32,6 +33,9 @@ class Parser2 {
   def setSymbolTable (symbolTable: SymbolTable) =
     this.symbolTable = symbolTable
 
+  def match_ (kind: Token.Kind) =
+    matchp(kind)
+
   def matchp (kind: Token.Kind) =
     if lookahead.kind == kind then
       consume()
@@ -50,46 +54,48 @@ class Parser2 {
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
-      Thread.sleep(10)
+      Thread.sleep(100)
       n.addChild(declaration())
     return n
 
-  def declaration (): AstNode =
-    // Deal with modifiers first
-    var n: AstNode = null
-    if lookahead.kind == Token.Kind.PUBLIC ||
-       lookahead.kind == Token.Kind.STATIC
-    then
-      n = modifiers()
+  // DECLARATIONS
 
-    val p = lookahead.kind match
-      case Token.Kind.CLASS =>
-        classDeclaration()
-      case Token.Kind.VAL =>
-        variableDeclarationFinal()
-      case Token.Kind.VAR =>
-        variableDeclaration(n)
+  def declaration (): AstNode =
+    val p = modifiers()
+    val n = lookahead.kind match
+      case Token.Kind.CLASS => classDeclaration()
+      case Token.Kind.VAL => variableDeclaration(p, true)
+      case Token.Kind.VAR => variableDeclaration(p, false)
       case _ =>
         println("Found something else!")
-        AstNode(AstNode.Kind.PLACEHOLDER)
+        null
     return p
-
-  val modifierAttributes = Map[AstNode, ModifierSet]()
-
-  val modifierMap = Map[Token.Kind, Modifier.Kind](
-    Token.Kind.PUBLIC -> Modifier.Kind.PUBLIC,
-    Token.Kind.STATIC -> Modifier.Kind.STATIC,
-  )
 
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
-    val ms = ModifierSet()
     while lookahead.kind == Token.Kind.PUBLIC ||
           lookahead.kind == Token.Kind.STATIC
     do
-      ms.add(Modifier(modifierMap(lookahead.kind)))
-    modifierAttributes(n) = ms
+      val modifier = lookahead.kind match
+        case Token.Kind.PUBLIC => publicModifier()
+        case Token.Kind.STATIC => staticModifier()
+        case _ =>
+          print("error: This can only happen if there is a parser error.")
+          null
+      n.addChild(modifier)
     return n
+
+  def finalModifier (): AstNode =
+    // No corresponding token, so match not needed
+    AstNode(AstNode.Kind.FINAL_MODIFIER)
+
+  def publicModifier (): AstNode =
+    matchp(Token.Kind.PUBLIC)
+    AstNode(AstNode.Kind.PUBLIC_MODIFIER)
+
+  def staticModifier (): AstNode =
+    matchp(Token.Kind.STATIC)
+    AstNode(AstNode.Kind.STATIC_MODIFIER)
 
   def classDeclaration (): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
@@ -106,23 +112,29 @@ class Parser2 {
     return AstNode(AstNode.Kind.PLACEHOLDER)
 
   // To do: Implement type inference
-  def variableDeclarationFinal (): AstNode =
+  def variableDeclarationFinal (modifiers: AstNode): AstNode =
+    modifiers.addChild(finalModifier())
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
     matchp(Token.Kind.VAL)
-    n.setAttribute("final", true)
+    n.addChild(modifiers)
     n.addChild(identifier())
     matchp(Token.Kind.COLON)
-    n.addChild(typeExpression())
+    n.addChild(typeRoot())
     matchp(Token.Kind.SEMICOLON)
     return n
 
   // To do: Implement type inference
-  def variableDeclaration (modifiersNode: AstNode): AstNode =
+  def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
     matchp(Token.Kind.VAR)
+    n.addChild(modifiers)
     n.addChild(identifier())
-    matchp(Token.Kind.COLON)
-    n.addChild(typeExpression())
+    if lookahead.kind == Token.Kind.COLON then
+      matchp(Token.Kind.COLON)
+      n.addChild(typeRoot())
+    if lookahead.kind == Token.Kind.EQUAL then
+      matchp(Token.Kind.EQUAL)
+      n.addChild(expression())
     matchp(Token.Kind.SEMICOLON)
     return n
 
@@ -132,16 +144,50 @@ class Parser2 {
     matchp(Token.Kind.IDENTIFIER)
     return n
 
+    // Expressions
+
+  def expression (): AstNode =
+    return null
+
   // Types
 
-  def typeExpression (): AstNode =
-    val n = lookahead.kind match
-      case Token.Kind.INT =>
-        ;
-      case Token.Kind.FLOAT =>
-        ;
-      case _ =>
-        println("Found something else!")
-    AstNode(AstNode.Kind.PLACEHOLDER)
+  def typeRoot (): AstNode =
+    val n = AstNode(AstNode.Kind.TYPE_ROOT)
+    n.addChild(type_())
+    return n
+
+    // val n = lookahead.kind match
+    //   case Token.Kind.INT =>
+    //   case Token.Kind.FLOAT =>
+    //     ;
+    //   case _ =>
+    //     println("Found something else!")
+    // AstNode(AstNode.Kind.PLACEHOLDER)
+
+  def type_ (): AstNode =
+    val combined = directType()
+    // Pop base type node
+    null
+
+  def directType (): AstNode =
+    // Build left fragment
+    val left = ArrayDeque[AstNode]()
+    // while lookahead.kind == Token.Kind.ASTERISK do
+    //   val n = pointerType()
+//      left.appendLeft(n)
+    // Build center fragment
+    null
+
+  def pointerType (): AstNode =
+    val n = AstNode(AstNode.Kind.POINTER_TYPE)
+    n.setToken(lookahead)
+    match_(Token.Kind.ASTERISK)
+    return n
+
+  def primitiveType (): AstNode =
+    val n = AstNode(AstNode.Kind.PRIMITIVE_TYPE)
+    n.setToken(lookahead)
+    match_(lookahead.kind)
+    return n
 
 }

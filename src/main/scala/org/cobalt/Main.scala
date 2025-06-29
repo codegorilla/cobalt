@@ -2,8 +2,8 @@ package org.cobalt
 
 @main def hello () = {
   val lexer = Lexer()
-  lexer.setInput("var x: int = 0b_001u;")
-  //class hello [T] { }; var x; class Waypoint [T] { }")
+  lexer.setInput("public static var x: int = 0b_001u;")
+  //class Hello [T] { }; var x; class Waypoint [T] { }")
   val tokens = lexer.process()
 
   println(tokens)
