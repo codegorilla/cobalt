@@ -2,9 +2,10 @@ package org.cobalt
 
 import org.cobalt.AstNode.Kind
 
-// This first parser just needs to create a class table so we know if
-// certain productions are classes or not. We also need to be able to
-// follow typealiases to their target types.
+// This first parser just needs to create the symbol table so we can
+// start populating it with template classes so that we know if
+// certain productions in a later parsing pass are classes or not. We
+// also need to be able to follow typealiases to their target types.
 
 // We cannot construct an AST in the first parsing pass because that
 // would require that we be able to fully parse the input, but we

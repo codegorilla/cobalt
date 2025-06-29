@@ -32,7 +32,10 @@ object Token {
         case NULL
         case OR
         case PACKAGE
+        case PRIVATE
+        case PUBLIC
         case RETURN
+        case STATIC
         case STRUCT
         case THEN
         case TRUE
