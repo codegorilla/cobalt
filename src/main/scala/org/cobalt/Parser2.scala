@@ -5,6 +5,9 @@ import org.cobalt.AstNode.Kind
 import scala.collection.mutable.ArrayDeque
 import scala.collection.mutable.Map
 
+// Try java linked list instead of scala deque
+import java.util.LinkedList
+
 // This first parser just needs to create a class table so we know if
 // certain productions are classes or not. We also need to be able to
 // follow typealiases to their target types.
@@ -19,6 +22,8 @@ import scala.collection.mutable.Map
 // First pass parser just looks for classes
 
 class Parser2 {
+
+  val SLEEP_TIME = 200
 
   var symbolTable: SymbolTable = null
 
@@ -54,7 +59,7 @@ class Parser2 {
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
-      Thread.sleep(100)
+      Thread.sleep(SLEEP_TIME)
       n.addChild(declaration())
     return n
 
@@ -126,16 +131,16 @@ class Parser2 {
   // To do: Implement type inference
   def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
-    matchp(Token.Kind.VAR)
+    match_(Token.Kind.VAR)
     n.addChild(modifiers)
     n.addChild(identifier())
     if lookahead.kind == Token.Kind.COLON then
-      matchp(Token.Kind.COLON)
+      match_(Token.Kind.COLON)
       n.addChild(typeRoot())
     if lookahead.kind == Token.Kind.EQUAL then
-      matchp(Token.Kind.EQUAL)
+      match_(Token.Kind.EQUAL)
       n.addChild(expression())
-    matchp(Token.Kind.SEMICOLON)
+    match_(Token.Kind.SEMICOLON)
     return n
 
   def identifier (): AstNode =
@@ -156,27 +161,96 @@ class Parser2 {
     n.addChild(type_())
     return n
 
-    // val n = lookahead.kind match
-    //   case Token.Kind.INT =>
-    //   case Token.Kind.FLOAT =>
-    //     ;
-    //   case _ =>
-    //     println("Found something else!")
-    // AstNode(AstNode.Kind.PLACEHOLDER)
-
   def type_ (): AstNode =
     val combined = directType()
     // Pop base type node
     null
 
-  def directType (): AstNode =
-    // Build left fragment
-    val left = ArrayDeque[AstNode]()
-    // while lookahead.kind == Token.Kind.ASTERISK do
-    //   val n = pointerType()
-//      left.appendLeft(n)
-    // Build center fragment
-    null
+  def directType (): LinkedList[AstNode] =
+    // Build fragments
+    val left   = leftFragment()
+    val center = centerFragment()
+    val right  = rightFragment()
+    // Assemble fragments
+    val combined = LinkedList[AstNode]()
+    combined.addAll(left)
+    combined.addAll(center)
+    combined.addAll(right)
+    return combined
+
+  def leftFragment (): LinkedList[AstNode] =
+    println("FOUND LEFT_FRAGMENT")
+    val fragment = LinkedList[AstNode]()
+    while lookahead.kind == Token.Kind.ASTERISK do
+      val n = pointerType()
+      fragment.addFirst(n)
+    return fragment
+
+  def centerFragment (): LinkedList[AstNode] =
+    println("FOUND CENTER_FRAGMENT")
+    var fragment = LinkedList[AstNode]()
+    if lookahead.kind == Token.Kind.CARAT then
+      fragment.addLast(functionPointerType())
+    else if lookahead.kind == Token.Kind.BOOL    ||
+            lookahead.kind == Token.Kind.INT     ||
+            lookahead.kind == Token.Kind.INT8    ||
+            lookahead.kind == Token.Kind.INT16   ||
+            lookahead.kind == Token.Kind.INT32   ||
+            lookahead.kind == Token.Kind.INT64   ||
+            lookahead.kind == Token.Kind.UINT    ||
+            lookahead.kind == Token.Kind.UINT8   ||
+            lookahead.kind == Token.Kind.UINT16  ||
+            lookahead.kind == Token.Kind.UINT32  ||
+            lookahead.kind == Token.Kind.UINT64  ||
+            lookahead.kind == Token.Kind.FLOAT32 ||
+            lookahead.kind == Token.Kind.FLOAT64 ||
+            lookahead.kind == Token.Kind.VOID
+    then
+      fragment.addLast(primitiveType())
+    else if lookahead.kind == Token.Kind.IDENTIFIER then
+      // Nominal type. Need to look up name in symbol table to tell
+      // what kind it is (e.g. struct, class). For now assume class.
+      // What if we don't want to require a symbol table for
+      // parsing? In this case, all we can say is that it is a
+      // 'nominal' type. Update: This comment was from python
+      // prototype - why is this required?
+      fragment.addLast(nominalType())
+    else if lookahead.kind == Token.Kind.L_PARENTHESIS then
+      match_(Token.Kind.L_PARENTHESIS)
+      val n = directType()
+      fragment = n
+      match_(Token.Kind.R_PARENTHESIS)
+    return fragment
+
+  def rightFragment (): LinkedList[AstNode] =
+    println("FOUND RIGHT_FRAGMENT")
+    val fragment = LinkedList[AstNode]()
+    while lookahead.kind == Token.Kind.L_BRACKET do
+      val n = arrayType()
+      fragment.addLast(n)
+    return fragment
+
+  def arrayType (): AstNode =
+    val n = AstNode(AstNode.Kind.ARRAY_TYPE)
+    match_(Token.Kind.L_BRACKET)
+    return n
+
+  def functionPointerType (): AstNode =
+    val n = AstNode(AstNode.Kind.FUNCTION_POINTER_TYPE)
+    n.setToken(lookahead)
+    match_(Token.Kind.CARAT)
+    return n
+
+  def nominalType (): AstNode =
+    val n = AstNode(AstNode.Kind.NOMINAL_TYPE)
+    // I don't think we want to add a name here, we just want to set
+    // the token instead, but we can revisit this later.
+    // n.add_child(self.name())
+    n.setToken(lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    // Need to eventually allow for type parameters. (This would allow
+    // us to know that this was a class type, if that matters.)
+    return n
 
   def pointerType (): AstNode =
     val n = AstNode(AstNode.Kind.POINTER_TYPE)
@@ -185,6 +259,7 @@ class Parser2 {
     return n
 
   def primitiveType (): AstNode =
+    println("PRIMITIVE TYPE")
     val n = AstNode(AstNode.Kind.PRIMITIVE_TYPE)
     n.setToken(lookahead)
     match_(lookahead.kind)

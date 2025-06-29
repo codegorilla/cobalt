@@ -1,6 +1,8 @@
 package org.cobalt
 
-@main def hello () = {
+import java.util.LinkedList
+
+@main def hello () =
   val lexer = Lexer()
   lexer.setInput("public static var x: int = 0b_001u;")
   //class Hello [T] { }; var x; class Waypoint [T] { }")
@@ -19,4 +21,3 @@ package org.cobalt
   val node = parser2.process()
 
   println(node)
-}

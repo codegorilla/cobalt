@@ -37,5 +37,7 @@ object AstNode:
     // Type expressions
     case TYPE_ROOT
     case ARRAY_TYPE
+    case FUNCTION_POINTER_TYPE
+    case NOMINAL_TYPE
     case POINTER_TYPE
     case PRIMITIVE_TYPE
