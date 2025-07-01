@@ -31,14 +31,27 @@ object AstNode:
     case TRANSLATION_UNIT
 
     // Declarations
+    case NAME
+
+    // Class declaration
     case CLASS_DECLARATION
-    case DEF
+
+    // Function declaration
+    case FUNCTION_DECLARATION
+    case PARAMETERS
+    case PARAMETER
+    case RESULT
+
+    // Variable declaration
+    case VARIABLE_DECLARATION
+
+    // Modifiers
     case FINAL_MODIFIER
-    case IDENTIFIER
     case MODIFIERS
     case PUBLIC_MODIFIER
     case STATIC_MODIFIER
-    case VARIABLE_DECLARATION
+
+    case IDENTIFIER
 
     // Type expressions
     case TYPE_ROOT

@@ -4,7 +4,7 @@ import java.util.LinkedList
 
 @main def hello () =
   val lexer = Lexer()
-  lexer.setInput("public static val x: *int[5] = 0b_001u;")
+  lexer.setInput("public static val x: *int = 0b_001u;")
   //class Hello [T] { }; var x; class Waypoint [T] { }")
   val tokens = lexer.process()
 

@@ -39,13 +39,17 @@ class Parser2 {
     this.symbolTable = symbolTable
 
   def match_ (kind: Token.Kind) =
-    matchp(kind)
-
-  def matchp (kind: Token.Kind) =
     if lookahead.kind == kind then
       consume()
     else
       print(s"invalid token: expected ${kind}, got ${lookahead.kind}")
+
+  def match_ (lexeme: String) =
+    // Note: If re-writing in java, we need to compare using .equals() method
+    if lookahead.lexeme == lexeme then
+      consume()
+    else
+      print(s"invalid token: expected '${lexeme}', got '${lookahead.lexeme}'")
 
   def consume () =
     position += 1
@@ -68,9 +72,10 @@ class Parser2 {
   def declaration (): AstNode =
     val p = modifiers()
     val n = lookahead.kind match
-      case Token.Kind.CLASS => classDeclaration()
+      case Token.Kind.CLASS => classDeclaration(p)
       case Token.Kind.VAL => variableDeclaration(p, true)
       case Token.Kind.VAR => variableDeclaration(p, false)
+      case Token.Kind.DEF => functionDeclaration(p)
       case _ =>
         println("Found something else!")
         null
@@ -95,40 +100,27 @@ class Parser2 {
     AstNode(AstNode.Kind.FINAL_MODIFIER)
 
   def publicModifier (): AstNode =
-    matchp(Token.Kind.PUBLIC)
+    match_(Token.Kind.PUBLIC)
     AstNode(AstNode.Kind.PUBLIC_MODIFIER)
 
   def staticModifier (): AstNode =
-    matchp(Token.Kind.STATIC)
+    match_(Token.Kind.STATIC)
     AstNode(AstNode.Kind.STATIC_MODIFIER)
 
-  def classDeclaration (): AstNode =
+  def classDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
-    matchp(Token.Kind.CLASS)
+    match_(Token.Kind.CLASS)
     n.addChild(identifier())
-    matchp(Token.Kind.L_BRACE)
+    match_(Token.Kind.L_BRACE)
     while lookahead.kind != Token.Kind.R_BRACE do
       n.addChild(classMember())
-    matchp(Token.Kind.R_BRACE)
+    match_(Token.Kind.R_BRACE)
     return n
 
   def classMember (): AstNode =
     // To do
     return AstNode(AstNode.Kind.PLACEHOLDER)
 
-  // To do: Implement type inference
-  // def variableDeclarationFinal (modifiers: AstNode): AstNode =
-  //   modifiers.addChild(finalModifier())
-  //   val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
-  //   matchp(Token.Kind.VAL)
-  //   n.addChild(modifiers)
-  //   n.addChild(identifier())
-  //   matchp(Token.Kind.COLON)
-  //   n.addChild(typeRoot())
-  //   matchp(Token.Kind.SEMICOLON)
-  //   return n
-
-  // To do: Implement type inference
   def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
     if finalFlag then
@@ -137,28 +129,79 @@ class Parser2 {
     else
       match_(Token.Kind.VAR)
     n.addChild(modifiers)
-    n.addChild(identifier())
+    n.addChild(name())
     if lookahead.kind == Token.Kind.COLON then
       match_(Token.Kind.COLON)
       n.addChild(typeRoot())
+      // Need to fix up array handling
     if lookahead.kind == Token.Kind.EQUAL then
       match_(Token.Kind.EQUAL)
       n.addChild(expression())
     match_(Token.Kind.SEMICOLON)
     return n
 
+  def functionDeclaration (modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.FUNCTION_DECLARATION)
+    match_(Token.Kind.DEF)
+    n.addChild(modifiers)
+    n.addChild(name())
+    n.addChild(parameters())
+    n.addChild(result())
+    return n
+
+  def parameters (): AstNode =
+    val n = AstNode(AstNode.Kind.PARAMETERS)
+    match_(Token.Kind.L_PARENTHESIS)
+    if lookahead.kind == Token.Kind.IDENTIFIER then
+      n.addChild(parameter())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(parameter())
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def parameter (): AstNode =
+    val n = AstNode(AstNode.Kind.PARAMETER)
+    n.addChild(name())
+    match_(Token.Kind.COLON)
+    n.addChild(typeRoot())
+    return n
+
+  def result (): AstNode =
+    val n = AstNode(AstNode.Kind.RESULT)
+    if lookahead.kind == Token.Kind.MINUS_GREATER then
+      match_(Token.Kind.MINUS_GREATER)
+      n.addChild(typeRoot())
+    return n
+
+  def name (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME)
+    n.setToken(lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    return n
+
+  // EXPRESSIONS
+
+  def expression (): AstNode =
+    println("EXPRESSION***")
+    val n = AstNode(AstNode.Kind.PLACEHOLDER)
+    consume()
+    return n
+
   def identifier (): AstNode =
     val n = AstNode(AstNode.Kind.IDENTIFIER)
     n.setToken(lookahead)
-    matchp(Token.Kind.IDENTIFIER)
+    match_(Token.Kind.IDENTIFIER)
     return n
 
-    // Expressions
+  // TYPES
 
-  def expression (): AstNode =
-    return null
-
-  // Types
+  // Type processing is interesting because Cobalt uses a form of the
+  // C-declaration style, so parsing types requires following the
+  // "spiral rule". To make this easier, we make use of doubly-linked
+  // lists provided by the language rather than complicating AST
+  // node class definition with parent links. We can re-think this in
+  // the future if we wish.
 
   def typeRoot (): AstNode =
     val n = AstNode(AstNode.Kind.TYPE_ROOT)
@@ -186,11 +229,11 @@ class Parser2 {
     return n
 
   def directType (): LinkedList[AstNode] =
-    // Build fragments
+    // Build type fragments in order they appear in token stream
     val left   = leftFragment()
     val center = centerFragment()
     val right  = rightFragment()
-    // Assemble fragments
+    // Assemble type fragments in "spiral rule" order
     val combined = LinkedList[AstNode]()
     combined.addAll(center)
     combined.addAll(right)
