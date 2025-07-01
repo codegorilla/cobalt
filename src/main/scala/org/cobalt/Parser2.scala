@@ -130,14 +130,23 @@ class Parser2 {
       match_(Token.Kind.VAR)
     n.addChild(modifiers)
     n.addChild(name())
+    n.addChild(typeSpecifier())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def typeSpecifier (): AstNode =
+    val n = AstNode(AstNode.Kind.TYPE_SPECIFIER)
     if lookahead.kind == Token.Kind.COLON then
       match_(Token.Kind.COLON)
-      n.addChild(typeRoot())
       // Need to fix up array handling
+      n.addChild(typeRoot())
+    return n
+
+  def initializer (): AstNode =
+    val n = AstNode(AstNode.Kind.INITIALIZER)
     if lookahead.kind == Token.Kind.EQUAL then
       match_(Token.Kind.EQUAL)
       n.addChild(expression())
-    match_(Token.Kind.SEMICOLON)
     return n
 
   def functionDeclaration (modifiers: AstNode): AstNode =

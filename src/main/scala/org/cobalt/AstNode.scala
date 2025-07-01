@@ -33,6 +33,12 @@ object AstNode:
     // Declarations
     case NAME
 
+    // Modifiers
+    case FINAL_MODIFIER
+    case MODIFIERS
+    case PUBLIC_MODIFIER
+    case STATIC_MODIFIER
+
     // Class declaration
     case CLASS_DECLARATION
 
@@ -44,12 +50,8 @@ object AstNode:
 
     // Variable declaration
     case VARIABLE_DECLARATION
-
-    // Modifiers
-    case FINAL_MODIFIER
-    case MODIFIERS
-    case PUBLIC_MODIFIER
-    case STATIC_MODIFIER
+    case TYPE_SPECIFIER
+    case INITIALIZER
 
     case IDENTIFIER
 
