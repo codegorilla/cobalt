@@ -47,6 +47,8 @@ object AstNode:
     case PARAMETERS
     case PARAMETER
     case RESULT
+    case FUNCTION_BODY
+    case BLOCK
 
     // Variable declaration
     case VARIABLE_DECLARATION
@@ -54,6 +56,10 @@ object AstNode:
     case INITIALIZER
 
     case IDENTIFIER
+
+    // Statements
+    case BREAK_STATEMENT
+    case CONTINUE_STATEMENT
 
     // Type expressions
     case TYPE_ROOT

@@ -38,6 +38,7 @@ object Token {
         case STATIC
         case STRUCT
         case THEN
+        case THIS
         case TRUE
         case TYPEALIAS
         case UNION

@@ -1,14 +1,31 @@
 package org.cobalt
 
 import java.util.LinkedList
+import java.nio.file.Paths
+import java.nio.file.Files
+import java.io.IOException
 
 @main def hello () =
+
+  // For now just hard-code the path
+  // Eventually, we'll want to provide robust CLI processing
+  val mainPath = "C:/Users/clearm/workspace/alpha-sprint4/cobalt/src/main/resources"
+  val path = Paths.get(mainPath + "/hello.co")
+  var content: String = null
+  try {
+    content = Files.readString(path)
+    println(content)
+  } catch {
+    case e: IOException => e.printStackTrace()
+  }
+
   val lexer = Lexer()
-  lexer.setInput("public static val x: *int = 0b_001u;")
-  //class Hello [T] { }; var x; class Waypoint [T] { }")
+  lexer.setInput(content)
   val tokens = lexer.process()
 
   println(tokens)
+
+  System.exit(0)
 
   val parser1 = Parser1()
   parser1.setInput(tokens)

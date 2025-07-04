@@ -183,11 +183,94 @@ class Parser2 {
       n.addChild(typeRoot())
     return n
 
+  def functionBody (): AstNode =
+    val n = AstNode(AstNode.Kind.FUNCTION_BODY)
+    if lookahead.kind == Token.Kind.SEMICOLON then
+      match_(Token.Kind.SEMICOLON)
+    else
+      n.addChild(block())
+    return n
+
+  // The top-most block needs to use the scope of the function itself
+  // so we might need a topBlock production. Alternatively, we can
+  // pass in a parameter that says whether or not to create a new
+  // scope.
+
+  def block (): AstNode =
+    val n = AstNode(AstNode.Kind.BLOCK)
+    match_(Token.Kind.L_BRACE)
+    while lookahead.kind != Token.Kind.R_BRACE do
+      // Do blocks only contain statements? If so, then we don't need
+      // blockElement. Otherwise, if we full distinguish between
+      // declarations and statements, then we need blockElement
+      n.addChild(statement())
+      match_(Token.Kind.R_BRACE)
+    return n
+
   def name (): AstNode =
     val n = AstNode(AstNode.Kind.NAME)
     n.setToken(lookahead)
     match_(Token.Kind.IDENTIFIER)
     return n
+
+  // STATEMENTS
+
+  def statement (): AstNode =
+    val kind = lookahead.kind
+    var n: AstNode = null
+    if kind == Token.Kind.IDENTIFIER ||
+       kind == Token.Kind.NULL ||
+       kind == Token.Kind.FALSE ||
+       kind == Token.Kind.THIS ||
+       kind == Token.Kind.TRUE ||
+       kind == Token.Kind.INT32_LITERAL ||
+       kind == Token.Kind.INT64_LITERAL ||
+       kind == Token.Kind.UINT32_LITERAL ||
+       kind == Token.Kind.UINT64_LITERAL ||
+       kind == Token.Kind.FLOAT32_LITERAL ||
+       kind == Token.Kind.FLOAT64_LITERAL
+    then
+      n = expressionStatement()
+    else if kind == Token.Kind.BREAK then
+      n = breakStatement()
+    else if kind == Token.Kind.CONTINUE then
+      n = continueStatement()
+    // else if kind == Token.Kind.DO then
+    //   n = doStatement()
+    // else if kind == Token.Kind.FOR then
+    //   n = forStatement()
+    // else if kind == Token.Kind.IF then
+    //   n = ifStatement()
+    // else if kind == Token.Kind.RETURN then
+    //   n = returnStatement()
+    // else if kind == Token.Kind.WHILE then
+    //   n = whileStatement()
+    // else if kind == Token.Kind.SEMICOLON then
+    //   n = nullStatement()
+    // else if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
+    //   n = declarationStatement()
+    else
+      print("Error: Invalid statement")
+    return n
+
+  def breakStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.BREAK_STATEMENT)
+    match_(Token.Kind.BREAK)
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def continueStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.CONTINUE_STATEMENT)
+    match_(Token.Kind.CONTINUE)
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+
+  def expressionStatement(): AstNode =
+    return null
+
+
+
 
   // EXPRESSIONS
 

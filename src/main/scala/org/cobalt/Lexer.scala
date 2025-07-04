@@ -238,10 +238,16 @@ class Lexer {
           consume()
           kind = Token.Kind.SLASH_EQUAL
           lexeme = "/="
+          return Token(kind, lexeme, position, line, column)
+        else if current == '/' then
+          // Line comment
+          consume()
+          while current != '\n' && current != '\r' && current != EOF do
+            consume()
         else
           kind = Token.Kind.SLASH
           lexeme = "/"
-        return Token(kind, lexeme, position, line, column)
+          return Token(kind, lexeme, position, line, column)
 
       else if current == '%' then
         consume()
