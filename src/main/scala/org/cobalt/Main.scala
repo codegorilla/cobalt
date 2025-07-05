@@ -26,7 +26,7 @@ import java.io.IOException
   println(tokens)
 
   // Exit
-  System.exit(0)
+  //System.exit(0)
 
   val parser1 = Parser1()
   parser1.setInput(tokens)

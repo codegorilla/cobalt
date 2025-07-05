@@ -73,11 +73,11 @@ class Parser2 {
     val p = modifiers()
     val n = lookahead.kind match
       case Token.Kind.CLASS => classDeclaration(p)
+      case Token.Kind.DEF => functionDeclaration(p)
       case Token.Kind.VAL => variableDeclaration(p, true)
       case Token.Kind.VAR => variableDeclaration(p, false)
-      case Token.Kind.DEF => functionDeclaration(p)
       case _ =>
-        println("Found something else!")
+        println(s"Found something else! ${lookahead.kind}")
         null
     return p
 
@@ -118,8 +118,32 @@ class Parser2 {
     return n
 
   def classMember (): AstNode =
-    // To do
-    return AstNode(AstNode.Kind.PLACEHOLDER)
+    val p = modifiers()
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.DEF then
+      n = methodDeclaration()
+    else if lookahead.kind == Token.Kind.VAL then
+      n = variableDeclaration(p, true)
+    else if lookahead.kind == Token.Kind.VAR then
+      n = variableDeclaration(p, false)
+    return n
+
+  def methodDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.METHOD_DECLARATION)
+    match_(Token.Kind.DEF)
+    n.addChild(name())
+    n.addChild(parameters())
+    n.addChild(result())
+    n.addChild(methodBody())
+    return n
+
+  def methodBody (): AstNode =
+    val n = AstNode(AstNode.Kind.METHOD_BODY)
+    if lookahead.kind == Token.Kind.SEMICOLON then
+      match_(Token.Kind.SEMICOLON)
+    else
+      n.addChild(block())
+    return n
 
   def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
@@ -156,6 +180,7 @@ class Parser2 {
     n.addChild(name())
     n.addChild(parameters())
     n.addChild(result())
+    n.addChild(functionBody())
     return n
 
   def parameters (): AstNode =
@@ -200,11 +225,12 @@ class Parser2 {
     val n = AstNode(AstNode.Kind.BLOCK)
     match_(Token.Kind.L_BRACE)
     while lookahead.kind != Token.Kind.R_BRACE do
+      Thread.sleep(SLEEP_TIME)
       // Do blocks only contain statements? If so, then we don't need
       // blockElement. Otherwise, if we full distinguish between
       // declarations and statements, then we need blockElement
       n.addChild(statement())
-      match_(Token.Kind.R_BRACE)
+    match_(Token.Kind.R_BRACE)
     return n
 
   def name (): AstNode =
@@ -241,8 +267,8 @@ class Parser2 {
     //   n = forStatement()
     // else if kind == Token.Kind.IF then
     //   n = ifStatement()
-    // else if kind == Token.Kind.RETURN then
-    //   n = returnStatement()
+    else if kind == Token.Kind.RETURN then
+      n = returnStatement()
     // else if kind == Token.Kind.WHILE then
     //   n = whileStatement()
     // else if kind == Token.Kind.SEMICOLON then
@@ -264,6 +290,14 @@ class Parser2 {
     match_(Token.Kind.CONTINUE)
     match_(Token.Kind.SEMICOLON)
     return n
+
+  def returnStatement (): AstNode =
+    print("GOT_HERE")
+    val n = AstNode(AstNode.Kind.RETURN_STATEMENT)
+    match_(Token.Kind.RETURN)
+    match_(Token.Kind.SEMICOLON)
+    return n
+    
 
 
   def expressionStatement(): AstNode =

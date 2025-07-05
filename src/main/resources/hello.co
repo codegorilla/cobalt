@@ -1,3 +1,12 @@
-public static val x: int;
+//public static val x: int;
 
-// hello
+//def myfun (x: float) -> int {
+//  return;
+//}
+
+class Token {
+
+  var x: int;
+
+}
+

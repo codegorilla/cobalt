@@ -42,6 +42,10 @@ object AstNode:
     // Class declaration
     case CLASS_DECLARATION
 
+    // Method declaration
+    case METHOD_DECLARATION
+    case METHOD_BODY
+
     // Function declaration
     case FUNCTION_DECLARATION
     case PARAMETERS
@@ -60,6 +64,7 @@ object AstNode:
     // Statements
     case BREAK_STATEMENT
     case CONTINUE_STATEMENT
+    case RETURN_STATEMENT
 
     // Type expressions
     case TYPE_ROOT
