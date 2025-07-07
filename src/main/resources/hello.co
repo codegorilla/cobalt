@@ -4,9 +4,20 @@
 //  return;
 //}
 
-class Token {
-
-  var x: int;
-
+enum TokenKind {
+  val DEF;
+  val VAL;
+  val VAR;
 }
+
+//class Token {
+
+//  var kind: int;
+//  var lexeme: String;
+//  var position: int;
+//  var line: int;
+//  var column: int;
+
+//}
+
 

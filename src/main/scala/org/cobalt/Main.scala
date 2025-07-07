@@ -1,5 +1,7 @@
 package org.cobalt
 
+import scala.collection.mutable.ListBuffer
+
 import java.util.LinkedList
 import java.nio.file.Paths
 import java.nio.file.Files
@@ -36,6 +38,11 @@ import java.io.IOException
 
   val parser2 = Parser2()
   parser2.setInput(tokens)
-  val node = parser2.process()
+  val root = parser2.process()
 
-  println(node)
+  println(root)
+
+  val pass1 = Pass1()
+  pass1.setInput(root)
+  pass1.process()
+

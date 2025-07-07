@@ -12,11 +12,23 @@ class AstNode (kind: AstNode.Kind):
   def addChild (node: AstNode) =
     children += node
 
+  def getChild (index: Int): AstNode =
+    return children(index)
+
+  def getChildCount (): Int =
+    return children.size
+
+  def getChildren (): ListBuffer[AstNode] =
+    return children
+
   def getKind (): AstNode.Kind =
     return kind
 
   def setAttribute (name: String, value: Any) =
     attributes += (name -> value)
+
+  def getToken (): Token =
+    return token
 
   def setToken (token: Token) =
     this.token = token
@@ -41,11 +53,15 @@ object AstNode:
 
     // Class declaration
     case CLASS_DECLARATION
+    case CLASS_BODY
 
     // Method declaration
     case METHOD_DECLARATION
     case METHOD_BODY
 
+    // Eumeration declaration
+    case ENUMERATION_DECLARATION
+    case ENUMERATION_CONSTANT_DECLARATION
     // Function declaration
     case FUNCTION_DECLARATION
     case PARAMETERS
@@ -65,6 +81,10 @@ object AstNode:
     case BREAK_STATEMENT
     case CONTINUE_STATEMENT
     case RETURN_STATEMENT
+
+    // Expressions
+    case FLOATING_POINT_LITERAL
+    case INTEGER_LITERAL
 
     // Type expressions
     case TYPE_ROOT

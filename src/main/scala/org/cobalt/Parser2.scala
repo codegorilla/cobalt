@@ -74,12 +74,13 @@ class Parser2 {
     val n = lookahead.kind match
       case Token.Kind.CLASS => classDeclaration(p)
       case Token.Kind.DEF => functionDeclaration(p)
+      case Token.Kind.ENUM => enumerationDeclaration(p)
       case Token.Kind.VAL => variableDeclaration(p, true)
       case Token.Kind.VAR => variableDeclaration(p, false)
       case _ =>
         println(s"Found something else! ${lookahead.kind}")
         null
-    return p
+    return n
 
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
@@ -97,6 +98,8 @@ class Parser2 {
 
   def finalModifier (): AstNode =
     // No corresponding token, so match not needed
+    // Note: This might change since final is overloaded. Currently
+    // this is only used to mark final variables.
     AstNode(AstNode.Kind.FINAL_MODIFIER)
 
   def publicModifier (): AstNode =
@@ -111,6 +114,11 @@ class Parser2 {
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
     match_(Token.Kind.CLASS)
     n.addChild(identifier())
+    n.addChild(classBody())
+    return n
+
+  def classBody (): AstNode =
+    val n = AstNode(AstNode.Kind.CLASS_BODY)
     match_(Token.Kind.L_BRACE)
     while lookahead.kind != Token.Kind.R_BRACE do
       n.addChild(classMember())
@@ -143,6 +151,27 @@ class Parser2 {
       match_(Token.Kind.SEMICOLON)
     else
       n.addChild(block())
+    return n
+
+  def enumerationDeclaration (modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION)
+    match_(Token.Kind.ENUM)
+    n.addChild(identifier())
+    match_(Token.Kind.L_BRACE)
+    while lookahead.kind != Token.Kind.R_BRACE do
+      n.addChild(enumerationMember())
+    match_(Token.Kind.R_BRACE)
+    return n
+
+  def enumerationMember (): AstNode =
+    val n = enumerationConstant()
+    return n
+
+  def enumerationConstant (): AstNode =
+    val n = AstNode(AstNode.Kind.ENUMERATION_CONSTANT_DECLARATION)
+    match_(Token.Kind.VAL)
+    n.addChild(name())
+    match_(Token.Kind.SEMICOLON)
     return n
 
   def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
