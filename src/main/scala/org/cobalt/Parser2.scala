@@ -1,7 +1,5 @@
 package org.cobalt
 
-import org.cobalt.AstNode.Kind
-
 import scala.collection.mutable.ArrayDeque
 import scala.collection.mutable.Map
 

@@ -1,7 +1,5 @@
 package org.cobalt
 
-import org.cobalt.AstNode.Kind
-
 // This first parser just needs to create the symbol table so we can
 // start populating it with template classes so that we know if
 // certain productions in a later parsing pass are classes or not. We
