@@ -1,11 +1,21 @@
 package org.cobalt
 
+import scala.collection.mutable.Map
+
 import java.util.LinkedList
+import javax.xml.crypto.Data
 
 // Semantic analyzer - convert enums to classes
 
 // Enumerations are converted to final classes with public static
 // final variables of type integer.
+
+// We traverse the AST, gathering nodes needed for the translation
+// phase, which comes in the next pass. So far, all we need are leaf
+// nodes, so the manipulation is fairly straight-forward because
+// there is no chance for cycles or unintentionally grabing an entire
+// sub-tree. If the AST manipulation gets more complex, we might have
+// to use a different approach, including making copies of things.
 
 class Pass1a {
 
@@ -16,6 +26,9 @@ class Pass1a {
 
   var stack = LinkedList[AstNode]()
 
+  var enumNameAttributes = Map[AstNode, AstNode]()
+  var enumConstNameAttributes = Map[AstNode, LinkedList[AstNode]]()
+
   def setInput (input: AstNode) =
     this.input = input
 
@@ -25,26 +38,35 @@ class Pass1a {
   def process () =
     translationUnit(input)
 
-  def translationUnit (node: AstNode) =
-    for child <- node.getChildren() do
+  def translationUnit (current: AstNode) =
+    for child <- current.getChildren() do
       if child.getKind() == AstNode.Kind.ENUMERATION_DECLARATION then
         enumerationDeclaration(child)
+        test(child)
 
   def enumerationDeclaration (current: AstNode) =
-    val nameNode = current.getChild(0)
-    println(s"Name node is ${nameNode.token}")
+    name(current.getChild(0))
+    enumNameAttributes += (current -> stack.pop())
     enumerationBody(current.getChild(1))
-    // println(s"Item is ${stack.pop().token}")
-    // println(s"Item is ${stack.pop().token}")
-    // println(s"Item is ${stack.pop().token}")
+    enumConstNameAttributes += (current -> stack)
+
+  def test (current: AstNode) =
+    println(s"${enumNameAttributes(current).token}")
+    println(s"${enumConstNameAttributes(current)}")
 
   def enumerationBody (current: AstNode) =
     for child <- current.getChildren() do
       enumerationMember(child)
 
   def enumerationMember (current: AstNode) =
-    print("Got here n0w")
+    enumerationConstantDeclaration(current)
+
+  def enumerationConstantDeclaration (current: AstNode) =
+    name(current.getChild(0))
+
+  def name (current: AstNode) =
     stack.push(current)
+
 
 
   def classDeclaration (current: AstNode): AstNode =
