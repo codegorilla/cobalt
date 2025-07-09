@@ -156,7 +156,13 @@ class Parser2 {
   def enumerationDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION)
     match_(Token.Kind.ENUM)
+    // Should be name()?
     n.addChild(identifier())
+    n.addChild(enumerationBody())
+    return n
+
+  def enumerationBody (): AstNode =
+    val n = AstNode(AstNode.Kind.ENUMERATION_BODY)
     match_(Token.Kind.L_BRACE)
     while lookahead.kind != Token.Kind.R_BRACE do
       n.addChild(enumerationMember())
@@ -164,10 +170,10 @@ class Parser2 {
     return n
 
   def enumerationMember (): AstNode =
-    val n = enumerationConstant()
+    val n = enumerationConstantDeclaration()
     return n
 
-  def enumerationConstant (): AstNode =
+  def enumerationConstantDeclaration (): AstNode =
     val n = AstNode(AstNode.Kind.ENUMERATION_CONSTANT_DECLARATION)
     match_(Token.Kind.VAL)
     n.addChild(name())

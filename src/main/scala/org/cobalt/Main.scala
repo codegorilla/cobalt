@@ -11,7 +11,10 @@ import java.io.IOException
 
   // For now just hard-code the path
   // Eventually, we'll want to provide robust CLI processing
-  val mainPath = "C:/Users/clearm/workspace/alpha-sprint4/cobalt/src/main/resources"
+  // Windows
+  // val mainPath = "C:/Users/clearm/workspace/alpha-sprint4/cobalt/src/main/resources"
+  // MAC
+  val mainPath = "/Users/matthewcleary/workspace/bravo-sprint1/cobalt/src/main/resources"
   val path = Paths.get(mainPath + "/hello.co")
   var content: String = null
   try {
@@ -42,7 +45,7 @@ import java.io.IOException
 
   println(root)
 
-  val pass1 = Pass1()
-  pass1.setInput(root)
-  pass1.process()
+  val pass1a = Pass1a()
+  pass1a.setInput(root)
+  pass1a.process()
 

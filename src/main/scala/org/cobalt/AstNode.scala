@@ -61,7 +61,9 @@ object AstNode:
 
     // Eumeration declaration
     case ENUMERATION_DECLARATION
+    case ENUMERATION_BODY
     case ENUMERATION_CONSTANT_DECLARATION
+
     // Function declaration
     case FUNCTION_DECLARATION
     case PARAMETERS
