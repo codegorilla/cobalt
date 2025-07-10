@@ -10,9 +10,12 @@ lazy val root = project
 
     // libraryDependencies += "org.scalameta" %% "munit" % "1.0.0" % Test
 
+    resolvers += "Secured Central Repository" at "https://repo1.maven.org/maven2",
+
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % "1.0.0" % Test,
-      "org.freemarker" % "freemarker" % "2.3.34"
+      "org.freemarker" % "freemarker" % "2.3.34",
+      "org.antlr" % "ST4" % "4.3.4"
     )
 
   )
