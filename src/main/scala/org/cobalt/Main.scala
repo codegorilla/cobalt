@@ -1,5 +1,9 @@
 package org.cobalt
 
+import org.stringtemplate.v4._
+
+import freemarker.template._
+
 import scala.collection.mutable.ListBuffer
 
 import java.util.LinkedList
@@ -8,6 +12,13 @@ import java.nio.file.Files
 import java.io.IOException
 
 @main def hello () =
+
+  val cfg = Configuration(Configuration.VERSION_2_3_34)
+
+  val hello = ST("Hello, <name>!")
+  hello.add("name", "World")
+  val output = hello.render()
+  println(output)
 
   // For now just hard-code the path
   // Eventually, we'll want to provide robust CLI processing

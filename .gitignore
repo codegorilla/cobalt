@@ -33,3 +33,6 @@ metals.sbt
 
 # Added project
 project/
+
+# Add lib
+lib/
