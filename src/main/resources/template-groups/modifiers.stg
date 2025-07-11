@@ -1,0 +1,14 @@
+typeInitMap ::= [
+  "public": "public",
+  "static": "static",
+  "final":  "const"
+]
+
+dict (x) ::= <<
+<typeInitMap.(x)>
+>>
+
+modifiers (mods) ::= <<
+<mods; separator = " ">
+<mods:dict(); separator = ";">
+>>
