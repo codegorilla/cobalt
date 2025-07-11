@@ -1,8 +1,6 @@
 package org.cobalt
 
-import org.stringtemplate.v4._
-
-import freemarker.template._
+import org.stringtemplate.v4.*
 
 import scala.collection.mutable.ListBuffer
 
@@ -13,8 +11,6 @@ import java.io.IOException
 
 @main def hello () =
 
-  // val cfg = Configuration(Configuration.VERSION_2_3_34)
-
   // Get template directory
   val templateDir = this.getClass().getClassLoader().getResource("templates")
 
@@ -24,8 +20,15 @@ import java.io.IOException
   st.add("type", "int");
   st.add("name", "x");
   st.add("value", 0);
-  val result = st.render(); // yields "int x = 0;"
+  val result = st.render();
   println(result)
+
+  val st1 = group.getInstanceOf("enumerationDeclaration");
+  st1.add("name", "TokenType");
+  st1.add("value", 1);
+  val result1 = st1.render();
+  println(result1)
+
 
   // Get program directory
   val programDir = this.getClass().getClassLoader().getResource("")
