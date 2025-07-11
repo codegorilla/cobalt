@@ -13,20 +13,25 @@ import java.io.IOException
 
 @main def hello () =
 
-  val cfg = Configuration(Configuration.VERSION_2_3_34)
+  // val cfg = Configuration(Configuration.VERSION_2_3_34)
 
-  val hello = ST("Hello, <name>!")
-  hello.add("name", "World")
-  val output = hello.render()
-  println(output)
+  // Get template directory
+  val templateDir = this.getClass().getClassLoader().getResource("templates")
+
+  // Test StringTemplate
+  val group = new STGroupDir(templateDir);
+  val st = group.getInstanceOf("decl");
+  st.add("type", "int");
+  st.add("name", "x");
+  st.add("value", 0);
+  val result = st.render(); // yields "int x = 0;"
+  println(result)
+
+  // Get program directory
+  val programDir = this.getClass().getClassLoader().getResource("")
 
   // For now just hard-code the path
-  // Eventually, we'll want to provide robust CLI processing
-  // Windows
-  // val mainPath = "C:/Users/clearm/workspace/alpha-sprint4/cobalt/src/main/resources"
-  // MAC
-  val mainPath = "/Users/matthewcleary/workspace/bravo-sprint1/cobalt/src/main/resources"
-  val path = Paths.get(mainPath + "/hello.co")
+  val path = Paths.get(programDir.getPath() + "/hello.co")
   var content: String = null
   try {
     content = Files.readString(path)
