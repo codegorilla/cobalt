@@ -18,8 +18,8 @@ class AstNode (kind: AstNode.Kind):
   def getChildCount (): Int =
     return children.size
 
-  def getChildren (): ListBuffer[AstNode] =
-    return children
+  def getChildren (): Iterator[AstNode] =
+    return children.iterator
 
   def getKind (): AstNode.Kind =
     return kind
@@ -46,8 +46,10 @@ object AstNode:
     case NAME
 
     // Modifiers
+    case CONST_MODIFIER
     case FINAL_MODIFIER
     case MODIFIERS
+    case PRIVATE_MODIFIER
     case PUBLIC_MODIFIER
     case STATIC_MODIFIER
 

@@ -1,6 +1,8 @@
 //public static val x: int;
 
-var waypoint: int;
+public final var waypoint: int;
+
+//static var hello: float;
 
 //def myfun (x: float) -> int {
 //  return;

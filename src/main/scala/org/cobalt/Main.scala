@@ -68,6 +68,9 @@ import java.io.IOException
   // pass1a.setInput(root)
   // pass1a.process()
 
-  val pass2 = Pass2()
-  pass2.setInput(root)
-  pass2.process()
+  // val testPass2 = TestPass2()
+  // testPass2.setInput(root)
+  // testPass2.process()
+
+  val pass20 = Pass20(root)
+  pass20.process()

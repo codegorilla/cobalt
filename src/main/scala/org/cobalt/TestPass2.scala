@@ -9,7 +9,7 @@ import java.util.LinkedList
 
 // The purpose of this pass is to experiment with StringTemplate
 
-class Pass2 {
+class TestPass2 {
 
   var input: AstNode = null
 
@@ -67,10 +67,11 @@ class Pass2 {
     list.add("public")
     list.add("static")
     list.add("final")
+    list.add("const")
     val st = groupFile.getInstanceOf("modifiers")
     st.add("mods", list)
     return st
-                                                                 
+
   def name (current: AstNode): ST =
     val st = groupDir.getInstanceOf("name")
     st.add("name", current.getToken().lexeme)

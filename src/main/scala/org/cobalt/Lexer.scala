@@ -28,6 +28,7 @@ class Lexer {
     "enum" -> Token.Kind.ENUM,
     "extends" -> Token.Kind.EXTENDS,
     "false" -> Token.Kind.FALSE,
+    "final" -> Token.Kind.FINAL,
     "for" -> Token.Kind.FOR,
     "foreach" -> Token.Kind.FOREACH,
     "fn" -> Token.Kind.FN,

@@ -21,6 +21,7 @@ object Token {
         case ENUM
         case EXTENDS
         case FALSE
+        case FINAL
         case FOR
         case FOREACH
         case FN

@@ -1,7 +1,8 @@
 typeInitMap ::= [
   "public": "public",
   "static": "static",
-  "final":  "const"
+  "final":  "const",
+  "const":  "constexpr"
 ]
 
 dict (x) ::= <<

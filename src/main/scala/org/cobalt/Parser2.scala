@@ -73,8 +73,8 @@ class Parser2 {
       case Token.Kind.CLASS => classDeclaration(p)
       case Token.Kind.DEF => functionDeclaration(p)
       case Token.Kind.ENUM => enumerationDeclaration(p)
-      case Token.Kind.VAL => variableDeclaration(p, true)
-      case Token.Kind.VAR => variableDeclaration(p, false)
+      case Token.Kind.VAL => variableDeclaration(p)
+      case Token.Kind.VAR => variableDeclaration(p)
       case _ =>
         println(s"Found something else! ${lookahead.kind}")
         null
@@ -82,12 +82,16 @@ class Parser2 {
 
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
-    while lookahead.kind == Token.Kind.PUBLIC ||
+    while lookahead.kind == Token.Kind.FINAL   ||
+          lookahead.kind == Token.Kind.PRIVATE ||
+          lookahead.kind == Token.Kind.PUBLIC  ||
           lookahead.kind == Token.Kind.STATIC
     do
       val modifier = lookahead.kind match
-        case Token.Kind.PUBLIC => publicModifier()
-        case Token.Kind.STATIC => staticModifier()
+        case Token.Kind.FINAL   => finalModifier()
+        case Token.Kind.PRIVATE => privateModifier()
+        case Token.Kind.PUBLIC  => publicModifier()
+        case Token.Kind.STATIC  => staticModifier()
         case _ =>
           print("error: This can only happen if there is a parser error.")
           null
@@ -95,18 +99,20 @@ class Parser2 {
     return n
 
   def finalModifier (): AstNode =
-    // No corresponding token, so match not needed
-    // Note: This might change since final is overloaded. Currently
-    // this is only used to mark final variables.
-    AstNode(AstNode.Kind.FINAL_MODIFIER)
+    match_(Token.Kind.FINAL)
+    return AstNode(AstNode.Kind.FINAL_MODIFIER)
+
+  def privateModifier (): AstNode =
+    match_(Token.Kind.PRIVATE)
+    return AstNode(AstNode.Kind.PRIVATE_MODIFIER)
 
   def publicModifier (): AstNode =
     match_(Token.Kind.PUBLIC)
-    AstNode(AstNode.Kind.PUBLIC_MODIFIER)
+    return AstNode(AstNode.Kind.PUBLIC_MODIFIER)
 
   def staticModifier (): AstNode =
     match_(Token.Kind.STATIC)
-    AstNode(AstNode.Kind.STATIC_MODIFIER)
+    return AstNode(AstNode.Kind.STATIC_MODIFIER)
 
   def classDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
@@ -129,9 +135,9 @@ class Parser2 {
     if lookahead.kind == Token.Kind.DEF then
       n = methodDeclaration()
     else if lookahead.kind == Token.Kind.VAL then
-      n = variableDeclaration(p, true)
+      n = variableDeclaration(p)
     else if lookahead.kind == Token.Kind.VAR then
-      n = variableDeclaration(p, false)
+      n = variableDeclaration(p)
     return n
 
   def methodDeclaration (): AstNode =
@@ -178,11 +184,12 @@ class Parser2 {
     match_(Token.Kind.SEMICOLON)
     return n
 
-  def variableDeclaration (modifiers: AstNode, finalFlag: Boolean): AstNode =
+  def variableDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
-    if finalFlag then
+    if lookahead.kind == Token.Kind.VAL then
+      // Keyword 'val' is equivalent to 'final var'
       match_(Token.Kind.VAL)
-      modifiers.addChild(finalModifier())
+      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
     else
       match_(Token.Kind.VAR)
     n.addChild(modifiers)
