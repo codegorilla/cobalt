@@ -15,7 +15,7 @@ import java.io.IOException
   val templateDir = this.getClass().getClassLoader().getResource("templates")
 
   // Test StringTemplate
-  val group = new STGroupDir(templateDir);
+  val group = STGroupDir(templateDir);
   val st = group.getInstanceOf("decl");
   st.add("type", "int");
   st.add("name", "x");
@@ -64,7 +64,10 @@ import java.io.IOException
 
   println(root)
 
-  val pass1a = Pass1a()
-  pass1a.setInput(root)
-  pass1a.process()
+  // val pass1a = Pass1a()
+  // pass1a.setInput(root)
+  // pass1a.process()
 
+  val pass2 = Pass2()
+  pass2.setInput(root)
+  pass2.process()
