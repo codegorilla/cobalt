@@ -1,6 +1,6 @@
 //public static val x: int;
 
-public final var waypoint: int;
+public final var waypoint: *int;
 
 class List {
 

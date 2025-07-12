@@ -425,6 +425,8 @@ class Parser2 {
   // node class definition with parent links. We can re-think this in
   // the future if we wish.
 
+  // Do we need a separate typeRoot node, or can we just use type_?
+
   def typeRoot (): AstNode =
     val n = AstNode(AstNode.Kind.TYPE_ROOT)
     n.addChild(type_())
@@ -515,36 +517,36 @@ class Parser2 {
     return fragment
 
   def arrayType (): AstNode =
-    val n = AstNode(AstNode.Kind.ARRAY_TYPE)
+    val n = AstNode(AstNode.Kind.ARRAY_TYPE, lookahead)
     match_(Token.Kind.L_BRACKET)
     return n
 
   def functionPointerType (): AstNode =
-    val n = AstNode(AstNode.Kind.FUNCTION_POINTER_TYPE)
-    n.setToken(lookahead)
+    val n = AstNode(AstNode.Kind.FUNCTION_POINTER_TYPE, lookahead)
     match_(Token.Kind.CARAT)
     return n
 
   def nominalType (): AstNode =
-    val n = AstNode(AstNode.Kind.NOMINAL_TYPE)
+    val n = AstNode(AstNode.Kind.NOMINAL_TYPE, lookahead)
     // I don't think we want to add a name here, we just want to set
     // the token instead, but we can revisit this later.
     // n.add_child(self.name())
-    n.setToken(lookahead)
     match_(Token.Kind.IDENTIFIER)
     // Need to eventually allow for type parameters. (This would allow
     // us to know that this was a class type, if that matters.)
     return n
 
   def pointerType (): AstNode =
-    val n = AstNode(AstNode.Kind.POINTER_TYPE)
-    n.setToken(lookahead)
+    val n = AstNode(AstNode.Kind.POINTER_TYPE, lookahead)
     match_(Token.Kind.ASTERISK)
     return n
 
+  // Here we use a somewhat generic PRIMITIVE_TYPE for the node. We can
+  // distinguish with more granularity by looking at the token. If we need
+  // separate AST node types for each primitive, then we can change it later.
+
   def primitiveType (): AstNode =
-    val n = AstNode(AstNode.Kind.PRIMITIVE_TYPE)
-    n.setToken(lookahead)
+    val n = AstNode(AstNode.Kind.PRIMITIVE_TYPE, lookahead)
     match_(lookahead.kind)
     return n
 

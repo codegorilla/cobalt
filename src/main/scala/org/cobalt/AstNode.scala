@@ -3,6 +3,14 @@ package org.cobalt
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
+// I prefer to use a homogenous AST design. This means that we tag each node
+// with a 'kind' field instead of using separate subclasses. I also prefer that
+// the AST nodes use normalized children. This means that instead of having
+// unique fields for children, we just use a generic array or linked list. The
+// homogenous AST with normalized children makes it easier to change the tree
+// structure as the language grammar develops over time. For more information,
+// see Parr, Ch. 4.
+
 class AstNode (
   private var kind: AstNode.Kind,
   private var token: Token = null
@@ -27,7 +35,7 @@ class AstNode (
     return kind
 
   // Not sure we'll ever need to mutate kind in place. If not, then we can
-  // remove the setter.
+  // remove the setter and make the the field immutable.
 
   def setKind (kind: AstNode.Kind) =
     this.kind = kind

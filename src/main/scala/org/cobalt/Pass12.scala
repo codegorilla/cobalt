@@ -11,18 +11,13 @@ package org.cobalt
 
 class Pass12 (val input: AstNode, val symtab: SymbolTable) {
 
-  // Used to pass nodes up and down during tree traversal
-  // val stack = Stack[AstNode]()
-
   def process () =
     translationUnit(input)
 
   def translationUnit (current: AstNode) =
     for child <- current.getChildren() do
       if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-        println(current.getKind())
-        println(current.getToken())
-        //globalVariableDeclaration(child)
+        globalVariableDeclaration(child)
 
   def globalVariableDeclaration (current: AstNode) =
     typeSpecifier(current.getChild(2))
@@ -34,10 +29,52 @@ class Pass12 (val input: AstNode, val symtab: SymbolTable) {
     if current.getChildCount() > 0 then
       // Type inference is NOT required - we just need to compute the type
       typeRoot(current.getChild(0))
-      println(current.getToken())
-  
+
+  // Not sure we need a type root, we can remove it if it isn't required.
+
   def typeRoot (current: AstNode) =
-    println(current.getToken())
+    type_(current.getChild(0))
+
+  def type_ (current: AstNode): TypeNode =
+    val t = current.getKind() match
+      case AstNode.Kind.NOMINAL_TYPE => nominalType(current)
+      case AstNode.Kind.POINTER_TYPE => pointerType(current)
+      case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
+      case _ => println(s"error: not implemented yet (type_)")
+        TypeNode(TypeNode.Kind.ERROR)
+    println(s"Type node is ${t}")
+    return t
+
+  // The size can either be an integer literal or an identifier (variable
+  // reference). In both cases, they are considered type nodes because they are
+  // part of the "type expression".
+  // val x: int[4]
+  // val y: int[size]
+
+  def arrayType (current: AstNode): TypeNode =
+    val t = TypeNode(TypeNode.Kind.ARRAY_TYPE)
+    // Need to add size as one child
+    // t.addChild(current.getChild(0))
+    t.addChild(type_(current.getChild(1)))
+    return t
+
+  // Nominal types definitely belong in the symbol table
+
+  def nominalType (current: AstNode): TypeNode =
+    val t = TypeNode(TypeNode.Kind.NOMINAL_TYPE)
+    return t
+
+  def pointerType (current: AstNode): TypeNode =
+    val t = TypeNode(TypeNode.Kind.POINTER_TYPE)
+    t.addChild(type_(current.getChild(0)))
+    return t
+
+  // Should we have separate kinds for INT, FLOAT, etc. or just rely on token
+  // or some other value? Should primitive types be in the symbol table?
+
+  def primitiveType (current: AstNode): TypeNode =
+    val t = TypeNode(TypeNode.Kind.PRIMITIVE_TYPE)
+    return t
 
 
   // def name (current: AstNode) =
