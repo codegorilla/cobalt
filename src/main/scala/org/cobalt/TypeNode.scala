@@ -44,6 +44,7 @@ class TypeNode (private var kind: TypeNode.Kind):
 object TypeNode:
   enum Kind:
     case ERROR
+    case ARRAY_SIZE
     case ARRAY_TYPE
     case FUNCTION_POINTER_TYPE
     case NOMINAL_TYPE

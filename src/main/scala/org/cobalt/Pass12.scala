@@ -45,17 +45,23 @@ class Pass12 (val input: AstNode, val symtab: SymbolTable) {
     println(s"Type node is ${t}")
     return t
 
-  // The size can either be an integer literal or an identifier (variable
-  // reference). In both cases, they are considered type nodes because they are
-  // part of the "type expression".
-  // val x: int[4]
-  // val y: int[size]
+  // The array size can be any compile-time computable expression, which may be
+  // as simple as an integer literal, but may be complex arithmetic expressions
+  // that include identifiers (variable references). In all cases, they are
+  // considered type nodes because they are part of the "type expression". We
+  // don't necessarily need to validate that the expression is a compile-time
+  // constant here. It can be done in a later pass.
+  // var x: int[size + 2];
 
   def arrayType (current: AstNode): TypeNode =
     val t = TypeNode(TypeNode.Kind.ARRAY_TYPE)
     // Need to add size as one child
-    // t.addChild(current.getChild(0))
+    t.addChild(arraySizeExpression(current.getChild(0)))
     t.addChild(type_(current.getChild(1)))
+    return t
+
+  def arraySizeExpression (current: AstNode): TypeNode =
+    val t = TypeNode(TypeNode.Kind.ARRAY_SIZE)
     return t
 
   // Nominal types definitely belong in the symbol table
