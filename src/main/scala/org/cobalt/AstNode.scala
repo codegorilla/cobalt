@@ -3,10 +3,12 @@ package org.cobalt
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
-class AstNode (kind: AstNode.Kind):
+class AstNode (
+  private var kind: AstNode.Kind,
+  private var token: Token = null
+):
 
   var children = ListBuffer[AstNode]()
-  var token: Token = null
   val attributes = Map[String, Any]()
 
   def addChild (node: AstNode) =
@@ -24,11 +26,20 @@ class AstNode (kind: AstNode.Kind):
   def getKind (): AstNode.Kind =
     return kind
 
+  // Not sure we'll ever need to mutate kind in place. If not, then we can
+  // remove the setter.
+
+  def setKind (kind: AstNode.Kind) =
+    this.kind = kind
+
   def setAttribute (name: String, value: Any) =
     attributes += (name -> value)
 
   def getToken (): Token =
     return token
+
+  // Also not sure if we'll ever need to mutate this in place. It depends on
+  // whether or not token is always known at time of AstNode creation.
 
   def setToken (token: Token) =
     this.token = token

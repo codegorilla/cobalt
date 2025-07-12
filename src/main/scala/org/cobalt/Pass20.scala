@@ -49,7 +49,7 @@ class Pass20 (val input: AstNode) {
         case AstNode.Kind.FINAL_MODIFIER   => current.setAttribute("final", true)
         case AstNode.Kind.PRIVATE_MODIFIER => current.setAttribute("private", true)
         case AstNode.Kind.PUBLIC_MODIFIER  => current.setAttribute("public", true)
-        case _ => println(s"error: invalid modifier on global variable ${current.token}")
+        case _ => println(s"error: invalid modifier on global variable ${current.getToken()}")
 
   // Valid modifers for local variables:
   // const = variable is a compile-time constant (also implies final)
@@ -64,7 +64,7 @@ class Pass20 (val input: AstNode) {
         case AstNode.Kind.CONST_MODIFIER   => current.setAttribute("const", true)
         case AstNode.Kind.FINAL_MODIFIER   => current.setAttribute("final", true)
         case AstNode.Kind.STATIC_MODIFIER  => current.setAttribute("static", true)
-        case _ => println(s"error: invalid modifier on local variable ${current.token}")    
+        case _ => println(s"error: invalid modifier on local variable ${current.getToken()}")    
 
   // Valid modifers for functions:
   // const = function yields a compile-time constant (should also imply final?)
@@ -85,7 +85,7 @@ class Pass20 (val input: AstNode) {
         case AstNode.Kind.FINAL_MODIFIER   => current.setAttribute("final", true)
         case AstNode.Kind.PRIVATE_MODIFIER => current.setAttribute("private", true)
         case AstNode.Kind.PUBLIC_MODIFIER  => current.setAttribute("public", true)
-        case _ => println(s"error: invalid modifier on function ${current.token}")
+        case _ => println(s"error: invalid modifier on function ${current.getToken()}")
     functionBody(current.getChild(5))
 
   def functionBody (current: AstNode) =

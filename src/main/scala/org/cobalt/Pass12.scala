@@ -34,10 +34,10 @@ class Pass12 (val input: AstNode, val symtab: SymbolTable) {
     if current.getChildCount() > 0 then
       // Type inference is NOT required - we just need to compute the type
       typeRoot(current.getChild(0))
-      println(current.token)
+      println(current.getToken())
   
   def typeRoot (current: AstNode) =
-    println(current.token)
+    println(current.getToken())
 
 
   // def name (current: AstNode) =

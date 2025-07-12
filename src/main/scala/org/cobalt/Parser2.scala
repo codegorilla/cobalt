@@ -57,6 +57,9 @@ class Parser2 {
     val node = translationUnit()
     return node
 
+  // Not every AST node has a corresponding token. Case in point is
+  // translationUnit.
+
   def translationUnit (): AstNode =
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
@@ -80,6 +83,13 @@ class Parser2 {
         null
     return n
 
+  // According to Parr, there is no need to have an AstNode kind -- you can just
+  // use the token to determine what kind of node it is. This works only for
+  // Simple cases. Sometimes, there is no corresponding token. So for that
+  // reason, we choose to have a AstNode kind field. That said, this means that
+  // sometimes we can leave the kind field generic and distinguish with more
+  // granularity by looking at the token.
+
   // Todo: We might just want to have one kind of modifier node and let the
   // token indicate what kind of modifier it is. The problem with this is that
   // some modifiers are added implicitly (e.g. 'final' in the case of 'val'), so
@@ -91,6 +101,7 @@ class Parser2 {
   // keyword tokens in their corresponding AST nodes. This might make sense for
   // error reporting, so that even the semantic analysis passes can trace
   // problems back to their originating column and line numbers.
+  // Update: Yes, it seems we should be storing tokens in AST nodes (Parr, 81).
 
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
@@ -111,38 +122,49 @@ class Parser2 {
     return n
 
   def finalModifier (): AstNode =
+    // We need to define the node at the top so that we can set its token to the
+    // current lookahead before it advances and we lose the chance to do so.
+    val n = AstNode(AstNode.Kind.FINAL_MODIFIER, lookahead)
     match_(Token.Kind.FINAL)
-    return AstNode(AstNode.Kind.FINAL_MODIFIER)
+    return n
 
   def overrideModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.OVERRIDE_MODIFIER, lookahead)
     match_(Token.Kind.OVERRIDE)
-    return AstNode(AstNode.Kind.OVERRIDE_MODIFIER)
+    return n
 
   def privateModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.PRIVATE_MODIFIER, lookahead)
     match_(Token.Kind.PRIVATE)
-    return AstNode(AstNode.Kind.PRIVATE_MODIFIER)
+    return n
 
   def publicModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.PUBLIC_MODIFIER, lookahead)
     match_(Token.Kind.PUBLIC)
-    return AstNode(AstNode.Kind.PUBLIC_MODIFIER)
+    return n
 
   def staticModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.STATIC_MODIFIER, lookahead)
     match_(Token.Kind.STATIC)
-    return AstNode(AstNode.Kind.STATIC_MODIFIER)
+    return n
 
   // CLASS DECLARATION
 
   def classDeclaration (modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.CLASS_DECLARATION, lookahead)
     match_(Token.Kind.CLASS)
-    val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
     n.addChild(modifiers)
     n.addChild(name())
     n.addChild(classBody())
     return n
 
+  // The token here is simply the curly brace '{'. Do we need to track this?
+  // It will depend on whether or not this sort of thing helps with error
+  // reporting and debugging.
+
   def classBody (): AstNode =
+    val n = AstNode(AstNode.Kind.CLASS_BODY, lookahead)
     match_(Token.Kind.L_BRACE)
-    val n = AstNode(AstNode.Kind.CLASS_BODY)
     while lookahead.kind != Token.Kind.R_BRACE do
       n.addChild(classMember())
     match_(Token.Kind.R_BRACE)
@@ -160,14 +182,21 @@ class Parser2 {
     return n
 
   def methodDeclaration (modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.METHOD_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
-    val n = AstNode(AstNode.Kind.METHOD_DECLARATION)
     n.addChild(modifiers)
     n.addChild(name())
     n.addChild(parameters())
     n.addChild(result())
     n.addChild(methodBody())
     return n
+
+  // Here we might not be able to set a token on the method body. This raises
+  // the question -- should any body nodes be associated with punctuation like
+  // curly braces?
+
+  // Can a semicolon properly represent an abstract method? Or would that only
+  // signify a "noop" method?
 
   def methodBody (): AstNode =
     val n = AstNode(AstNode.Kind.METHOD_BODY)
@@ -178,7 +207,7 @@ class Parser2 {
     return n
 
   def enumerationDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION)
+    val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION, lookahead)
     match_(Token.Kind.ENUM)
     // Should be name()?
     n.addChild(identifier())
@@ -198,7 +227,7 @@ class Parser2 {
     return n
 
   def enumerationConstantDeclaration (): AstNode =
-    val n = AstNode(AstNode.Kind.ENUMERATION_CONSTANT_DECLARATION)
+    val n = AstNode(AstNode.Kind.ENUMERATION_CONSTANT_DECLARATION, lookahead)
     match_(Token.Kind.VAL)
     n.addChild(name())
     match_(Token.Kind.SEMICOLON)
@@ -207,15 +236,15 @@ class Parser2 {
   // VARIABLE DECLARATION
 
   def variableDeclaration (modifiers: AstNode): AstNode =
-    // We need to define the node at the top so that we can set its token to the
-    // current lookahead before it advances and we lose the chance to do so.
-    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
-    n.setToken(lookahead)
+    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
     if lookahead.kind == Token.Kind.VAL then
       // Keyword 'val' is equivalent to 'final var'
       match_(Token.Kind.VAL)
       // This final modifier won't have a token since it is an implied modifier
       // that doesn't actually appear in the source code.
+      // Update: We might not want to add an implicit modifier like this.
+      // Instead, when it comes time to set attributes, we can set one base on
+      // the token (val or var).
       modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
     else
       match_(Token.Kind.VAR)

@@ -42,17 +42,12 @@ class Pass1a {
     for child <- current.getChildren() do
       if child.getKind() == AstNode.Kind.ENUMERATION_DECLARATION then
         enumerationDeclaration(child)
-        test(child)
 
   def enumerationDeclaration (current: AstNode) =
     name(current.getChild(0))
     enumNameAttributes += (current -> stack.pop())
     enumerationBody(current.getChild(1))
     enumConstNameAttributes += (current -> stack)
-
-  def test (current: AstNode) =
-    println(s"${enumNameAttributes(current).token}")
-    println(s"${enumConstNameAttributes(current)}")
 
   def enumerationBody (current: AstNode) =
     for child <- current.getChildren() do
