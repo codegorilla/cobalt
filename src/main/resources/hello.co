@@ -2,6 +2,10 @@
 
 public final var waypoint: int;
 
+class List {
+  
+}
+
 //static var hello: float;
 
 //def myfun (x: float) -> int {

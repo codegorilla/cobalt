@@ -102,6 +102,10 @@ class Parser2 {
     match_(Token.Kind.FINAL)
     return AstNode(AstNode.Kind.FINAL_MODIFIER)
 
+  def overrideModifier (): AstNode =
+    match_(Token.Kind.OVERRIDE)
+    return AstNode(AstNode.Kind.OVERRIDE_MODIFIER)
+
   def privateModifier (): AstNode =
     match_(Token.Kind.PRIVATE)
     return AstNode(AstNode.Kind.PRIVATE_MODIFIER)
@@ -114,16 +118,19 @@ class Parser2 {
     match_(Token.Kind.STATIC)
     return AstNode(AstNode.Kind.STATIC_MODIFIER)
 
+  // CLASS DECLARATION
+
   def classDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
     match_(Token.Kind.CLASS)
-    n.addChild(identifier())
+    val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
+    n.addChild(modifiers)
+    n.addChild(name())
     n.addChild(classBody())
     return n
 
   def classBody (): AstNode =
-    val n = AstNode(AstNode.Kind.CLASS_BODY)
     match_(Token.Kind.L_BRACE)
+    val n = AstNode(AstNode.Kind.CLASS_BODY)
     while lookahead.kind != Token.Kind.R_BRACE do
       n.addChild(classMember())
     match_(Token.Kind.R_BRACE)
@@ -131,18 +138,19 @@ class Parser2 {
 
   def classMember (): AstNode =
     val p = modifiers()
-    var n: AstNode = null
-    if lookahead.kind == Token.Kind.DEF then
-      n = methodDeclaration()
-    else if lookahead.kind == Token.Kind.VAL then
-      n = variableDeclaration(p)
-    else if lookahead.kind == Token.Kind.VAR then
-      n = variableDeclaration(p)
+    val n = lookahead.kind match
+      case Token.Kind.DEF => methodDeclaration(p)
+      // case Token.Kind.VAL => fieldDeclaration(p)
+      // case Token.Kind.VAR => fieldDeclaration(p)
+      case _ => 
+          print("error: This can only happen if there is a parser error.")
+          null
     return n
 
-  def methodDeclaration (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_DECLARATION)
+  def methodDeclaration (modifiers: AstNode): AstNode =
     match_(Token.Kind.DEF)
+    val n = AstNode(AstNode.Kind.METHOD_DECLARATION)
+    n.addChild(modifiers)
     n.addChild(name())
     n.addChild(parameters())
     n.addChild(result())
@@ -184,14 +192,16 @@ class Parser2 {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  // VARIABLE DECLARATION
+
   def variableDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
     if lookahead.kind == Token.Kind.VAL then
       // Keyword 'val' is equivalent to 'final var'
       match_(Token.Kind.VAL)
       modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
     else
       match_(Token.Kind.VAR)
+    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
     n.addChild(modifiers)
     n.addChild(name())
     n.addChild(typeSpecifier())

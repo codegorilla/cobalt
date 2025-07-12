@@ -49,6 +49,7 @@ object AstNode:
     case CONST_MODIFIER
     case FINAL_MODIFIER
     case MODIFIERS
+    case OVERRIDE_MODIFIER
     case PRIVATE_MODIFIER
     case PUBLIC_MODIFIER
     case STATIC_MODIFIER

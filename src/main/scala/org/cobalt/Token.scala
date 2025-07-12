@@ -32,6 +32,7 @@ object Token {
         case NIL
         case NULL
         case OR
+        case OVERRIDE
         case PACKAGE
         case PRIVATE
         case PUBLIC
@@ -43,6 +44,7 @@ object Token {
         case TRUE
         case TYPEALIAS
         case UNION
+        case USING
         case VAL
         case VAR
         case WHILE

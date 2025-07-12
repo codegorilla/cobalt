@@ -1,6 +1,6 @@
 package org.cobalt
 
-// The purpose of this pass is to process type declarations
+// The purpose of this pass is to process type declarations.
 
 // This should occur fairly early because we need to know what types exist for
 // later passes. One difficulty is that we don't know anything about types
@@ -18,22 +18,26 @@ package org.cobalt
 
 class Pass10 (val input: AstNode) {
 
-  val symbolTable = SymbolTable()
+  val symtab = SymbolTable()
 
   // Used to pass nodes up and down during tree traversal
   // val stack = Stack[AstNode]()
 
   def process (): SymbolTable =
     translationUnit(input)
-    return symbolTable
+    return symtab
 
   def translationUnit (current: AstNode) =
-    ;
-    // for child <- current.getChildren() do
-    //   if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-    //     globalVariableDeclaration(child)
-    //   else if child.getKind() == AstNode.Kind.FUNCTION_DECLARATION then
-    //     functionDeclaration(child)
+    for child <- current.getChildren() do
+      if child.getKind() == AstNode.Kind.CLASS_DECLARATION then
+        classDeclaration(child)
 
+  def classDeclaration (current: AstNode) =
+    name(current.getChild(1))
 
+  def name (current: AstNode) =
+    // Add to symbol table as a type
+    // Might need to be more specific, e.g. CLASS type vs. STRUCT type
+    val symbol = new Symbol(Symbol.Kind.TYPE, current.token.lexeme)
+    symtab.insert(symbol)
 }

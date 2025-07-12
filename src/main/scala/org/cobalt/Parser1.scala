@@ -64,7 +64,7 @@ class Parser1 {
       val name = identifier()
       if lookahead.kind == Token.Kind.L_BRACKET then
         pmatch(Token.Kind.L_BRACKET)
-        symbolTable.insert(new Symbol(name))
+        symbolTable.insert(new Symbol(Symbol.Kind.TYPE, name))
 
   def identifier (): String =
     val name = lookahead.lexeme

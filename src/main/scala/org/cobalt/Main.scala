@@ -73,5 +73,8 @@ import java.io.IOException
   // testPass2.setInput(root)
   // testPass2.process()
 
+  val pass10 = Pass10(root)
+  val symtab = pass10.process()
+
   val pass20 = Pass20(root)
   pass20.process()
