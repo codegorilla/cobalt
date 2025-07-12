@@ -80,6 +80,18 @@ class Parser2 {
         null
     return n
 
+  // Todo: We might just want to have one kind of modifier node and let the
+  // token indicate what kind of modifier it is. The problem with this is that
+  // some modifiers are added implicitly (e.g. 'final' in the case of 'val'), so
+  // such modifiers do not actually have tokens. We could create a virtual token
+  // but it would not have a position in the character stream, so it would lack
+  // things like a column and line number.
+
+  // Todo: Check best practice on whether or not we should gratuitously store
+  // keyword tokens in their corresponding AST nodes. This might make sense for
+  // error reporting, so that even the semantic analysis passes can trace
+  // problems back to their originating column and line numbers.
+
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
     while lookahead.kind == Token.Kind.FINAL   ||
@@ -195,13 +207,18 @@ class Parser2 {
   // VARIABLE DECLARATION
 
   def variableDeclaration (modifiers: AstNode): AstNode =
+    // We need to define the node at the top so that we can set its token to the
+    // current lookahead before it advances and we lose the chance to do so.
+    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
+    n.setToken(lookahead)
     if lookahead.kind == Token.Kind.VAL then
       // Keyword 'val' is equivalent to 'final var'
       match_(Token.Kind.VAL)
+      // This final modifier won't have a token since it is an implied modifier
+      // that doesn't actually appear in the source code.
       modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
     else
       match_(Token.Kind.VAR)
-    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION)
     n.addChild(modifiers)
     n.addChild(name())
     n.addChild(typeSpecifier())

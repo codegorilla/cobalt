@@ -3,7 +3,7 @@
 public final var waypoint: int;
 
 class List {
-  
+
 }
 
 //static var hello: float;
