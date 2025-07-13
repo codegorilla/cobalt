@@ -577,7 +577,7 @@ class Parser2 {
       match_(lookahead.kind)
       n.addChild(unaryExpression())
     else
-      n = primaryExpression()
+      n = postfixExpression()
     return n
 
   // Might need to add postfix expressions here. See C, C++, and Java language
@@ -588,9 +588,91 @@ class Parser2 {
   // To ease the problem, we may just put identifiers in primary expressions.
   // Or we will just consider plain identifiers to be postfix expressions.
 
+  // More than just names can be used as postfix expressions (e.g. this->x). We
+  // can either consider 'this' a postfix expression, or we can break primary
+  // expressions down into those that support postfix expressions and those that
+  // do not.
+
+  // Note: In cpp2, this is not a pointer. Its unclear if we can follow the same
+  // approach.
+
   def postfixExpression (): AstNode =
-    val n = AstNode(AstNode.Kind.PLACEHOLDER)
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.IDENTIFIER then
+      n = nameExpression()
+    else
+      n = primaryExpression()
     return n
+
+  // A plain name by itself is technically a primary expression, but that is
+  // hard to handle with an LL(1) grammar because we cannot look past the name
+  // token to see if it is actually part of a routine call, subscript, or member
+  // access operation. Thus for parsing purposes, we lump it in as a postfix
+  // expression.
+
+  def nameExpression (): AstNode =
+    // We need to distinguish between identifiers used when defining program
+    // elements and identifiers used when referencing program elements. Is this
+    // done already (comment copied in from python prototype)?
+    var n = name()
+    val firstSet = List(
+      Token.Kind.MINUS_GREATER,
+      Token.Kind.PERIOD,
+      Token.Kind.L_BRACKET,
+      Token.Kind.L_PARENTHESIS
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      lookahead.kind match
+        case Token.Kind.MINUS_GREATER =>
+          n = dereferencingMemberAccess(p)
+        case Token.Kind.PERIOD =>
+          n = memberAccess(p)
+        case Token.Kind.L_BRACKET =>
+          n = subscript(p)
+        case Token.Kind.L_PARENTHESIS =>
+          n = routineCall(p)
+    return n
+
+  def dereferencingMemberAccess (nameExpr: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.DEREFERENCING_MEMBER_ACCESS)
+    n.addChild(nameExpr)
+    match_(Token.Kind.MINUS_GREATER)
+    n.addChild(name())
+    return n
+
+  def memberAccess (nameExpr: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.MEMBER_ACCESS)
+    n.addChild(nameExpr)
+    match_(Token.Kind.PERIOD)
+    n.addChild(name())
+    return n
+
+  def subscript (nameExpr: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.SUBSCRIPT)
+    n.addChild(nameExpr)
+    match_(Token.Kind.L_BRACKET)
+    n.addChild(expression())
+    match_(Token.Kind.R_BRACKET)
+    return n
+
+  def routineCall (nameExpr: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_CALL)
+    n.addChild(nameExpr)
+    n.addChild(arguments())
+    return n
+
+  def arguments (): AstNode =
+    val n = AstNode(AstNode.Kind.ARGUMENTS)
+    match_(Token.Kind.L_PARENTHESIS)
+    if lookahead.kind != Token.Kind.R_PARENTHESIS then
+      n.addChild(expression())
+      while lookahead.kind == Token.Kind.COMMA do
+        match_(Token.Kind.COMMA)
+        n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
 
   def primaryExpression (): AstNode =
     val firstSet = List(
@@ -607,8 +689,6 @@ class Parser2 {
       Token.Kind.STRING_LITERAL
     )
     var n: AstNode = null
-    if lookahead.kind == Token.Kind.IDENTIFIER then
-      n = nameExpression()
     else if lookahead.kind == Token.Kind.IF then
       n = ifExpression()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
@@ -624,68 +704,6 @@ class Parser2 {
   // are members of a class are known as 'methods'. However, we do not
   // distinguish between these types of routines using different keywords.
 
-  def nameExpression (): AstNode =
-    // We need to distinguish between identifiers used when defining program
-    // elements and identifiers used when referencing program elements. Is this
-    // done already (comment copied in from python prototype)?
-    var n = name()
-    val firstSet = List(
-      Token.Kind.L_PARENTHESIS,
-      Token.Kind.L_BRACKET,
-      Token.Kind.MINUS_GREATER,
-      Token.Kind.PERIOD
-    )
-    while firstSet.contains(lookahead.kind) do
-      var p = n
-      lookahead.kind match
-        case Token.Kind.L_PARENTHESIS =>
-          n = routineCall(p)
-        case Token.Kind.L_BRACKET =>
-          n = subscript(p)
-        case Token.Kind.MINUS_GREATER =>
-          n = derefMemberAccess(p)
-        case Token.Kind.PERIOD =>
-          n = memberAccess(p)
-    return n
-
-  def routineCall (name: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.ROUTINE_CALL)
-    n.addChild(name)
-    n.addChild(argumentList())
-    return n
-
-  def argumentList (): AstNode =
-    val n = AstNode(AstNode.Kind.ARGUMENT_LIST)
-    match_(Token.Kind.L_PARENTHESIS)
-    if lookahead.kind != Token.Kind.R_PARENTHESIS then
-      n.addChild(expression())
-      while lookahead.kind == Token.Kind.COMMA do
-        match_(Token.Kind.COMMA)
-        n.addChild(expression())
-    match_(Token.Kind.R_PARENTHESIS)
-    return n
-
-  def subscript (p: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.ARRAY_ACCESS)
-    n.addChild(p)
-    match_(Token.Kind.L_BRACKET)
-    n.addChild(expression())
-    match_(Token.Kind.R_BRACKET)
-    return n
-
-  def derefMemberAccess (p: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.DEREF_ACCESS)
-    n.addChild(p)
-    match_(Token.Kind.MINUS_GREATER)
-    n.addChild(name())
-    return n
-
-  def memberAccess (p: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.FIELD_ACCESS)
-    n.addChild(p)
-    match_(Token.Kind.PERIOD)
-    n.addChild(name())
-    return n
 
   def ifExpression (): AstNode =
     val n = AstNode(AstNode.Kind.IF_EXPRESSION, lookahead)
@@ -716,13 +734,13 @@ class Parser2 {
       var p = n
       lookahead.kind match
         case Token.Kind.L_PARENTHESIS =>
-          n = functionCall(p)
+          n = routineCall(p)
         case Token.Kind.L_BRACKET =>
-          n = arrayAccess(p)
+          n = subscript(p)
         case Token.Kind.MINUS_GREATER =>
-          n = derefAccess(p)
+          n = dereferencingMemberAccess(p)
         case Token.Kind.PERIOD =>
-          n = fieldAccess(p)
+          n = memberAccess(p)
     return n
 
   def identifier (): AstNode =

@@ -108,17 +108,16 @@ object AstNode:
 
     // Expressions
     // ARGUMENTS?
-    case ARGUMENT_LIST
-    case ARRAY_ACCESS
+    case ARGUMENTS
     case BINARY_EXPRESSION
-    case DEREF_ACCESS
+    case DEREFERENCING_MEMBER_ACCESS
     case EXPRESSION_ROOT
-    case FIELD_ACCESS
     case FLOATING_POINT_LITERAL
-    case FUNCTION_CALL
     case IF_EXPRESSION
     case INTEGER_LITERAL
+    case MEMBER_ACCESS
     case ROUTINE_CALL
+    case SUBSCRIPT
     case UNARY_EXPRESSION
 
     // Type expressions
