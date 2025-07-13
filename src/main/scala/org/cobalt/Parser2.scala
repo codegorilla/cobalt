@@ -561,6 +561,8 @@ class Parser2 {
       n.addChild(unaryExpression())
     return n
   
+  // Why recursion here instead of iteration? Does it matter?
+
   def unaryExpression (): AstNode =
     var n: AstNode = null
     // TODO: Need to add tilde
@@ -579,7 +581,12 @@ class Parser2 {
     return n
 
   // Might need to add postfix expressions here. See C, C++, and Java language
-  // specifications.
+  // specifications. This is a spot where LL(2) would be nice because we want to
+  // be able to tell if we have a plain identifier, or if it will be a postfix
+  // expression (e.g. 'position' vs. 'position.getX()'). An identifier is more
+  // of a primary expression, whereas a function call is a postfix expression.
+  // To ease the problem, we may just put identifiers in primary expressions.
+  // Or we will just consider plain identifiers to be postfix expressions.
 
   def postfixExpression (): AstNode =
     val n = AstNode(AstNode.Kind.PLACEHOLDER)
@@ -612,10 +619,15 @@ class Parser2 {
       //   print("ERROR - INVALID PRIMARY EXPRESSION")
     return n
 
+  // Subroutines (or routines for short) may be classified as 'functions', which
+  // return a result; and 'procedures', which do not. Furthermore, routines that
+  // are members of a class are known as 'methods'. However, we do not
+  // distinguish between these types of routines using different keywords.
+
   def nameExpression (): AstNode =
     // We need to distinguish between identifiers used when defining program
     // elements and identifiers used when referencing program elements. Is this
-    // done?
+    // done already (comment copied in from python prototype)?
     var n = name()
     val firstSet = List(
       Token.Kind.L_PARENTHESIS,
@@ -627,17 +639,17 @@ class Parser2 {
       var p = n
       lookahead.kind match
         case Token.Kind.L_PARENTHESIS =>
-          n = functionCall(p)
+          n = routineCall(p)
         case Token.Kind.L_BRACKET =>
-          n = arrayAccess(p)
+          n = subscript(p)
         case Token.Kind.MINUS_GREATER =>
-          n = derefAccess(p)
+          n = derefMemberAccess(p)
         case Token.Kind.PERIOD =>
-          n = fieldAccess(p)
+          n = memberAccess(p)
     return n
 
-  def functionCall (name: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.FUNCTION_CALL)
+  def routineCall (name: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_CALL)
     n.addChild(name)
     n.addChild(argumentList())
     return n
@@ -653,22 +665,22 @@ class Parser2 {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
-  def arrayAccess (name: AstNode): AstNode =
+  def subscript (p: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ARRAY_ACCESS)
-    n.addChild(name)
+    n.addChild(p)
     match_(Token.Kind.L_BRACKET)
     n.addChild(expression())
     match_(Token.Kind.R_BRACKET)
     return n
 
-  def derefAccess (name_ : AstNode): AstNode =
+  def derefMemberAccess (p: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.DEREF_ACCESS)
-    n.addChild(name_)
+    n.addChild(p)
     match_(Token.Kind.MINUS_GREATER)
     n.addChild(name())
     return n
 
-  def fieldAccess (p: AstNode): AstNode =
+  def memberAccess (p: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.FIELD_ACCESS)
     n.addChild(p)
     match_(Token.Kind.PERIOD)

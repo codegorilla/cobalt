@@ -118,6 +118,7 @@ object AstNode:
     case FUNCTION_CALL
     case IF_EXPRESSION
     case INTEGER_LITERAL
+    case ROUTINE_CALL
     case UNARY_EXPRESSION
 
     // Type expressions
