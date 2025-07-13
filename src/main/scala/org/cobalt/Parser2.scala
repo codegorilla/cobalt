@@ -400,15 +400,215 @@ class Parser2 {
     return null
 
 
-
-
   // EXPRESSIONS
 
-  def expression (): AstNode =
-    println("EXPRESSION***")
-    val n = AstNode(AstNode.Kind.PLACEHOLDER)
-    consume()
+  // Do we need an expression root AST node?
+
+  def expressionRoot (): AstNode =
+    println("EXPRESSION_ROOT")
+    val n = AstNode(AstNode.Kind.EXPRESSION_ROOT)
+    n.addChild(expression())
     return n
+
+  def expression (): AstNode =
+    val n = assignmentExpression()
+    return n
+
+  def assignmentExpression (): AstNode =
+    var n = logicalOrExpression()
+    val firstSet = List(
+      Token.Kind.EQUAL,
+      Token.Kind.ASTERISK_EQUAL,
+      Token.Kind.SLASH_EQUAL,
+      Token.Kind.PERCENT_EQUAL,
+      Token.Kind.PLUS_EQUAL,
+      Token.Kind.MINUS_EQUAL,
+      Token.Kind.LESS_LESS_EQUAL,
+      Token.Kind.GREATER_GREATER_EQUAL,
+      Token.Kind.AMPERSAND_EQUAL,
+      Token.Kind.CARET_EQUAL,
+      Token.Kind.BAR_EQUAL
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(lookahead.kind)
+      p = logicalOrExpression()
+      n.addChild(p)
+    return n
+
+  def logicalOrExpression (): AstNode =
+    var n = logicalAndExpression()
+    while lookahead.kind == Token.Kind.OR do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(Token.Kind.OR)
+      n.addChild(logicalAndExpression())
+    return n
+
+  def logicalAndExpression (): AstNode =
+    var n = inclusiveOrExpression()
+    while lookahead.kind == Token.Kind.AND do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(Token.Kind.AND)
+      n.addChild(inclusiveOrExpression())
+    return n
+  
+  def inclusiveOrExpression (): AstNode =
+    var n = exclusiveOrExpression()
+    while lookahead.kind == Token.Kind.BAR do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(Token.Kind.BAR)
+      n.addChild(exclusiveOrExpression())
+    return n
+
+  def exclusiveOrExpression (): AstNode =
+    var n = andExpression()
+    while lookahead.kind == Token.Kind.CARET do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(Token.Kind.CARET)
+      n.addChild(andExpression())
+    return n
+  
+  def andExpression (): AstNode =
+    var n = equalityExpression()
+    while lookahead.kind == Token.Kind.AMPERSAND do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(Token.Kind.AMPERSAND)
+      n.addChild(equalityExpression())
+    return n
+
+  def equalityExpression (): AstNode =
+    var n = relationalExpression()
+    val firstSet = List(
+      Token.Kind.EQUAL_EQUAL,
+      Token.Kind.EXCLAMATION_EQUAL
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(lookahead.kind)
+      n.addChild(relationalExpression())
+    return n
+
+  def relationalExpression (): AstNode =
+    var n = shiftExpression()
+    val firstSet = List(
+      Token.Kind.GREATER,
+      Token.Kind.LESS,
+      Token.Kind.GREATER_EQUAL,
+      Token.Kind.LESS_EQUAL
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(lookahead.kind)
+      n.addChild(shiftExpression())
+    return n
+
+  def shiftExpression (): AstNode =
+    var n = additiveExpression()
+    val firstSet = List(
+      Token.Kind.GREATER_GREATER,
+      Token.Kind.LESS_LESS
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(lookahead.kind)
+      n.addChild(additiveExpression())
+    return n
+
+  def additiveExpression (): AstNode =
+    var n = multiplicativeExpression()
+    val firstSet = List(
+      Token.Kind.PLUS,
+      Token.Kind.MINUS
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(lookahead.kind)
+      n.addChild(multiplicativeExpression())
+    return n
+
+  def multiplicativeExpression (): AstNode =
+    var n = unaryExpression()
+    val firstSet = List(
+      Token.Kind.ASTERISK,
+      Token.Kind.SLASH,
+      Token.Kind.PERCENT
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
+      n.addChild(p)
+      match_(lookahead.kind)
+      n.addChild(unaryExpression())
+    return n
+  
+  def unaryExpression (): AstNode =
+    var n: AstNode = null
+    // TODO: Need to add tilde
+    val firstSet = List(
+      Token.Kind.ASTERISK,
+      Token.Kind.MINUS,
+      Token.Kind.PLUS,
+      Token.Kind.EXCLAMATION
+    )
+    if firstSet.contains(lookahead.kind) then
+      n = AstNode(AstNode.Kind.UNARY_EXPRESSION, lookahead)
+      match_(lookahead.kind)
+      n.addChild(unaryExpression())
+    else
+      ; //n = primaryExpression()
+    return n
+
+  // TODO: FIX
+
+  // def primaryExpression (): AstNode =
+  //   val firstSet = List(
+  //     Token.Kind.NULL,
+  //     Token.Kind.THIS,
+  //     Token.Kind.FALSE,
+  //     Token.Kind.TRUE,
+  //     Token.Kind.FLOAT32_LITERAL,
+  //     Token.Kind.FLOAT64_LITERAL,
+  //     Token.Kind.INT32_LITERAL,
+  //     Token.Kind.INT64_LITERAL,
+  //     Token.Kind.UINT32_LITERAL,
+  //     Token.Kind.UINT64_LITERAL,
+  //     Token.Kind.STRING_LITERAL
+  //   )
+  //   val n: AstNode = null
+  //   if lookahead.kind == Token.Kind.IDENTIFIER then
+  //     n = nameExpression()
+      
+  //     case Token.Kind.IDENTIFIER => nameExpression()
+  //     case Token.Kind.IF => ifExpression()
+  //     case Token.Kind.L_PARENTHESIS => parenthesizedExpression()
+  //     case item if item in firstSet:
+  //       n = literal()
+  //     case _ =>
+  //       print("ERROR - INVALID PRIMARY EXPRESSION")
+  //   return n
+
+
+
 
   def identifier (): AstNode =
     val n = AstNode(AstNode.Kind.IDENTIFIER)
@@ -475,7 +675,7 @@ class Parser2 {
   def centerFragment (): LinkedList[AstNode] =
     println("FOUND CENTER_FRAGMENT")
     var fragment = LinkedList[AstNode]()
-    if lookahead.kind == Token.Kind.CARAT then
+    if lookahead.kind == Token.Kind.CARET then
       fragment.addLast(functionPointerType())
     else if lookahead.kind == Token.Kind.BOOL    ||
             lookahead.kind == Token.Kind.INT     ||
@@ -523,7 +723,7 @@ class Parser2 {
 
   def functionPointerType (): AstNode =
     val n = AstNode(AstNode.Kind.FUNCTION_POINTER_TYPE, lookahead)
-    match_(Token.Kind.CARAT)
+    match_(Token.Kind.CARET)
     return n
 
   def nominalType (): AstNode =

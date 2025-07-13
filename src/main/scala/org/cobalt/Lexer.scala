@@ -136,10 +136,10 @@ class Lexer {
         consume()
         if current == '=' then
           consume()
-          kind = Token.Kind.CARAT_EQUAL
+          kind = Token.Kind.CARET_EQUAL
           lexeme = "^="
         else
-          kind = Token.Kind.CARAT
+          kind = Token.Kind.CARET
           lexeme = "^"
         return Token(kind, lexeme, position, line, column)
 

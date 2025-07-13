@@ -107,8 +107,11 @@ object AstNode:
     case RETURN_STATEMENT
 
     // Expressions
+    case BINARY_EXPRESSION
+    case EXPRESSION_ROOT
     case FLOATING_POINT_LITERAL
     case INTEGER_LITERAL
+    case UNARY_EXPRESSION
 
     // Type expressions
     case TYPE_ROOT

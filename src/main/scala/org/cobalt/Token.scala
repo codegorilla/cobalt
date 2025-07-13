@@ -106,8 +106,8 @@ object Token {
         case BAR
         case BAR_BAR
         case BAR_EQUAL
-        case CARAT
-        case CARAT_EQUAL
+        case CARET
+        case CARET_EQUAL
         case CHARACTER_LITERAL
         case COLON
         case COMMA
