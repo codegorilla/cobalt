@@ -575,40 +575,143 @@ class Parser2 {
       match_(lookahead.kind)
       n.addChild(unaryExpression())
     else
-      ; //n = primaryExpression()
+      n = primaryExpression()
     return n
 
-  // TODO: FIX
+  // Might need to add postfix expressions here. See C, C++, and Java language
+  // specifications.
 
-  // def primaryExpression (): AstNode =
-  //   val firstSet = List(
-  //     Token.Kind.NULL,
-  //     Token.Kind.THIS,
-  //     Token.Kind.FALSE,
-  //     Token.Kind.TRUE,
-  //     Token.Kind.FLOAT32_LITERAL,
-  //     Token.Kind.FLOAT64_LITERAL,
-  //     Token.Kind.INT32_LITERAL,
-  //     Token.Kind.INT64_LITERAL,
-  //     Token.Kind.UINT32_LITERAL,
-  //     Token.Kind.UINT64_LITERAL,
-  //     Token.Kind.STRING_LITERAL
-  //   )
-  //   val n: AstNode = null
-  //   if lookahead.kind == Token.Kind.IDENTIFIER then
-  //     n = nameExpression()
-      
-  //     case Token.Kind.IDENTIFIER => nameExpression()
-  //     case Token.Kind.IF => ifExpression()
-  //     case Token.Kind.L_PARENTHESIS => parenthesizedExpression()
-  //     case item if item in firstSet:
-  //       n = literal()
-  //     case _ =>
-  //       print("ERROR - INVALID PRIMARY EXPRESSION")
-  //   return n
+  def postfixExpression (): AstNode =
+    val n = AstNode(AstNode.Kind.PLACEHOLDER)
+    return n
 
+  def primaryExpression (): AstNode =
+    val firstSet = List(
+      Token.Kind.NULL,
+      Token.Kind.THIS,
+      Token.Kind.FALSE,
+      Token.Kind.TRUE,
+      Token.Kind.FLOAT32_LITERAL,
+      Token.Kind.FLOAT64_LITERAL,
+      Token.Kind.INT32_LITERAL,
+      Token.Kind.INT64_LITERAL,
+      Token.Kind.UINT32_LITERAL,
+      Token.Kind.UINT64_LITERAL,
+      Token.Kind.STRING_LITERAL
+    )
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.IDENTIFIER then
+      n = nameExpression()
+    else if lookahead.kind == Token.Kind.IF then
+      n = ifExpression()
+    else if lookahead.kind == Token.Kind.L_PARENTHESIS then
+      n = parenthesizedExpression()
+      // case item if item in firstSet:
+      //   n = literal()
+      // case _ =>
+      //   print("ERROR - INVALID PRIMARY EXPRESSION")
+    return n
 
+  def nameExpression (): AstNode =
+    // We need to distinguish between identifiers used when defining program
+    // elements and identifiers used when referencing program elements. Is this
+    // done?
+    var n = name()
+    val firstSet = List(
+      Token.Kind.L_PARENTHESIS,
+      Token.Kind.L_BRACKET,
+      Token.Kind.MINUS_GREATER,
+      Token.Kind.PERIOD
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      lookahead.kind match
+        case Token.Kind.L_PARENTHESIS =>
+          n = functionCall(p)
+        case Token.Kind.L_BRACKET =>
+          n = arrayAccess(p)
+        case Token.Kind.MINUS_GREATER =>
+          n = derefAccess(p)
+        case Token.Kind.PERIOD =>
+          n = fieldAccess(p)
+    return n
 
+  def functionCall (name: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.FUNCTION_CALL)
+    n.addChild(name)
+    n.addChild(argumentList())
+    return n
+
+  def argumentList (): AstNode =
+    val n = AstNode(AstNode.Kind.ARGUMENT_LIST)
+    match_(Token.Kind.L_PARENTHESIS)
+    if lookahead.kind != Token.Kind.R_PARENTHESIS then
+      n.addChild(expression())
+      while lookahead.kind == Token.Kind.COMMA do
+        match_(Token.Kind.COMMA)
+        n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def arrayAccess (name: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.ARRAY_ACCESS)
+    n.addChild(name)
+    match_(Token.Kind.L_BRACKET)
+    n.addChild(expression())
+    match_(Token.Kind.R_BRACKET)
+    return n
+
+  def derefAccess (name_ : AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.DEREF_ACCESS)
+    n.addChild(name_)
+    match_(Token.Kind.MINUS_GREATER)
+    n.addChild(name())
+    return n
+
+  def fieldAccess (p: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.FIELD_ACCESS)
+    n.addChild(p)
+    match_(Token.Kind.PERIOD)
+    n.addChild(name())
+    return n
+
+  def ifExpression (): AstNode =
+    val n = AstNode(AstNode.Kind.IF_EXPRESSION, lookahead)
+    match_(Token.Kind.IF)
+    if lookahead.kind == Token.Kind.L_PARENTHESIS then
+      match_(Token.Kind.L_PARENTHESIS)
+      n.addChild(expression())
+      match_(Token.Kind.R_PARENTHESIS)
+    else
+      n.addChild(expression())
+      match_(Token.Kind.THEN)
+    n.addChild(expression())
+    match_(Token.Kind.ELSE)
+    n.addChild(expression())
+    return n
+
+  def parenthesizedExpression (): AstNode =
+    match_(Token.Kind.L_PARENTHESIS)
+    var n = expression()
+    match_(Token.Kind.R_PARENTHESIS)
+    val firstSet = List(
+      Token.Kind.L_PARENTHESIS,
+      Token.Kind.L_BRACKET,
+      Token.Kind.MINUS_GREATER,
+      Token.Kind.PERIOD
+    )
+    while firstSet.contains(lookahead.kind) do
+      var p = n
+      lookahead.kind match
+        case Token.Kind.L_PARENTHESIS =>
+          n = functionCall(p)
+        case Token.Kind.L_BRACKET =>
+          n = arrayAccess(p)
+        case Token.Kind.MINUS_GREATER =>
+          n = derefAccess(p)
+        case Token.Kind.PERIOD =>
+          n = fieldAccess(p)
+    return n
 
   def identifier (): AstNode =
     val n = AstNode(AstNode.Kind.IDENTIFIER)
