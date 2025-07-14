@@ -590,28 +590,55 @@ class Parser2 {
       n = postfixExpression()
     return n
 
-  // More than just names can be used as postfix expressions (e.g. this->x). We
+  val postfixExpressionFinishFirstSet = Set(
+    Token.Kind.MINUS_GREATER,
+    Token.Kind.PERIOD,
+    Token.Kind.L_BRACKET,
+    Token.Kind.L_PARENTHESIS
+  )
 
   def postfixExpression (): AstNode =
-    var n = primaryExpression()
-    val firstSet = Set(
-      Token.Kind.MINUS_GREATER,
-      Token.Kind.PERIOD,
-      Token.Kind.L_BRACKET,
-      Token.Kind.L_PARENTHESIS
-    )
-    while firstSet.contains(lookahead.kind) do
-      var p = n
+    var node = primaryExpression()
+    //if postfixExpressionFinishFirstSet.contains(lookahead.kind) then
+    node = postfixExpressionFinish(node)
+    return node
+
+  def postfixExpressionFinish (postfixExpr: AstNode): AstNode =
+    var node = postfixExpr
+    while postfixExpressionFinishFirstSet.contains(lookahead.kind) do
       lookahead.kind match
         case Token.Kind.MINUS_GREATER =>
-          n = dereferencingMemberAccess(p)
+          node = dereferencingMemberAccess(node)
         case Token.Kind.PERIOD =>
-          n = memberAccess(p)
+          node = memberAccess(node)
         case Token.Kind.L_PARENTHESIS =>
-          n = routineCall(p)
+          node = routineCall(node)
         case Token.Kind.L_BRACKET =>
-          n = subscript(p)
-    return n
+          node = arraySubscript(node)
+        case _ =>
+          println("ERROR: No viable alternative in postfixExpressionFinish.")
+    return node
+
+    // val firstSet = Set(
+    //   Token.Kind.MINUS_GREATER,
+    //   Token.Kind.PERIOD,
+    //   Token.Kind.L_BRACKET,
+    //   Token.Kind.L_PARENTHESIS
+    // )
+    // while firstSet.contains(lookahead.kind) do
+    //   var p = n
+    //   lookahead.kind match
+    //     case Token.Kind.MINUS_GREATER =>
+    //       n = dereferencingMemberAccess(p)
+    //     case Token.Kind.PERIOD =>
+    //       n = memberAccess(p)
+    //     case Token.Kind.L_PARENTHESIS =>
+    //       n = routineCall(p)
+    //     case Token.Kind.L_BRACKET =>
+    //       n = arraySubscript(p)
+    // return n
+
+
 
   def dereferencingMemberAccess (nameExpr: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.DEREFERENCING_MEMBER_ACCESS)
@@ -649,7 +676,7 @@ class Parser2 {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
-  def subscript (nameExpr: AstNode): AstNode =
+  def arraySubscript (nameExpr: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.SUBSCRIPT)
     n.addChild(nameExpr)
     match_(Token.Kind.L_BRACKET)
