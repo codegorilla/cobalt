@@ -112,13 +112,20 @@ object AstNode:
     case BINARY_EXPRESSION
     case DEREFERENCING_MEMBER_ACCESS
     case EXPRESSION_ROOT
-    case FLOATING_POINT_LITERAL
     case IF_EXPRESSION
-    case INTEGER_LITERAL
     case MEMBER_ACCESS
     case ROUTINE_CALL
     case SUBSCRIPT
     case UNARY_EXPRESSION
+
+    // Literal expressions
+    case BOOLEAN_LITERAL
+    case FLOATING_POINT_LITERAL
+    case INTEGER_LITERAL
+    case UNSIGNED_INTEGER_LITERAL
+    case NULL_LITERAL
+    case CHARACTER_LITERAL
+    case STRING_LITERAL
 
     // Type expressions
     case TYPE_ROOT

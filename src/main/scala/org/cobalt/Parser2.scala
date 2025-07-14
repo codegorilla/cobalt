@@ -594,27 +594,10 @@ class Parser2 {
   // do not.
 
   // Note: In cpp2, this is not a pointer. Its unclear if we can follow the same
-  // approach.
+  // pattern.
 
   def postfixExpression (): AstNode =
-    var n: AstNode = null
-    if lookahead.kind == Token.Kind.IDENTIFIER then
-      n = nameExpression()
-    else
-      n = primaryExpression()
-    return n
-
-  // A plain name by itself is technically a primary expression, but that is
-  // hard to handle with an LL(1) grammar because we cannot look past the name
-  // token to see if it is actually part of a routine call, subscript, or member
-  // access operation. Thus for parsing purposes, we lump it in as a postfix
-  // expression.
-
-  def nameExpression (): AstNode =
-    // We need to distinguish between identifiers used when defining program
-    // elements and identifiers used when referencing program elements. Is this
-    // done already (comment copied in from python prototype)?
-    var n = name()
+    var n = primaryExpression()
     val firstSet = List(
       Token.Kind.MINUS_GREATER,
       Token.Kind.PERIOD,
@@ -656,6 +639,11 @@ class Parser2 {
     match_(Token.Kind.R_BRACKET)
     return n
 
+  // Subroutines (or routines for short) may be classified as 'functions', which
+  // return a result; and 'procedures', which do not. Furthermore, routines that
+  // are members of a class are known as 'methods'. However, we do not
+  // distinguish between these types of routines using different keywords.
+
   def routineCall (nameExpr: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_CALL)
     n.addChild(nameExpr)
@@ -673,37 +661,91 @@ class Parser2 {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
+  // We need to distinguish between identifiers used when defining program
+  // elements and identifiers used when referencing program elements. Is this
+  // done already (comment copied in from python prototype)?
+
+  // Note: The 'this' pointer is not a literal.
+
+  val booleanLiteralFirstSet = List(Token.Kind.FALSE, Token.Kind.TRUE)
+
+  val floatingPointLiteralFirstSet = List(Token.Kind.FLOAT32_LITERAL, Token.Kind.FLOAT64_LITERAL)
+
+  val integerLiteralFirstSet = List(Token.Kind.INT32_LITERAL, Token.Kind.INT64_LITERAL)
+
+  val unsignedIntegerLiteralFirstSet =  List(Token.Kind.UINT32_LITERAL, Token.Kind.UINT64_LITERAL)
+
+  val nullLiteralFirstSet = List(Token.Kind.NULL)
+
+  val stringLiteralFirstSet = List(Token.Kind.STRING_LITERAL)
+
+  val literalFirstSet =
+    booleanLiteralFirstSet ++
+    floatingPointLiteralFirstSet ++
+    integerLiteralFirstSet ++
+    unsignedIntegerLiteralFirstSet ++
+    nullLiteralFirstSet ++
+    stringLiteralFirstSet
 
   def primaryExpression (): AstNode =
-    val firstSet = List(
-      Token.Kind.NULL,
-      Token.Kind.THIS,
-      Token.Kind.FALSE,
-      Token.Kind.TRUE,
-      Token.Kind.FLOAT32_LITERAL,
-      Token.Kind.FLOAT64_LITERAL,
-      Token.Kind.INT32_LITERAL,
-      Token.Kind.INT64_LITERAL,
-      Token.Kind.UINT32_LITERAL,
-      Token.Kind.UINT64_LITERAL,
-      Token.Kind.STRING_LITERAL
-    )
     var n: AstNode = null
+    if literalFirstSet.contains(lookahead.kind) then
+      n = literal()
+    else if lookahead.kind == Token.Kind.IDENTIFIER then
+      n = name()
     else if lookahead.kind == Token.Kind.IF then
       n = ifExpression()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       n = parenthesizedExpression()
-      // case item if item in firstSet:
-      //   n = literal()
-      // case _ =>
-      //   print("ERROR - INVALID PRIMARY EXPRESSION")
+    else
+      println("ERROR - INVALID PRIMARY EXPRESSION")
     return n
 
-  // Subroutines (or routines for short) may be classified as 'functions', which
-  // return a result; and 'procedures', which do not. Furthermore, routines that
-  // are members of a class are known as 'methods'. However, we do not
-  // distinguish between these types of routines using different keywords.
+  def literal (): AstNode =
+    var n: AstNode = null
+    if booleanLiteralFirstSet.contains(lookahead.kind) then
+      n = booleanLiteral()
+    else if floatingPointLiteralFirstSet.contains(lookahead.kind) then
+      n = floatingPointLiteral()
+    else if integerLiteralFirstSet.contains(lookahead.kind) then
+      n = integerLiteral()
+    else if unsignedIntegerLiteralFirstSet.contains(lookahead.kind) then
+      n = unsignedIntegerLiteral()
+    else if nullLiteralFirstSet.contains(lookahead.kind) then
+      n = nullLiteral()
+    else if stringLiteralFirstSet.contains(lookahead.kind) then
+      n = stringLiteral()
+    return n
 
+  def booleanLiteral (): AstNode =
+    val n = AstNode(AstNode.Kind.BOOLEAN_LITERAL, lookahead)
+    consume()
+    return n
+
+  def floatingPointLiteral (): AstNode =
+    val n = AstNode(AstNode.Kind.FLOATING_POINT_LITERAL, lookahead)
+    consume()
+    return n
+
+  def integerLiteral (): AstNode =
+    val n = AstNode(AstNode.Kind.INTEGER_LITERAL, lookahead)
+    consume()
+    return n
+
+  def unsignedIntegerLiteral (): AstNode =
+    val n =AstNode(AstNode.Kind.UNSIGNED_INTEGER_LITERAL, lookahead)
+    consume()
+    return n
+
+  def nullLiteral (): AstNode =
+    val n = AstNode(AstNode.Kind.NULL_LITERAL, lookahead)
+    consume()
+    return n
+
+  def stringLiteral (): AstNode =
+    val n = AstNode(AstNode.Kind.STRING_LITERAL, lookahead)
+    consume()
+    return n
 
   def ifExpression (): AstNode =
     val n = AstNode(AstNode.Kind.IF_EXPRESSION, lookahead)
