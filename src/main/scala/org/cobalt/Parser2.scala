@@ -590,6 +590,15 @@ class Parser2 {
       n = postfixExpression()
     return n
 
+  // The postfix expression grammar below permits semantically invalid results.
+  // For example, primary expressions can include integer literals, so the
+  // parser will successfully parse '5++', even though that isn't semantically
+  // sound because integer literals are not l-values. This issue is addressed
+  // during a semantic analysis pass (which is how it seems to be dealt with in
+  // C++ and some other languages). Although we might be able to adjust the
+  // grammar to avoid this problem, the for now we will just stick with the
+  // traditional design.
+
   def postfixExpression (): AstNode =
     var node = primaryExpression()
     val firstSet = Set(
@@ -613,14 +622,14 @@ class Parser2 {
     return node
 
   def dereferencingMemberAccess (nameExpr: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.DEREFERENCING_MEMBER_ACCESS)
+    val n = AstNode(AstNode.Kind.DEREFERENCING_MEMBER_ACCESS, lookahead)
     n.addChild(nameExpr)
     match_(Token.Kind.MINUS_GREATER)
     n.addChild(name())
     return n
 
   def memberAccess (nameExpr: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.MEMBER_ACCESS)
+    val n = AstNode(AstNode.Kind.MEMBER_ACCESS, lookahead)
     n.addChild(nameExpr)
     match_(Token.Kind.PERIOD)
     n.addChild(name())
@@ -632,7 +641,7 @@ class Parser2 {
   // distinguish between these types of routines using different keywords.
 
   def routineCall (nameExpr: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.ROUTINE_CALL)
+    val n = AstNode(AstNode.Kind.ROUTINE_CALL, lookahead)
     n.addChild(nameExpr)
     n.addChild(arguments())
     return n
