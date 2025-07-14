@@ -15,18 +15,18 @@ import java.io.IOException
   val templateDir = this.getClass().getClassLoader().getResource("templates")
 
   // Test StringTemplate
-  val group = STGroupDir(templateDir);
-  val st = group.getInstanceOf("decl");
-  st.add("type", "int");
-  st.add("name", "x");
-  st.add("value", 0);
-  val result = st.render();
+  val group = STGroupDir(templateDir)
+  val st = group.getInstanceOf("decl")
+  st.add("type", "int")
+  st.add("name", "x")
+  st.add("value", 0)
+  val result = st.render()
   println(result)
 
   val st1 = group.getInstanceOf("enumerationDeclaration");
-  st1.add("name", "TokenType");
-  st1.add("value", 1);
-  val result1 = st1.render();
+  st1.add("name", "TokenType")
+  st1.add("value", 1)
+  val result1 = st1.render()
   println(result1)
 
 

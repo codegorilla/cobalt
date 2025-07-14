@@ -329,6 +329,10 @@ class Parser2 {
     match_(Token.Kind.R_BRACE)
     return n
 
+  // We need to distinguish between identifiers used when defining program
+  // elements and identifiers used when referencing program elements. Is this
+  // done already (comment copied in from python prototype)?
+
   def name (): AstNode =
     val n = AstNode(AstNode.Kind.NAME)
     n.setToken(lookahead)
@@ -337,20 +341,29 @@ class Parser2 {
 
   // STATEMENTS
 
+  val booleanLiteralFirstSet = Set(Token.Kind.FALSE, Token.Kind.TRUE)
+  val characterLiteralFirstSet = Set(Token.Kind.CHARACTER_LITERAL)
+  val floatingPointLiteralFirstSet = Set(Token.Kind.FLOAT32_LITERAL, Token.Kind.FLOAT64_LITERAL)
+  val integerLiteralFirstSet = Set(Token.Kind.INT32_LITERAL, Token.Kind.INT64_LITERAL)
+  val nullLiteralFirstSet = Set(Token.Kind.NULL)
+  val unsignedIntegerLiteralFirstSet =  Set(Token.Kind.UINT32_LITERAL, Token.Kind.UINT64_LITERAL)
+  val stringLiteralFirstSet = Set(Token.Kind.STRING_LITERAL)
+
+  val literalFirstSet =
+    booleanLiteralFirstSet ++
+    characterLiteralFirstSet ++
+    floatingPointLiteralFirstSet ++
+    integerLiteralFirstSet ++
+    nullLiteralFirstSet ++
+    unsignedIntegerLiteralFirstSet ++
+    stringLiteralFirstSet
+
   def statement (): AstNode =
     val kind = lookahead.kind
     var n: AstNode = null
     if kind == Token.Kind.IDENTIFIER ||
-       kind == Token.Kind.NULL ||
-       kind == Token.Kind.FALSE ||
-       kind == Token.Kind.THIS ||
-       kind == Token.Kind.TRUE ||
-       kind == Token.Kind.INT32_LITERAL ||
-       kind == Token.Kind.INT64_LITERAL ||
-       kind == Token.Kind.UINT32_LITERAL ||
-       kind == Token.Kind.UINT64_LITERAL ||
-       kind == Token.Kind.FLOAT32_LITERAL ||
-       kind == Token.Kind.FLOAT64_LITERAL
+       kind == Token.Kind.THIS       ||
+       literalFirstSet.contains(kind)
     then
       n = expressionStatement()
     else if kind == Token.Kind.BREAK then
@@ -393,12 +406,9 @@ class Parser2 {
     match_(Token.Kind.RETURN)
     match_(Token.Kind.SEMICOLON)
     return n
-    
-
 
   def expressionStatement(): AstNode =
     return null
-
 
   // EXPRESSIONS
 
@@ -416,7 +426,7 @@ class Parser2 {
 
   def assignmentExpression (): AstNode =
     var n = logicalOrExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.EQUAL,
       Token.Kind.ASTERISK_EQUAL,
       Token.Kind.SLASH_EQUAL,
@@ -490,7 +500,7 @@ class Parser2 {
 
   def equalityExpression (): AstNode =
     var n = relationalExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.EQUAL_EQUAL,
       Token.Kind.EXCLAMATION_EQUAL
     )
@@ -504,7 +514,7 @@ class Parser2 {
 
   def relationalExpression (): AstNode =
     var n = shiftExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.GREATER,
       Token.Kind.LESS,
       Token.Kind.GREATER_EQUAL,
@@ -520,7 +530,7 @@ class Parser2 {
 
   def shiftExpression (): AstNode =
     var n = additiveExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.GREATER_GREATER,
       Token.Kind.LESS_LESS
     )
@@ -534,7 +544,7 @@ class Parser2 {
 
   def additiveExpression (): AstNode =
     var n = multiplicativeExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.PLUS,
       Token.Kind.MINUS
     )
@@ -548,7 +558,7 @@ class Parser2 {
 
   def multiplicativeExpression (): AstNode =
     var n = unaryExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.ASTERISK,
       Token.Kind.SLASH,
       Token.Kind.PERCENT
@@ -566,7 +576,7 @@ class Parser2 {
   def unaryExpression (): AstNode =
     var n: AstNode = null
     // TODO: Need to add tilde
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.ASTERISK,
       Token.Kind.MINUS,
       Token.Kind.PLUS,
@@ -580,25 +590,11 @@ class Parser2 {
       n = postfixExpression()
     return n
 
-  // Might need to add postfix expressions here. See C, C++, and Java language
-  // specifications. This is a spot where LL(2) would be nice because we want to
-  // be able to tell if we have a plain identifier, or if it will be a postfix
-  // expression (e.g. 'position' vs. 'position.getX()'). An identifier is more
-  // of a primary expression, whereas a function call is a postfix expression.
-  // To ease the problem, we may just put identifiers in primary expressions.
-  // Or we will just consider plain identifiers to be postfix expressions.
-
   // More than just names can be used as postfix expressions (e.g. this->x). We
-  // can either consider 'this' a postfix expression, or we can break primary
-  // expressions down into those that support postfix expressions and those that
-  // do not.
-
-  // Note: In cpp2, this is not a pointer. Its unclear if we can follow the same
-  // pattern.
 
   def postfixExpression (): AstNode =
     var n = primaryExpression()
-    val firstSet = List(
+    val firstSet = Set(
       Token.Kind.MINUS_GREATER,
       Token.Kind.PERIOD,
       Token.Kind.L_BRACKET,
@@ -661,27 +657,8 @@ class Parser2 {
     match_(Token.Kind.R_BRACKET)
     return n
 
-  // We need to distinguish between identifiers used when defining program
-  // elements and identifiers used when referencing program elements. Is this
-  // done already (comment copied in from python prototype)?
-
-  // TODO: Need to add character first set
-  val booleanLiteralFirstSet = List(Token.Kind.FALSE, Token.Kind.TRUE)
-  val floatingPointLiteralFirstSet = List(Token.Kind.FLOAT32_LITERAL, Token.Kind.FLOAT64_LITERAL)
-  val integerLiteralFirstSet = List(Token.Kind.INT32_LITERAL, Token.Kind.INT64_LITERAL)
-  val unsignedIntegerLiteralFirstSet =  List(Token.Kind.UINT32_LITERAL, Token.Kind.UINT64_LITERAL)
-  val nullLiteralFirstSet = List(Token.Kind.NULL)
-  val stringLiteralFirstSet = List(Token.Kind.STRING_LITERAL)
-
   def primaryExpression (): AstNode =
     var n: AstNode = null
-    val literalFirstSet =
-      booleanLiteralFirstSet ++
-      floatingPointLiteralFirstSet ++
-      integerLiteralFirstSet ++
-      unsignedIntegerLiteralFirstSet ++
-      nullLiteralFirstSet ++
-      stringLiteralFirstSet
     if literalFirstSet.contains(lookahead.kind) then
       n = literal()
     else if lookahead.kind == Token.Kind.THIS then
@@ -700,20 +677,27 @@ class Parser2 {
     var n: AstNode = null
     if booleanLiteralFirstSet.contains(lookahead.kind) then
       n = booleanLiteral()
+    else if characterLiteralFirstSet.contains(lookahead.kind) then
+      n = characterLiteral()
     else if floatingPointLiteralFirstSet.contains(lookahead.kind) then
       n = floatingPointLiteral()
     else if integerLiteralFirstSet.contains(lookahead.kind) then
       n = integerLiteral()
-    else if unsignedIntegerLiteralFirstSet.contains(lookahead.kind) then
-      n = unsignedIntegerLiteral()
     else if nullLiteralFirstSet.contains(lookahead.kind) then
       n = nullLiteral()
     else if stringLiteralFirstSet.contains(lookahead.kind) then
       n = stringLiteral()
+    else if unsignedIntegerLiteralFirstSet.contains(lookahead.kind) then
+      n = unsignedIntegerLiteral()
     return n
 
   def booleanLiteral (): AstNode =
     val n = AstNode(AstNode.Kind.BOOLEAN_LITERAL, lookahead)
+    consume()
+    return n
+
+  def characterLiteral (): AstNode =
+    val n = AstNode(AstNode.Kind.CHARACTER_LITERAL, lookahead)
     consume()
     return n
 
@@ -727,11 +711,6 @@ class Parser2 {
     consume()
     return n
 
-  def unsignedIntegerLiteral (): AstNode =
-    val n =AstNode(AstNode.Kind.UNSIGNED_INTEGER_LITERAL, lookahead)
-    consume()
-    return n
-
   def nullLiteral (): AstNode =
     val n = AstNode(AstNode.Kind.NULL_LITERAL, lookahead)
     consume()
@@ -741,6 +720,15 @@ class Parser2 {
     val n = AstNode(AstNode.Kind.STRING_LITERAL, lookahead)
     consume()
     return n
+
+  def unsignedIntegerLiteral (): AstNode =
+    val n =AstNode(AstNode.Kind.UNSIGNED_INTEGER_LITERAL, lookahead)
+    consume()
+    return n
+
+  // Note: In C++, 'this' is a pointer, but in cppfront, it is not. Its unclear
+  // if we can achieve the same thing in cobalt. For now, just assume it is a
+  // pointer.
 
   def this_ (): AstNode =
     val n = AstNode(AstNode.Kind.THIS, lookahead)
@@ -766,23 +754,6 @@ class Parser2 {
     match_(Token.Kind.L_PARENTHESIS)
     var n = expression()
     match_(Token.Kind.R_PARENTHESIS)
-    val firstSet = List(
-      Token.Kind.L_PARENTHESIS,
-      Token.Kind.L_BRACKET,
-      Token.Kind.MINUS_GREATER,
-      Token.Kind.PERIOD
-    )
-    while firstSet.contains(lookahead.kind) do
-      var p = n
-      lookahead.kind match
-        case Token.Kind.L_PARENTHESIS =>
-          n = routineCall(p)
-        case Token.Kind.L_BRACKET =>
-          n = subscript(p)
-        case Token.Kind.MINUS_GREATER =>
-          n = dereferencingMemberAccess(p)
-        case Token.Kind.PERIOD =>
-          n = memberAccess(p)
     return n
 
   def identifier (): AstNode =

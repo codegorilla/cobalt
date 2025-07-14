@@ -8,6 +8,7 @@ object Token {
         case AND
         case BREAK
         case CASE
+        case CAST
         case CATCH
         case CLASS
         case CONST
@@ -15,6 +16,7 @@ object Token {
         case DEF
         case DEFAULT
         case DELETE
+        case DISPEL
         case DO
         case ELSE
         case END
@@ -26,9 +28,12 @@ object Token {
         case FOREACH
         case FN
         case FUN
+        case GOTO
         case IF
         case IN
         case LOOP
+        case NAMESPACE
+        case NEW
         case NIL
         case NULL
         case OR
@@ -39,6 +44,7 @@ object Token {
         case RETURN
         case STATIC
         case STRUCT
+        case SWITCH
         case THEN
         case THIS
         case TRUE
@@ -97,6 +103,10 @@ object Token {
         case HEXADECIMAL_FLOAT32_LITERAL
         case HEXADECIMAL_FLOAT64_LITERAL
 
+        // Other literals
+        case CHARACTER_LITERAL
+        case STRING_LITERAL
+
         // Operators and Punctuation
         case AMPERSAND
         case AMPERSAND_AMPERSAND
@@ -108,7 +118,6 @@ object Token {
         case BAR_EQUAL
         case CARET
         case CARET_EQUAL
-        case CHARACTER_LITERAL
         case COLON
         case COMMA
         case EQUAL
@@ -142,7 +151,6 @@ object Token {
         case SEMICOLON
         case SLASH
         case SLASH_EQUAL
-        case STRING_LITERAL
         case TILDE
         case TILDE_EQUAL
 
