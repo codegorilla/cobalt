@@ -107,16 +107,20 @@ object AstNode:
     case RETURN_STATEMENT
 
     // Expressions
-    // ARGUMENTS?
-    case ARGUMENTS
     case BINARY_EXPRESSION
-    case DEREFERENCING_MEMBER_ACCESS
     case EXPRESSION_ROOT
-    case IF_EXPRESSION
+    case UNARY_EXPRESSION
+
+    // Postfix expressions
+    case DEREFERENCING_MEMBER_ACCESS
     case MEMBER_ACCESS
     case ROUTINE_CALL
+    case ARGUMENTS
     case SUBSCRIPT
-    case UNARY_EXPRESSION
+
+    // Primary expressions
+    case IF_EXPRESSION
+    case THIS
 
     // Literal expressions
     case BOOLEAN_LITERAL

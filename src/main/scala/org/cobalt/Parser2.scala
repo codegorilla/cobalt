@@ -611,10 +611,10 @@ class Parser2 {
           n = dereferencingMemberAccess(p)
         case Token.Kind.PERIOD =>
           n = memberAccess(p)
-        case Token.Kind.L_BRACKET =>
-          n = subscript(p)
         case Token.Kind.L_PARENTHESIS =>
           n = routineCall(p)
+        case Token.Kind.L_BRACKET =>
+          n = subscript(p)
     return n
 
   def dereferencingMemberAccess (nameExpr: AstNode): AstNode =
@@ -629,14 +629,6 @@ class Parser2 {
     n.addChild(nameExpr)
     match_(Token.Kind.PERIOD)
     n.addChild(name())
-    return n
-
-  def subscript (nameExpr: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.SUBSCRIPT)
-    n.addChild(nameExpr)
-    match_(Token.Kind.L_BRACKET)
-    n.addChild(expression())
-    match_(Token.Kind.R_BRACKET)
     return n
 
   // Subroutines (or routines for short) may be classified as 'functions', which
@@ -661,36 +653,39 @@ class Parser2 {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
+  def subscript (nameExpr: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.SUBSCRIPT)
+    n.addChild(nameExpr)
+    match_(Token.Kind.L_BRACKET)
+    n.addChild(expression())
+    match_(Token.Kind.R_BRACKET)
+    return n
+
   // We need to distinguish between identifiers used when defining program
   // elements and identifiers used when referencing program elements. Is this
   // done already (comment copied in from python prototype)?
 
-  // Note: The 'this' pointer is not a literal.
-
+  // TODO: Need to add character first set
   val booleanLiteralFirstSet = List(Token.Kind.FALSE, Token.Kind.TRUE)
-
   val floatingPointLiteralFirstSet = List(Token.Kind.FLOAT32_LITERAL, Token.Kind.FLOAT64_LITERAL)
-
   val integerLiteralFirstSet = List(Token.Kind.INT32_LITERAL, Token.Kind.INT64_LITERAL)
-
   val unsignedIntegerLiteralFirstSet =  List(Token.Kind.UINT32_LITERAL, Token.Kind.UINT64_LITERAL)
-
   val nullLiteralFirstSet = List(Token.Kind.NULL)
-
   val stringLiteralFirstSet = List(Token.Kind.STRING_LITERAL)
-
-  val literalFirstSet =
-    booleanLiteralFirstSet ++
-    floatingPointLiteralFirstSet ++
-    integerLiteralFirstSet ++
-    unsignedIntegerLiteralFirstSet ++
-    nullLiteralFirstSet ++
-    stringLiteralFirstSet
 
   def primaryExpression (): AstNode =
     var n: AstNode = null
+    val literalFirstSet =
+      booleanLiteralFirstSet ++
+      floatingPointLiteralFirstSet ++
+      integerLiteralFirstSet ++
+      unsignedIntegerLiteralFirstSet ++
+      nullLiteralFirstSet ++
+      stringLiteralFirstSet
     if literalFirstSet.contains(lookahead.kind) then
       n = literal()
+    else if lookahead.kind == Token.Kind.THIS then
+      n = this_()
     else if lookahead.kind == Token.Kind.IDENTIFIER then
       n = name()
     else if lookahead.kind == Token.Kind.IF then
@@ -745,6 +740,11 @@ class Parser2 {
   def stringLiteral (): AstNode =
     val n = AstNode(AstNode.Kind.STRING_LITERAL, lookahead)
     consume()
+    return n
+
+  def this_ (): AstNode =
+    val n = AstNode(AstNode.Kind.THIS, lookahead)
+    match_(Token.Kind.THIS)
     return n
 
   def ifExpression (): AstNode =
