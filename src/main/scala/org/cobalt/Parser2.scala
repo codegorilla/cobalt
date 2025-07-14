@@ -590,22 +590,15 @@ class Parser2 {
       n = postfixExpression()
     return n
 
-  val postfixExpressionFinishFirstSet = Set(
-    Token.Kind.MINUS_GREATER,
-    Token.Kind.PERIOD,
-    Token.Kind.L_BRACKET,
-    Token.Kind.L_PARENTHESIS
-  )
-
   def postfixExpression (): AstNode =
     var node = primaryExpression()
-    //if postfixExpressionFinishFirstSet.contains(lookahead.kind) then
-    node = postfixExpressionFinish(node)
-    return node
-
-  def postfixExpressionFinish (postfixExpr: AstNode): AstNode =
-    var node = postfixExpr
-    while postfixExpressionFinishFirstSet.contains(lookahead.kind) do
+    val firstSet = Set(
+      Token.Kind.MINUS_GREATER,
+      Token.Kind.PERIOD,
+      Token.Kind.L_PARENTHESIS,
+      Token.Kind.L_BRACKET
+    )
+    while firstSet.contains(lookahead.kind) do
       lookahead.kind match
         case Token.Kind.MINUS_GREATER =>
           node = dereferencingMemberAccess(node)
@@ -616,29 +609,8 @@ class Parser2 {
         case Token.Kind.L_BRACKET =>
           node = arraySubscript(node)
         case _ =>
-          println("ERROR: No viable alternative in postfixExpressionFinish.")
+          println("Error: No viable alternative in postfixExpression")
     return node
-
-    // val firstSet = Set(
-    //   Token.Kind.MINUS_GREATER,
-    //   Token.Kind.PERIOD,
-    //   Token.Kind.L_BRACKET,
-    //   Token.Kind.L_PARENTHESIS
-    // )
-    // while firstSet.contains(lookahead.kind) do
-    //   var p = n
-    //   lookahead.kind match
-    //     case Token.Kind.MINUS_GREATER =>
-    //       n = dereferencingMemberAccess(p)
-    //     case Token.Kind.PERIOD =>
-    //       n = memberAccess(p)
-    //     case Token.Kind.L_PARENTHESIS =>
-    //       n = routineCall(p)
-    //     case Token.Kind.L_BRACKET =>
-    //       n = arraySubscript(p)
-    // return n
-
-
 
   def dereferencingMemberAccess (nameExpr: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.DEREFERENCING_MEMBER_ACCESS)
