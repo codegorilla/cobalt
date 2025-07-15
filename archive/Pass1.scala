@@ -1,33 +1,16 @@
-package org.cobalt
-
-import scala.collection.mutable.Map
-
-import java.util.LinkedList
-import javax.xml.crypto.Data
+package org.cobalt.archive
 
 // Semantic analyzer - convert enums to classes
 
 // Enumerations are converted to final classes with public static
 // final variables of type integer.
 
-// We traverse the AST, gathering nodes needed for the translation
-// phase, which comes in the next pass. So far, all we need are leaf
-// nodes, so the manipulation is fairly straight-forward because
-// there is no chance for cycles or unintentionally grabing an entire
-// sub-tree. If the AST manipulation gets more complex, we might have
-// to use a different approach, including making copies of things.
-
-class Pass1a {
+class Pass1 {
 
   var input: AstNode = null
   var counter: Int = 0
 
   var symbolTable: SymbolTable = null
-
-  var stack = LinkedList[AstNode]()
-
-  var enumNameAttributes = Map[AstNode, AstNode]()
-  var enumConstNameAttributes = Map[AstNode, LinkedList[AstNode]]()
 
   def setInput (input: AstNode) =
     this.input = input
@@ -38,31 +21,10 @@ class Pass1a {
   def process () =
     translationUnit(input)
 
-  def translationUnit (current: AstNode) =
-    for child <- current.getChildren() do
+  def translationUnit (node: AstNode) =
+    for child <- node.getChildren() do
       if child.getKind() == AstNode.Kind.ENUMERATION_DECLARATION then
-        enumerationDeclaration(child)
-
-  def enumerationDeclaration (current: AstNode) =
-    name(current.getChild(0))
-    enumNameAttributes += (current -> stack.pop())
-    enumerationBody(current.getChild(1))
-    enumConstNameAttributes += (current -> stack)
-
-  def enumerationBody (current: AstNode) =
-    for child <- current.getChildren() do
-      enumerationMember(child)
-
-  def enumerationMember (current: AstNode) =
-    enumerationConstantDeclaration(current)
-
-  def enumerationConstantDeclaration (current: AstNode) =
-    name(current.getChild(0))
-
-  def name (current: AstNode) =
-    stack.push(current)
-
-
+        classDeclaration(child)
 
   def classDeclaration (current: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION)
