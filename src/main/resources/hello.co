@@ -1,10 +1,13 @@
 //public static val x: int;
 
-public final var waypoint: *int;
+var waypoint: int[1 + 2][1 + 2.1];
 
-class List {
+//var hello: int[5];
 
-}
+
+//class List {
+
+//}
 
 //static var hello: float;
 
@@ -12,11 +15,11 @@ class List {
 //  return;
 //}
 
-enum TokenKind {
-  val DEF;
-  val VAL;
-  val VAR;
-}
+//enum TokenKind {
+//  val DEF;
+//  val VAL;
+//  val VAR;
+//}
 
 //class Token {
 

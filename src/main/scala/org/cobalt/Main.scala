@@ -64,6 +64,7 @@ import java.io.IOException
 
   println(root)
   
+  // System.exit(0)
 
   // val pass1a = Pass1a()
   // pass1a.setInput(root)
@@ -79,5 +80,8 @@ import java.io.IOException
   val pass12 = Pass12(root, symtab)
   pass12.process()
 
-  val pass20 = Pass20(root)
-  pass20.process()
+  // val pass14 = Pass14(root, symtab)
+  // pass14.process()
+
+  // val pass20 = Pass20(root)
+  // pass20.process()

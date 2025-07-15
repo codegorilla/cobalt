@@ -870,9 +870,15 @@ class Parser2 {
       fragment.addLast(n)
     return fragment
 
+  // The array size expression may be optional if an initializer is provided.
+  // This will be checked during semantic analysis rather than during parsing.
+
   def arrayType (): AstNode =
     val n = AstNode(AstNode.Kind.ARRAY_TYPE, lookahead)
     match_(Token.Kind.L_BRACKET)
+    if lookahead.kind != Token.Kind.R_BRACKET then
+      n.addChild(expressionRoot())
+    match_(Token.Kind.R_BRACKET)
     return n
 
   def functionPointerType (): AstNode =

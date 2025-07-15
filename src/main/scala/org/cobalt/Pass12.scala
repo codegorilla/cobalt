@@ -1,91 +1,68 @@
 package org.cobalt
 
-// The purpose of this pass is to process type specifiers on variable
-// declarations.
+// The purpose of this pass is to process array size expressions.
 
-// This has to occur after processing of type declarations. We need to do
-// several things. First, we need to establish the types of variables if
-// specified. If not specified, then we need to compute the types. Finally, we
-// need to perform type checking. Not all of this will necessarily happen in
-// this pass.
+// Array size expressions must meet the following criteria:
+// - All nodes must evaluate to integer types
+// - All nodes must be constants (literals or const expressions)
+
+// We might need to handle these as two separate passes. If so, an optimization
+// is to do three passes -- one to gather lists of indices to array type nodes,
+// and the other two to go through the lists without having to re-traverse the
+// AST.
+
+// For now, lets just work with literal values, so we avoid needing a symbol
+// table.
 
 class Pass12 (val input: AstNode, val symtab: SymbolTable) {
 
+  // Need to recurse through tree looking for array size expressions. These
+  // always appear under AST nodes of kind AstNode.Kind.ARRAY_TYPE, so search
+  // for those. Only array type nodes under variable declarations have sizes.
+  // Other locations, such as routine parameters omit the sizes.
+
+  // We may want to limit the search to only locations where type expressions
+  // can appear. To do so, we need to come up with a list of all nodes that may
+  // appear in the chain from the array type node to the root. Then, when
+  // traversing, we only continue down sub-trees whose node type is of one of
+  // those types. For now, we won't worry about that optimization.
+
   def process () =
-    translationUnit(input)
+    inspect(input)
 
-  def translationUnit (current: AstNode) =
-    for child <- current.getChildren() do
-      if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-        globalVariableDeclaration(child)
+  def inspect (current: AstNode): Unit =
+    if current.getKind() == AstNode.Kind.ARRAY_TYPE then
+      expressionRoot(current.getChild(0))
+      inspect(current.getChild(1))
+    else
+      for child <- current.getChildren() do
+        inspect(child)
 
-  def globalVariableDeclaration (current: AstNode) =
-    typeSpecifier(current.getChild(2))
+  def expressionRoot (current: AstNode) =
+    val isIntegral = expression(current.getChild(0))
+    print(isIntegral)
 
-  def typeSpecifier (current: AstNode) =
-    println(current.getKind())
-    // If the type specifier has no children then it means no type was specified
-    // in the declaration and type inference is needed
-    if current.getChildCount() > 0 then
-      // Type inference is NOT required - we just need to compute the type
-      typeRoot(current.getChild(0))
+  // Other expressions we need to match against include postfix expressions,
+  // such as names, routine calls, member access, and array subscripts. We need
+  // symbol table information for those cases.
 
-  // Not sure we need a type root, we can remove it if it isn't required.
+  def expression (current: AstNode): Boolean =
+    current.getKind() match
+      case AstNode.Kind.BINARY_EXPRESSION        => binaryExpression(current)
+      case AstNode.Kind.UNARY_EXPRESSION         => unaryExpression(current)
+      case AstNode.Kind.INTEGER_LITERAL          => integerLiteral(current)
+      case AstNode.Kind.UNSIGNED_INTEGER_LITERAL => unsignedIntegerLiteral(current)
+      case _ => false
 
-  def typeRoot (current: AstNode) =
-    type_(current.getChild(0))
+  def binaryExpression (current: AstNode): Boolean =
+    expression(current.getChild(0)) && expression(current.getChild(1))
 
-  def type_ (current: AstNode): TypeNode =
-    val t = current.getKind() match
-      case AstNode.Kind.NOMINAL_TYPE => nominalType(current)
-      case AstNode.Kind.POINTER_TYPE => pointerType(current)
-      case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
-      case _ => println(s"error: not implemented yet (type_)")
-        TypeNode(TypeNode.Kind.ERROR)
-    println(s"Type node is ${t}")
-    return t
+  def unaryExpression (current: AstNode): Boolean =
+    expression(current.getChild(0))
 
-  // The array size can be any compile-time computable expression, which may be
-  // as simple as an integer literal, but may be complex arithmetic expressions
-  // that include identifiers (variable references). In all cases, they are
-  // considered type nodes because they are part of the "type expression". We
-  // don't necessarily need to validate that the expression is a compile-time
-  // constant here. It can be done in a later pass.
-  // var x: int[size + 2];
+  def integerLiteral (current: AstNode): Boolean =
+    true
 
-  def arrayType (current: AstNode): TypeNode =
-    val t = TypeNode(TypeNode.Kind.ARRAY_TYPE)
-    // Need to add size as one child
-    t.addChild(arraySizeExpression(current.getChild(0)))
-    t.addChild(type_(current.getChild(1)))
-    return t
-
-  def arraySizeExpression (current: AstNode): TypeNode =
-    val t = TypeNode(TypeNode.Kind.ARRAY_SIZE)
-    return t
-
-  // Nominal types definitely belong in the symbol table
-
-  def nominalType (current: AstNode): TypeNode =
-    val t = TypeNode(TypeNode.Kind.NOMINAL_TYPE)
-    return t
-
-  def pointerType (current: AstNode): TypeNode =
-    val t = TypeNode(TypeNode.Kind.POINTER_TYPE)
-    t.addChild(type_(current.getChild(0)))
-    return t
-
-  // Should we have separate kinds for INT, FLOAT, etc. or just rely on token
-  // or some other value? Should primitive types be in the symbol table?
-
-  def primitiveType (current: AstNode): TypeNode =
-    val t = TypeNode(TypeNode.Kind.PRIMITIVE_TYPE)
-    return t
-
-
-  // def name (current: AstNode) =
-  //   // Add to symbol table as a type
-  //   // Might need to be more specific, e.g. CLASS type vs. STRUCT type
-  //   val symbol = new Symbol(Symbol.Kind.TYPE, current.token.lexeme)
-  //   symtab.insert(symbol)
+  def unsignedIntegerLiteral (curren: AstNode): Boolean =
+    true
 }
