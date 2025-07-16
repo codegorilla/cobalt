@@ -1,6 +1,6 @@
 //public static val x: int;
 
-var waypoint: int[1 + 2][1 + 2.1];
+var waypoint: int[2];
 
 //var hello: int[5];
 

@@ -1,7 +1,12 @@
 package org.cobalt
 
-// The purpose of this pass is to process type specifiers on variable
+// The purpose of this pass is to process type specifiers on global variable
 // declarations.
+
+// Processing types on local variable declarations will either be added to this
+// pass later, or will be put into its own pass. Since global variable
+// declarations may occur out of order, even after the functions that reference
+// them, it makes sense to fully process them first.
 
 // This has to occur after processing of type declarations. We need to do
 // several things. First, we need to establish the types of variables if
@@ -9,10 +14,15 @@ package org.cobalt
 // need to perform type checking. Not all of this will necessarily happen in
 // this pass.
 
+// We need a pass before this where we build a symbol table tree.
+
 class Pass14 (val input: AstNode, val symtab: SymbolTable) {
 
   def process () =
     translationUnit(input)
+
+  // We could just do a search for global variable declarations, but they are
+  // know to always occur at the top scope, so that might not be worth it.
 
   def translationUnit (current: AstNode) =
     for child <- current.getChildren() do
@@ -23,7 +33,6 @@ class Pass14 (val input: AstNode, val symtab: SymbolTable) {
     typeSpecifier(current.getChild(2))
 
   def typeSpecifier (current: AstNode) =
-    println(current.getKind())
     // If the type specifier has no children then it means no type was specified
     // in the declaration and the type must be inferred
     if current.getChildCount() > 0 then
@@ -37,31 +46,22 @@ class Pass14 (val input: AstNode, val symtab: SymbolTable) {
 
   def type_ (current: AstNode): TypeNode =
     val t = current.getKind() match
+      case AstNode.Kind.ARRAY_TYPE => arrayType(current)
       case AstNode.Kind.NOMINAL_TYPE => nominalType(current)
       case AstNode.Kind.POINTER_TYPE => pointerType(current)
       case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
-      case _ => println(s"error: not implemented yet (type_)")
+      case _ => println(s"error: not possible without bug in type_()")
         TypeNode(TypeNode.Kind.ERROR)
     println(s"Type node is ${t}")
     return t
 
-  // The array size can be any compile-time computable expression, which may be
-  // as simple as an integer literal, but may be complex arithmetic expressions
-  // that include identifiers (variable references). In all cases, they are
-  // considered type nodes because they are part of the "type expression". We
-  // don't necessarily need to validate that the expression is a compile-time
-  // constant here. It can be done in a later pass.
-  // var x: int[size + 2];
+  // The array size must be a compile-time computable expression, which may be
+  // a simple integer literal, or a complex arithmetic expression that includes
+  // identifiers (variable references). Size is not part of the array type.
 
   def arrayType (current: AstNode): TypeNode =
     val t = TypeNode(TypeNode.Kind.ARRAY_TYPE)
-    // Need to add size as one child
-    t.addChild(expression(current.getChild(0)))
     t.addChild(type_(current.getChild(1)))
-    return t
-
-  def expression (current: AstNode): TypeNode =
-    val t = TypeNode(TypeNode.Kind.ARRAY_SIZE)
     return t
 
   // Nominal types definitely belong in the symbol table
@@ -77,6 +77,9 @@ class Pass14 (val input: AstNode, val symtab: SymbolTable) {
 
   // Should we have separate kinds for INT, FLOAT, etc. or just rely on token
   // or some other value? Should primitive types be in the symbol table?
+
+  // I am leaning towards having separate primitive types, just to make things
+  // very simple and uniform in later processing.
 
   def primitiveType (current: AstNode): TypeNode =
     val t = TypeNode(TypeNode.Kind.PRIMITIVE_TYPE)

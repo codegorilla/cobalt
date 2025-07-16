@@ -2,6 +2,11 @@ package org.cobalt
 
 // The purpose of this pass is to process array size expressions.
 
+// UPDATE: I don't think this needs to occur before type computations because
+// in C++, array size is not part of the type. Although array sizes might appear
+// in type specifiers, they are ignored for the purpose of computing types. It
+// is assumed that they are integral types.
+
 // Array size expressions must meet the following criteria:
 // - All nodes must evaluate to integer types
 // - All nodes must be constants (literals or const expressions)
@@ -37,6 +42,8 @@ class Pass12 (val input: AstNode, val symtab: SymbolTable) {
     else
       for child <- current.getChildren() do
         inspect(child)
+
+  // TODO: We need to store the result here
 
   def expressionRoot (current: AstNode) =
     val isIntegral = expression(current.getChild(0))
