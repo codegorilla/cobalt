@@ -18,15 +18,21 @@ package org.cobalt
 
 class Pass10 (val input: AstNode) {
 
-  val scope = Scope(Scope.Kind.BUILT_IN)
-  val symtab = SymbolTable()
+  val builtinScope = Scope(Scope.Kind.BUILT_IN)
+  var currentScope = builtinScope
+  definePrimitiveTypes()
 
   // Used to pass nodes up and down during tree traversal
   // val stack = Stack[AstNode]()
 
-  def process (): SymbolTable =
+  def definePrimitiveTypes () =
+    // To do: Types need to be made up of type trees
+    builtinScope.define(TypeSymbol(Symbol.Kind.TYPE, "bool", TypeNode(TypeNode.Kind.PRIMITIVE_TYPE)))
+
+  def process (): Scope =
     translationUnit(input)
-    return symtab
+    // Return built-in scope?
+    return builtinScope
 
   def translationUnit (current: AstNode) =
     for child <- current.getChildren() do
@@ -40,5 +46,5 @@ class Pass10 (val input: AstNode) {
     // Add to symbol table as a type
     // Might need to be more specific, e.g. CLASS type vs. STRUCT type
     val symbol = new Symbol(Symbol.Kind.TYPE, current.getToken().lexeme)
-    symtab.insert(symbol)
+    currentScope.define(symbol)
 }
