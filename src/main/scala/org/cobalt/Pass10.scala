@@ -18,6 +18,7 @@ package org.cobalt
 
 class Pass10 (val input: AstNode) {
 
+  val scope = Scope(Scope.Kind.BUILT_IN)
   val symtab = SymbolTable()
 
   // Used to pass nodes up and down during tree traversal
