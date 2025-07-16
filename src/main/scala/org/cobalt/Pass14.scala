@@ -1,4 +1,5 @@
 package org.cobalt
+import symbol.SymbolTable
 
 // The purpose of this pass is to process type specifiers on global variable
 // declarations.

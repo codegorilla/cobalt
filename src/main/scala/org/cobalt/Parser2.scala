@@ -5,6 +5,7 @@ import scala.collection.mutable.Map
 
 // Try java linked list instead of scala deque
 import java.util.LinkedList
+//import symbol.SymbolTable
 
 // This first parser just needs to create a class table so we know if
 // certain productions are classes or not. We also need to be able to
@@ -23,7 +24,7 @@ class Parser2 {
 
   val SLEEP_TIME = 200
 
-  var symbolTable: SymbolTable = null
+//  var symbolTable: SymbolTable = null
 
   var input: List[Token] = null
   var position = 0
@@ -33,8 +34,8 @@ class Parser2 {
     this.input = input
     lookahead = input(position)
 
-  def setSymbolTable (symbolTable: SymbolTable) =
-    this.symbolTable = symbolTable
+  // def setSymbolTable (symbolTable: SymbolTable) =
+  //   this.symbolTable = symbolTable
 
   def match_ (kind: Token.Kind) =
     if lookahead.kind == kind then

@@ -1,4 +1,4 @@
-package org.cobalt
+package org.cobalt.symbol
 
 import scala.collection.mutable.Map
 

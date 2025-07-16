@@ -6,6 +6,7 @@ import scala.collection.mutable.ListBuffer
 
 import java.net.URL
 import java.util.LinkedList
+import symbol.SymbolTable
 
 // The purpose of this pass is to experiment with StringTemplate
 

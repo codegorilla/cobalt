@@ -1,4 +1,5 @@
 package org.cobalt
+import symbol.Scope
 
 // This pass continues building the symbol table.
 

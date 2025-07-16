@@ -1,4 +1,4 @@
-package org.cobalt
+package org.cobalt.symbol
 
 class Scope (private var kind: Scope.Kind) {
 

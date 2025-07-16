@@ -1,5 +1,8 @@
 package org.cobalt
 
+import org.cobalt.symbol.Symbol
+import org.cobalt.symbol.SymbolTable
+
 // This first parser just needs to create the symbol table so we can
 // start populating it with template classes so that we know if
 // certain productions in a later parsing pass are classes or not. We
@@ -64,7 +67,7 @@ class Parser1 {
       val name = identifier()
       if lookahead.kind == Token.Kind.L_BRACKET then
         pmatch(Token.Kind.L_BRACKET)
-        symbolTable.insert(new Symbol(Symbol.Kind.TYPE, name))
+        symbolTable.insert(new Symbol(name))
 
   def identifier (): String =
     val name = lookahead.lexeme
