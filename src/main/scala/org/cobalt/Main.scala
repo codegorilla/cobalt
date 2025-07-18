@@ -52,15 +52,15 @@ import java.io.IOException
   // Exit
   //System.exit(0)
 
-  val parser1 = Parser1()
-  parser1.setInput(tokens)
-  val symbolTable = parser1.process()
+  // val parser1 = Parser1()
+  // parser1.setInput(tokens)
+  // val symbolTable = parser1.process()
 
-  println(symbolTable.data)
+  // println(symbolTable.data)
 
-  val parser2 = Parser2()
-  parser2.setInput(tokens)
-  val root = parser2.process()
+  val parser = Parser()
+  parser.setInput(tokens)
+  val root = parser.process()
 
   println(root)
   

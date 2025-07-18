@@ -2,7 +2,6 @@ package org.cobalt
 
 import symbol.Symbol
 import symbol.Scope
-import symbol.TypeSymbol
 
 // The purpose of this pass is to process type declarations.
 
@@ -31,7 +30,8 @@ class Pass10 (val input: AstNode) {
 
   def definePrimitiveTypes () =
     // To do: Types need to be made up of type trees
-    builtinScope.define(TypeSymbol("bool", TypeNode(TypeNode.Kind.PRIMITIVE_TYPE)))
+    //builtinScope.define(TypeSymbol("bool", TypeNode(TypeNode.Kind.PRIMITIVE_TYPE)))
+    ;
 
   def process (): Scope =
     translationUnit(input)
@@ -49,6 +49,7 @@ class Pass10 (val input: AstNode) {
   def name (current: AstNode) =
     // Add to symbol table as a type
     // Might need to be more specific, e.g. CLASS type vs. STRUCT type
-    val symbol = new Symbol(current.getToken().lexeme)
-    currentScope.define(symbol)
+    //val symbol = new Symbol(current.getToken().lexeme)
+    //currentScope.define(symbol)
+    ;
 }

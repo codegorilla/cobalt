@@ -1,7 +1,7 @@
 package org.cobalt
 
+import org.cobalt.symbol.Scope
 import org.cobalt.symbol.Symbol
-import org.cobalt.symbol.SymbolTable
 
 // This first parser just needs to create the symbol table so we can
 // start populating it with template classes so that we know if
@@ -21,7 +21,7 @@ import org.cobalt.symbol.SymbolTable
 
 class Parser1 {
   
-  val symbolTable = SymbolTable()
+  val scope = Scope(Scope.Kind.BUILT_IN)
 
   var input: List[Token] = null
   var position = 0
@@ -31,7 +31,7 @@ class Parser1 {
     this.input = input
     lookahead = input(position)
 
-  def pmatch (kind: Token.Kind) =
+  def match_ (kind: Token.Kind) =
     if lookahead.kind == kind then
       consume()
     else
@@ -41,9 +41,9 @@ class Parser1 {
     position += 1
     lookahead = input(position)
 
-  def process (): SymbolTable =
+  def process (): Scope =
     translationUnit()
-    return symbolTable
+    return scope
 
   def translationUnit () =
     while lookahead.kind != Token.Kind.EOF do
@@ -62,15 +62,17 @@ class Parser1 {
     // saving the name before we know if its even needed. This is
     // because we only need to create the symbol table entry if this
     // is a class template.
-    pmatch(Token.Kind.CLASS)
-    if lookahead.kind == Token.Kind.IDENTIFIER then
-      val name = identifier()
-      if lookahead.kind == Token.Kind.L_BRACKET then
-        pmatch(Token.Kind.L_BRACKET)
-        symbolTable.insert(new Symbol(name))
+    match_ (Token.Kind.CLASS)
+    name()
+    // if lookahead.kind == Token.Kind.IDENTIFIER then
+    //   val name = identifier()
+    //   if lookahead.kind == Token.Kind.L_BRACKET then
+    //     match_ (Token.Kind.L_BRACKET)
+    //     scope.define()
 
-  def identifier (): String =
-    val name = lookahead.lexeme
-    pmatch(Token.Kind.IDENTIFIER)
-    return name
+  def name () = 
+    val s = new Symbol(Symbol.Kind.CLASS_TYPE, lookahead.lexeme)
+    scope.define(s)
+    // TODO: We may wish to link the AST node to the symbol table entry somehow
+    match_ (Token.Kind.IDENTIFIER)
 }

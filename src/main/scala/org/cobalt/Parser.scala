@@ -7,24 +7,28 @@ import scala.collection.mutable.Map
 import java.util.LinkedList
 //import symbol.SymbolTable
 
-// This first parser just needs to create a class table so we know if
-// certain productions are classes or not. We also need to be able to
-// follow typealiases to their target types.
+import symbol.Symbol
+import symbol.Scope
 
-// We cannot construct an AST in the first parsing pass because that
-// would require that we be able to fully parse the input, but we
-// cannot do that because there might be forward references, e.g.
-// List[Int].someMethod(), where List[T] is defined later. The parser
-// cannot tell if L[X] is an array dereference or the beginning of a
-// static method call. (Same issue arises with List<int>.)
+// Thie parser needs to create a symbol table so we know if certain
+// productions are classes or not. We also need to be able to follow
+// typealiases to their target types.
+
+// We need to be able to tell if X[Y].z() is a template instantiation
+// or an array subscript operation. To do that, we need to know if X
+// is a class or not. If it is a class, then this must be an attempt
+// to instantiate a template because types cannot be subscripted --
+// only values can. If it is not a class, then it must be an attempt
+// to perform a subscript operation. (Similar issue arises with
+// List<int>, so switching to that syntax doesn't help.)
 
 // First pass parser just looks for classes
 
-class Parser2 {
+class Parser {
 
   val SLEEP_TIME = 200
 
-//  var symbolTable: SymbolTable = null
+  var scope = Scope(Scope.Kind.BUILT_IN)
 
   var input: List[Token] = null
   var position = 0
