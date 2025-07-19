@@ -94,10 +94,10 @@ class Parser {
       val p = modifiers()
       n = lookahead.kind match
         case Token.Kind.CLASS => classDeclaration(p)
-        case Token.Kind.DEF => functionDeclaration(p)
-        case Token.Kind.ENUM => enumerationDeclaration(p)
-        case Token.Kind.VAL => variableDeclaration(p)
-        case Token.Kind.VAR => variableDeclaration(p)
+        case Token.Kind.ENUM  => enumerationDeclaration(p)
+        case Token.Kind.DEF   => routineDeclaration(p)
+        case Token.Kind.VAL   => variableDeclaration(p)
+        case Token.Kind.VAR   => variableDeclaration(p)
         case _ =>
           println(s"Found something else! ${lookahead.kind}")
           null
@@ -177,7 +177,7 @@ class Parser {
     val p = modifiers()
     val q = lookahead.kind match
       case Token.Kind.CLASS => classDeclaration(p)
-      case Token.Kind.DEF => functionDeclaration(p)
+      case Token.Kind.DEF   => routineDeclaration(p)
       case _ =>
         println(s"Found something else in template declaration! ${lookahead.kind}")
         null
@@ -195,7 +195,8 @@ class Parser {
     match_ (Token.Kind.R_BRACKET)
     return n
 
-  // For now just support type names as template Parameters
+  // For now just support type names as template Parameters. Later, we can
+  // expand on this. Can we allow templates as parameters (i.e. nesting)?
 
   def templateParameter (): AstNode =
     val n = AstNode(AstNode.Kind.TEMPLATE_PARAMETER, lookahead)
@@ -251,7 +252,7 @@ class Parser {
     match_(Token.Kind.DEF)
     n.addChild(modifiers)
     n.addChild(name())
-    n.addChild(parameters())
+    n.addChild(routineParameters())
     n.addChild(result())
     n.addChild(methodBody())
     return n
@@ -298,65 +299,41 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
-  // VARIABLE DECLARATION
+  // ROUTINE DECLARATION
 
-  def variableDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
-    if lookahead.kind == Token.Kind.VAL then
-      // Keyword 'val' is equivalent to 'final var'
-      match_(Token.Kind.VAL)
-      // This final modifier won't have a token since it is an implied modifier
-      // that doesn't actually appear in the source code.
-      // Update: We might not want to add an implicit modifier like this.
-      // Instead, when it comes time to set attributes, we can set one base on
-      // the token (val or var).
-      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
-    else
-      match_(Token.Kind.VAR)
-    n.addChild(modifiers)
-    n.addChild(name())
-    n.addChild(typeSpecifier())
-    match_(Token.Kind.SEMICOLON)
-    return n
-
-  def typeSpecifier (): AstNode =
-    val n = AstNode(AstNode.Kind.TYPE_SPECIFIER)
-    if lookahead.kind == Token.Kind.COLON then
-      match_(Token.Kind.COLON)
-      // Need to fix up array handling
-      n.addChild(typeRoot())
-    return n
-
-  def initializer (): AstNode =
-    val n = AstNode(AstNode.Kind.INITIALIZER)
-    if lookahead.kind == Token.Kind.EQUAL then
-      match_(Token.Kind.EQUAL)
-      n.addChild(expression())
-    return n
-
-  def functionDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.FUNCTION_DECLARATION)
+  def routineDeclaration (modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION)
     match_(Token.Kind.DEF)
     n.addChild(modifiers)
-    n.addChild(name())
-    n.addChild(parameters())
+    n.addChild(routineName())
+    n.addChild(routineParameters())
     n.addChild(result())
-    n.addChild(functionBody())
+    n.addChild(routineBody())
     return n
 
-  def parameters (): AstNode =
-    val n = AstNode(AstNode.Kind.PARAMETERS)
+  // Todo: Should symbols point to AST node, and/or vice versa? This might come
+  // in handy later on, but wait until its needed before adding the code.
+
+  def routineName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.ROUTINE, n.getToken().lexeme)
+    currentScope.define(s)
+    return n
+
+  def routineParameters (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_PARAMETERS)
     match_(Token.Kind.L_PARENTHESIS)
     if lookahead.kind == Token.Kind.IDENTIFIER then
-      n.addChild(parameter())
+      n.addChild(routineParameter())
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)
-      n.addChild(parameter())
+      n.addChild(routineParameter())
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
-  def parameter (): AstNode =
-    val n = AstNode(AstNode.Kind.PARAMETER)
+  def routineParameter (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER)
     n.addChild(name())
     match_(Token.Kind.COLON)
     n.addChild(typeRoot())
@@ -369,8 +346,8 @@ class Parser {
       n.addChild(typeRoot())
     return n
 
-  def functionBody (): AstNode =
-    val n = AstNode(AstNode.Kind.FUNCTION_BODY)
+  def routineBody (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_BODY)
     if lookahead.kind == Token.Kind.SEMICOLON then
       match_(Token.Kind.SEMICOLON)
     else
@@ -393,6 +370,54 @@ class Parser {
       n.addChild(statement())
     match_(Token.Kind.R_BRACE)
     return n
+
+  // VARIABLE DECLARATION
+
+  def variableDeclaration (modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
+    if lookahead.kind == Token.Kind.VAL then
+      // Keyword 'val' is equivalent to 'final var'
+      match_(Token.Kind.VAL)
+      // This final modifier won't have a token since it is an implied modifier
+      // that doesn't actually appear in the source code.
+      // Update: We might not want to add an implicit modifier like this.
+      // Instead, when it comes time to set attributes, we can set one base on
+      // the token (val or var).
+      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
+    else
+      match_(Token.Kind.VAR)
+    n.addChild(modifiers)
+    n.addChild(variableName())
+    n.addChild(typeSpecifier())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  // Todo: Should symbols point to AST node, and/or vice versa? This might come
+  // in handy later on, but wait until its needed before adding the code.
+
+  def variableName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    currentScope.define(s)
+    return n
+
+  def typeSpecifier (): AstNode =
+    val n = AstNode(AstNode.Kind.TYPE_SPECIFIER)
+    if lookahead.kind == Token.Kind.COLON then
+      match_(Token.Kind.COLON)
+      // Need to fix up array handling
+      n.addChild(typeRoot())
+    return n
+
+  def initializer (): AstNode =
+    val n = AstNode(AstNode.Kind.INITIALIZER)
+    if lookahead.kind == Token.Kind.EQUAL then
+      match_(Token.Kind.EQUAL)
+      n.addChild(expression())
+    return n
+
+  // NAME
 
   // We need to distinguish between identifiers used when defining program
   // elements and identifiers used when referencing program elements. Is this
@@ -859,6 +884,7 @@ class Parser {
     // Pop each type node from list, constructing chain of pointers
     // and arrays as we go. When done, the list should be empty.
     while combined.size() > 0 do
+      // Todo: Should be removeLast()?
       val p = combined.removeFirst()
       p.getKind() match
         case AstNode.Kind.POINTER_TYPE =>

@@ -86,13 +86,13 @@ object AstNode:
     case ENUMERATION_BODY
     case ENUMERATION_CONSTANT_DECLARATION
 
-    // Function declaration
-    case FUNCTION_DECLARATION
-    case PARAMETERS
-    case PARAMETER
-    case RESULT
-    case FUNCTION_BODY
+    // Routine declaration
     case BLOCK
+    case RESULT
+    case ROUTINE_DECLARATION
+    case ROUTINE_PARAMETERS
+    case ROUTINE_PARAMETER
+    case ROUTINE_BODY
 
     // Template declaration
     case TEMPLATE_DECLARATION

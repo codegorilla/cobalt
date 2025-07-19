@@ -1,14 +1,11 @@
 //public static val x: int;
 
-var waypoint: int[2];
-
-//var hello: int[5];
+var waypoint: int[2][3];
 
 
-template [T]
-def sort (x: int, y: int) {
-}
-
+//template [T]
+//def sort (x: int, y: int) {
+//}
 
 //class List {
 

@@ -31,7 +31,7 @@ class Pass20 (val input: AstNode) {
     for child <- current.getChildren() do
       if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
         globalVariableDeclaration(child)
-      else if child.getKind() == AstNode.Kind.FUNCTION_DECLARATION then
+      else if child.getKind() == AstNode.Kind.ROUTINE_DECLARATION then
         functionDeclaration(child)
   
   // Valid modifers for global variables:
