@@ -28,18 +28,26 @@ class Parser {
 
   val SLEEP_TIME = 200
 
-  var scope = Scope(Scope.Kind.BUILT_IN)
+  val builtinScope = Scope(Scope.Kind.BUILT_IN)
+  var currentScope = builtinScope
 
   var input: List[Token] = null
   var position = 0
   var lookahead: Token = null
 
+  def definePrimitiveTypes () =
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int8"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int16"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int32"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int64"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float32"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float64"))
+
   def setInput (input: List[Token]) =
     this.input = input
     lookahead = input(position)
-
-  // def setSymbolTable (symbolTable: SymbolTable) =
-  //   this.symbolTable = symbolTable
 
   def match_ (kind: Token.Kind) =
     if lookahead.kind == kind then
@@ -59,6 +67,7 @@ class Parser {
     lookahead = input(position)
 
   def process (): AstNode =
+    definePrimitiveTypes()
     val node = translationUnit()
     return node
 
@@ -75,17 +84,23 @@ class Parser {
 
   // DECLARATIONS
 
+  // Template must come first before any modifiers.
+
   def declaration (): AstNode =
-    val p = modifiers()
-    val n = lookahead.kind match
-      case Token.Kind.CLASS => classDeclaration(p)
-      case Token.Kind.DEF => functionDeclaration(p)
-      case Token.Kind.ENUM => enumerationDeclaration(p)
-      case Token.Kind.VAL => variableDeclaration(p)
-      case Token.Kind.VAR => variableDeclaration(p)
-      case _ =>
-        println(s"Found something else! ${lookahead.kind}")
-        null
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.TEMPLATE then
+      n = templateDeclaration()
+    else
+      val p = modifiers()
+      n = lookahead.kind match
+        case Token.Kind.CLASS => classDeclaration(p)
+        case Token.Kind.DEF => functionDeclaration(p)
+        case Token.Kind.ENUM => enumerationDeclaration(p)
+        case Token.Kind.VAL => variableDeclaration(p)
+        case Token.Kind.VAR => variableDeclaration(p)
+        case _ =>
+          println(s"Found something else! ${lookahead.kind}")
+          null
     return n
 
   // According to Parr, there is no need to have an AstNode kind -- you can just
@@ -153,14 +168,59 @@ class Parser {
     match_(Token.Kind.STATIC)
     return n
 
+  // TEMPLATE DECLARATION
+
+  def templateDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.TEMPLATE_DECLARATION, lookahead)
+    match_(Token.Kind.TEMPLATE)
+    n.addChild(templateParameters())
+    val p = modifiers()
+    val q = lookahead.kind match
+      case Token.Kind.CLASS => classDeclaration(p)
+      case Token.Kind.DEF => functionDeclaration(p)
+      case _ =>
+        println(s"Found something else in template declaration! ${lookahead.kind}")
+        null
+    n.addChild(q)
+    return n
+
+  def templateParameters (): AstNode =
+    val n = AstNode(AstNode.Kind.TEMPLATE_PARAMETERS, lookahead)
+    match_ (Token.Kind.L_BRACKET)
+    // There must be at least one template parameter
+    n.addChild(templateParameter())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(templateParameter())
+    match_ (Token.Kind.R_BRACKET)
+    return n
+
+  // For now just support type names as template Parameters
+
+  def templateParameter (): AstNode =
+    val n = AstNode(AstNode.Kind.TEMPLATE_PARAMETER, lookahead)
+    // Add to symbol table?
+    return n
+
   // CLASS DECLARATION
 
   def classDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION, lookahead)
     match_(Token.Kind.CLASS)
     n.addChild(modifiers)
-    n.addChild(name())
+    n.addChild(className())
     n.addChild(classBody())
+    return n
+
+  // Todo: Should symbols point to AST node, and/or vice versa? This might come
+  // in handy later on, but wait until its needed before adding the code.
+
+  def className (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME)
+    n.setToken(lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.CLASS, n.getToken().lexeme)
+    currentScope.define(s)
     return n
 
   // The token here is simply the curly brace '{'. Do we need to track this?

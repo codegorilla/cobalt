@@ -45,6 +45,7 @@ object Token {
         case STATIC
         case STRUCT
         case SWITCH
+        case TEMPLATE
         case THEN
         case THIS
         case TRUE

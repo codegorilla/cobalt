@@ -46,6 +46,7 @@ class Lexer {
     "return" -> Token.Kind.RETURN,
     "static" -> Token.Kind.STATIC,
     "struct" -> Token.Kind.STRUCT,
+    "template" -> Token.Kind.TEMPLATE,
     "then" -> Token.Kind.THEN,
     "true" -> Token.Kind.TRUE,
     "typealias" -> Token.Kind.TYPEALIAS,

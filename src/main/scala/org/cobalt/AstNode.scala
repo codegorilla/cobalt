@@ -94,6 +94,11 @@ object AstNode:
     case FUNCTION_BODY
     case BLOCK
 
+    // Template declaration
+    case TEMPLATE_DECLARATION
+    case TEMPLATE_PARAMETERS
+    case TEMPLATE_PARAMETER
+
     // Variable declaration
     case VARIABLE_DECLARATION
     case TYPE_SPECIFIER
