@@ -1,10 +1,13 @@
 package org.cobalt
 
-import scala.collection.mutable.ArrayDeque
-import scala.collection.mutable.Map
+//import scala.collection.mutable.ArrayDeque
+//import scala.collection.mutable.Map
+
+import scala.collection.mutable.Queue
+import scala.collection.mutable.Stack
 
 // Try java linked list instead of scala deque
-import java.util.LinkedList
+//import java.util.LinkedList
 //import symbol.SymbolTable
 
 import symbol.Symbol
@@ -28,12 +31,18 @@ class Parser {
 
   val SLEEP_TIME = 200
 
-  val builtinScope = Scope(Scope.Kind.BUILT_IN)
-  var currentScope = builtinScope
-
   var input: List[Token] = null
   var position = 0
   var lookahead: Token = null
+
+  // Used to pass nodes up and down during tree traversal
+  val stack = Stack[AstNode]()
+
+  // Used for symbol table operations. Cobalt requires a symbol table during
+  // parsing in order to disambiguate a few grammar rules. We cannot wait until
+  // the semantic analysis phase to begin constructing symbol tables.
+  val builtinScope = Scope(Scope.Kind.BUILT_IN)
+  var currentScope = builtinScope
 
   def definePrimitiveTypes () =
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int"))
@@ -877,89 +886,116 @@ class Parser {
     return n
 
   def type_ (): AstNode =
-    val combined = directType()
-    println(combined)
-    // Pop base type node
-    var n = combined.removeFirst()
-    // Pop each type node from list, constructing chain of pointers
-    // and arrays as we go. When done, the list should be empty.
-    while combined.size() > 0 do
-      // Todo: Should be removeLast()?
-      val p = combined.removeFirst()
-      p.getKind() match
-        case AstNode.Kind.POINTER_TYPE =>
-          p.addChild(n)
-          n = p
-        case AstNode.Kind.ARRAY_TYPE =>
-          p.addChild(n)
-          n = p
-        case _ =>
-          println("error: This is not possible without a parser error.")
+    directType()
+    // Need to remove items from parser stack and construct final type
+    println("BEGIN STACK")
+    while !stack.isEmpty do
+      val n = stack.pop()
+      println(n)
+    println("END STACK")
+
+
+    // val combined = directType()
+    // println(combined)
+    // // Pop base type node
+    // var n = combined.removeFirst()
+    // // Pop each type node from list, constructing chain of pointers
+    // // and arrays as we go. When done, the list should be empty.
+    // while combined.size() > 0 do
+    //   // Todo: Should be removeLast()?
+    //   val p = combined.removeFirst()
+    //   p.getKind() match
+    //     case AstNode.Kind.POINTER_TYPE =>
+    //       p.addChild(n)
+    //       n = p
+    //     case AstNode.Kind.ARRAY_TYPE =>
+    //       p.addChild(n)
+    //       n = p
+    //     case _ =>
+    //       println("error: This is not possible without a parser error.")
+    val n = AstNode(AstNode.Kind.PLACEHOLDER)
     return n
 
-  def directType (): LinkedList[AstNode] =
-    // Build type fragments in order they appear in token stream
-    val left   = leftFragment()
-    val center = centerFragment()
-    val right  = rightFragment()
-    // Assemble type fragments in "spiral rule" order
-    val combined = LinkedList[AstNode]()
-    combined.addAll(center)
-    combined.addAll(right)
-    combined.addAll(left)
-    return combined
+  // Algorithm below is to handle the C++ spiral rule for type specifiers. The
+  // type is broken into three fragments: left, consisting of pointers; center,
+  // which is either a primitive type, function pointer, nominal type, or
+  // another type enclosed in parenthesis; and right, consisting of arrays.
+  // First, pointers are placed onto a stack. Next, the center is processed,
+  // which may entail a recursive call to directType(). Then, arrays are placed
+  // in a queue. Once all fragments have been created, their contents are
+  // systematically moved onto the parsing stack in the order of right, left,
+  // center.
+  
+  // Note: Currently, we don't keep track of how many items are in the parsing
+  // stack because this is the only thing it is being used for. However, due to
+  // templates, we might need to keep track of the count. This can be done by
+  // using an "accumulator" and returning its value from directType(). We could
+  // also created a "combined" stack and return it instead of using the parsing
+  // stack.
 
-  def leftFragment (): LinkedList[AstNode] =
-    println("FOUND LEFT_FRAGMENT")
-    val fragment = LinkedList[AstNode]()
+  // Note: The left fragment also uses a stack. Do not confuse this with the
+  // parsing stack.
+
+  def directType (): Unit =
+    // Build left type fragment
+    val leftFragment = Stack[AstNode]()
     while lookahead.kind == Token.Kind.ASTERISK do
-      val n = pointerType()
-      fragment.addFirst(n)
-    return fragment
-
-  def centerFragment (): LinkedList[AstNode] =
-    println("FOUND CENTER_FRAGMENT")
-    var fragment = LinkedList[AstNode]()
-    if lookahead.kind == Token.Kind.CARET then
-      fragment.addLast(functionPointerType())
-    else if lookahead.kind == Token.Kind.BOOL    ||
-            lookahead.kind == Token.Kind.INT     ||
-            lookahead.kind == Token.Kind.INT8    ||
-            lookahead.kind == Token.Kind.INT16   ||
-            lookahead.kind == Token.Kind.INT32   ||
-            lookahead.kind == Token.Kind.INT64   ||
-            lookahead.kind == Token.Kind.UINT    ||
-            lookahead.kind == Token.Kind.UINT8   ||
-            lookahead.kind == Token.Kind.UINT16  ||
-            lookahead.kind == Token.Kind.UINT32  ||
-            lookahead.kind == Token.Kind.UINT64  ||
-            lookahead.kind == Token.Kind.FLOAT32 ||
-            lookahead.kind == Token.Kind.FLOAT64 ||
-            lookahead.kind == Token.Kind.VOID
-    then
-      fragment.addLast(primitiveType())
-    else if lookahead.kind == Token.Kind.IDENTIFIER then
-      // Nominal type. Need to look up name in symbol table to tell
-      // what kind it is (e.g. struct, class). For now assume class.
-      // What if we don't want to require a symbol table for
-      // parsing? In this case, all we can say is that it is a
-      // 'nominal' type. Update: This comment was from python
-      // prototype - why is this required?
-      fragment.addLast(nominalType())
+      leftFragment.push(pointerType())
+    // Build center type fragment
+    var centerFragment: AstNode = null
+    if lookahead.kind == Token.Kind.INT then
+      centerFragment = primitiveType()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       match_(Token.Kind.L_PARENTHESIS)
-      val n = directType()
-      fragment = n
+      directType()
+      centerFragment = stack.pop()
       match_(Token.Kind.R_PARENTHESIS)
-    return fragment
-
-  def rightFragment (): LinkedList[AstNode] =
-    println("FOUND RIGHT_FRAGMENT")
-    val fragment = LinkedList[AstNode]()
+    // Build right type fragment
+    val rightFragment = Queue[AstNode]()
     while lookahead.kind == Token.Kind.L_BRACKET do
-      val n = arrayType()
-      fragment.addLast(n)
-    return fragment
+      rightFragment.enqueue(arrayType())
+    // Move type fragments to parsing stack in "spiral rule" order
+    while !rightFragment.isEmpty do
+      stack.push(rightFragment.dequeue())
+    while !leftFragment.isEmpty do
+      stack.push(leftFragment.pop())
+    stack.push(centerFragment)
+
+  // def centerFragment (): LinkedList[AstNode] =
+  //   println("FOUND CENTER_FRAGMENT")
+  //   var fragment = LinkedList[AstNode]()
+  //   if lookahead.kind == Token.Kind.CARET then
+  //     fragment.addLast(functionPointerType())
+  //   else if lookahead.kind == Token.Kind.BOOL    ||
+  //           lookahead.kind == Token.Kind.INT     ||
+  //           lookahead.kind == Token.Kind.INT8    ||
+  //           lookahead.kind == Token.Kind.INT16   ||
+  //           lookahead.kind == Token.Kind.INT32   ||
+  //           lookahead.kind == Token.Kind.INT64   ||
+  //           lookahead.kind == Token.Kind.UINT    ||
+  //           lookahead.kind == Token.Kind.UINT8   ||
+  //           lookahead.kind == Token.Kind.UINT16  ||
+  //           lookahead.kind == Token.Kind.UINT32  ||
+  //           lookahead.kind == Token.Kind.UINT64  ||
+  //           lookahead.kind == Token.Kind.FLOAT32 ||
+  //           lookahead.kind == Token.Kind.FLOAT64 ||
+  //           lookahead.kind == Token.Kind.VOID
+  //   then
+  //     fragment.addLast(primitiveType())
+  //   else if lookahead.kind == Token.Kind.IDENTIFIER then
+  //     // Nominal type. Need to look up name in symbol table to tell
+  //     // what kind it is (e.g. struct, class). For now assume class.
+  //     // What if we don't want to require a symbol table for
+  //     // parsing? In this case, all we can say is that it is a
+  //     // 'nominal' type. Update: This comment was from python
+  //     // prototype - why is this required?
+  //     fragment.addLast(nominalType())
+  //   else if lookahead.kind == Token.Kind.L_PARENTHESIS then
+  //     match_(Token.Kind.L_PARENTHESIS)
+  //     val n = directType()
+  //     fragment = n
+  //     match_(Token.Kind.R_PARENTHESIS)
+  //   return fragment
 
   // The array size expression may be optional if an initializer is provided.
   // This will be checked during semantic analysis rather than during parsing.
