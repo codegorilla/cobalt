@@ -877,11 +877,10 @@ class Parser {
   // TYPES
 
   // Type processing is interesting because Cobalt uses a form of the
-  // C-declaration style, so parsing types requires following the
-  // "spiral rule". To make this easier, we make use of doubly-linked
-  // lists provided by the language rather than complicating AST
-  // node class definition with parent links. We can re-think this in
-  // the future if we wish.
+  // C-declaration style, so parsing types requires following the "spiral rule".
+  // To make this easier, we make use of stack and queue types provided by the
+  // language rather than complicating AST node class definition with parent
+  // links. We can re-think this in the future if we wish.
 
   // Do we need a separate typeRoot node, or can we just use type_?
 
@@ -892,33 +891,25 @@ class Parser {
 
   def type_ (): AstNode =
     directType()
-    // Need to remove items from parser stack and construct final type
+    // Need to remove items from parsing stack and construct final type. With
+    // just arrays and pointers it should be easy. Once other types are added,
+    // it will require slightly more processing.
     println("BEGIN STACK")
+    // Stack must have at least one element, e.g. primitive type
+    var n = stack.pop()
     while !stack.isEmpty do
-      val n = stack.pop()
-      println(n)
+      var p = n
+      n = stack.pop()
+      n.addChild(p)
     println("END STACK")
-
-
-    // val combined = directType()
-    // println(combined)
-    // // Pop base type node
-    // var n = combined.removeFirst()
-    // // Pop each type node from list, constructing chain of pointers
-    // // and arrays as we go. When done, the list should be empty.
-    // while combined.size() > 0 do
-    //   // Todo: Should be removeLast()?
-    //   val p = combined.removeFirst()
-    //   p.getKind() match
-    //     case AstNode.Kind.POINTER_TYPE =>
-    //       p.addChild(n)
-    //       n = p
-    //     case AstNode.Kind.ARRAY_TYPE =>
-    //       p.addChild(n)
-    //       n = p
-    //     case _ =>
-    //       println("error: This is not possible without a parser error.")
-    val n = AstNode(AstNode.Kind.PLACEHOLDER)
+    // // Now trace through the type expression and print it out
+    while n.getChildCount() != 0 do
+      println(n)
+      if n.getKind() == AstNode.Kind.ARRAY_TYPE then
+        n = n.getChild(1)
+      else if n.getKind() == AstNode.Kind.POINTER_TYPE then
+        n = n.getChild(0)
+    println(n)
     return n
 
   // Algorithm below is to handle the C++ spiral rule for type specifiers. The
