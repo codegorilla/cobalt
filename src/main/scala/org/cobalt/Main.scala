@@ -49,34 +49,6 @@ import java.io.IOException
 
   println(tokens)
 
-  
-  // Center
-  val center = LinkedList[String]()
-  center.addLast("int")
-  
-  // Right
-  val right = LinkedList[String]()
-  right.addLast("1")
-  right.addLast("2")
-  right.addLast("3")
-
-  // Combined
-  val combined = LinkedList[String]()
-  combined.addAll(center)
-  combined.addAll(right)
-
-  println(s"The list is ${combined}")
-
-
-  // Exit
-//  System.exit(0)
-
-  // val parser1 = Parser1()
-  // parser1.setInput(tokens)
-  // val symbolTable = parser1.process()
-
-  // println(symbolTable.data)
-
   val parser = Parser()
   parser.setInput(tokens)
   val root = parser.process()

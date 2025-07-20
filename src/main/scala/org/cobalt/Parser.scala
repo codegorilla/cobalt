@@ -523,6 +523,11 @@ class Parser {
     val n = assignmentExpression()
     return n
 
+  // Note: It is inefficient to define first sets inside of each method because
+  // these methods may be called over and over again, resulting in repeated
+  // creation of first sets, which all contain constant information. However, it
+  // is convenient to define them like so. We can optimize this later.
+
   def assignmentExpression (): AstNode =
     var n = logicalOrExpression()
     val firstSet = Set(
@@ -734,10 +739,10 @@ class Parser {
     n.addChild(name())
     return n
 
-  // Subroutines (or routines for short) may be classified as 'functions', which
-  // return a result; and 'procedures', which do not. Furthermore, routines that
-  // are members of a class are known as 'methods'. However, we do not
-  // distinguish between these types of routines using different keywords.
+  // Subroutines (or 'routines' for short) may be classified as 'functions',
+  // which return a result; or 'procedures', which do not. Furthermore, routines
+  // that are members of a class are known as 'methods'. However, we do not
+  // distinguish between all these types of routines using different keywords.
 
   def routineCall (nameExpr: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_CALL, lookahead)
@@ -918,20 +923,20 @@ class Parser {
 
   // Algorithm below is to handle the C++ spiral rule for type specifiers. The
   // type is broken into three fragments: left, consisting of pointers; center,
-  // which is either a primitive type, function pointer, nominal type, or
-  // another type enclosed in parenthesis; and right, consisting of arrays.
+  // which is either a primitive type, function pointer, nominal type, or some
+  // compounded type enclosed in parenthesis; and right, consisting of arrays.
   // First, pointers are placed onto a stack. Next, the center is processed,
   // which may entail a recursive call to directType(). Then, arrays are placed
-  // in a queue. Once all fragments have been created, their contents are
-  // systematically moved onto the parsing stack in the order of right, left,
+  // into a queue. Once all fragments have been created, their contents are
+  // systematically moved onto the parsing stack in the order of: right, left,
   // center.
   
   // Note: Currently, we don't keep track of how many items are in the parsing
   // stack because this is the only thing it is being used for. However, due to
-  // templates, we might need to keep track of the count. This can be done by
-  // using an "accumulator" and returning its value from directType(). We could
-  // also created a "combined" stack and return it instead of using the parsing
-  // stack.
+  // routines and templates, we might need to keep track of the count. This can
+  // be done by using an "accumulator" and returning its value from
+  // directType(). We could alternatively create a "combined" stack and return
+  // it instead of using the parsing stack.
 
   // Note: The left fragment also uses a stack. Do not confuse this with the
   // parsing stack.
@@ -943,8 +948,30 @@ class Parser {
       leftFragment.push(pointerType())
     // Build center type fragment
     var centerFragment: AstNode = null
-    if lookahead.kind == Token.Kind.INT then
+    if lookahead.kind == Token.Kind.CARET then
+      centerFragment = routinePointerType()
+    else if
+      lookahead.kind == Token.Kind.BOOL    ||
+      lookahead.kind == Token.Kind.INT     ||
+      lookahead.kind == Token.Kind.INT8    ||
+      lookahead.kind == Token.Kind.INT16   ||
+      lookahead.kind == Token.Kind.INT32   ||
+      lookahead.kind == Token.Kind.INT64   ||
+      lookahead.kind == Token.Kind.UINT    ||
+      lookahead.kind == Token.Kind.UINT8   ||
+      lookahead.kind == Token.Kind.UINT16  ||
+      lookahead.kind == Token.Kind.UINT32  ||
+      lookahead.kind == Token.Kind.UINT64  ||
+      lookahead.kind == Token.Kind.FLOAT   ||
+      lookahead.kind == Token.Kind.FLOAT32 ||
+      lookahead.kind == Token.Kind.FLOAT64 ||
+      lookahead.kind == Token.Kind.VOID
+    then
       centerFragment = primitiveType()
+    else if lookahead.kind == Token.Kind.IDENTIFIER then
+      // Nominal type. Need to look up name in symbol table to tell
+      // what kind it is (e.g. struct, class). For now assume class.
+      centerFragment = nominalType()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       match_(Token.Kind.L_PARENTHESIS)
       directType()
@@ -961,42 +988,6 @@ class Parser {
       stack.push(leftFragment.pop())
     stack.push(centerFragment)
 
-  // def centerFragment (): LinkedList[AstNode] =
-  //   println("FOUND CENTER_FRAGMENT")
-  //   var fragment = LinkedList[AstNode]()
-  //   if lookahead.kind == Token.Kind.CARET then
-  //     fragment.addLast(functionPointerType())
-  //   else if lookahead.kind == Token.Kind.BOOL    ||
-  //           lookahead.kind == Token.Kind.INT     ||
-  //           lookahead.kind == Token.Kind.INT8    ||
-  //           lookahead.kind == Token.Kind.INT16   ||
-  //           lookahead.kind == Token.Kind.INT32   ||
-  //           lookahead.kind == Token.Kind.INT64   ||
-  //           lookahead.kind == Token.Kind.UINT    ||
-  //           lookahead.kind == Token.Kind.UINT8   ||
-  //           lookahead.kind == Token.Kind.UINT16  ||
-  //           lookahead.kind == Token.Kind.UINT32  ||
-  //           lookahead.kind == Token.Kind.UINT64  ||
-  //           lookahead.kind == Token.Kind.FLOAT32 ||
-  //           lookahead.kind == Token.Kind.FLOAT64 ||
-  //           lookahead.kind == Token.Kind.VOID
-  //   then
-  //     fragment.addLast(primitiveType())
-  //   else if lookahead.kind == Token.Kind.IDENTIFIER then
-  //     // Nominal type. Need to look up name in symbol table to tell
-  //     // what kind it is (e.g. struct, class). For now assume class.
-  //     // What if we don't want to require a symbol table for
-  //     // parsing? In this case, all we can say is that it is a
-  //     // 'nominal' type. Update: This comment was from python
-  //     // prototype - why is this required?
-  //     fragment.addLast(nominalType())
-  //   else if lookahead.kind == Token.Kind.L_PARENTHESIS then
-  //     match_(Token.Kind.L_PARENTHESIS)
-  //     val n = directType()
-  //     fragment = n
-  //     match_(Token.Kind.R_PARENTHESIS)
-  //   return fragment
-
   // The array size expression may be optional if an initializer is provided.
   // This will be checked during semantic analysis rather than during parsing.
 
@@ -1008,9 +999,10 @@ class Parser {
     match_(Token.Kind.R_BRACKET)
     return n
 
-  def functionPointerType (): AstNode =
-    val n = AstNode(AstNode.Kind.FUNCTION_POINTER_TYPE, lookahead)
+  def routinePointerType (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_POINTER_TYPE, lookahead)
     match_(Token.Kind.CARET)
+    // To do: Process parameters
     return n
 
   def nominalType (): AstNode =

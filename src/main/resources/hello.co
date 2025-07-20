@@ -1,7 +1,6 @@
 //public static val x: int;
 
-var waypoint: int[2][3];
-
+var waypoint: **int[2][3];
 
 //template [T]
 //def sort (x: int, y: int) {
