@@ -16,10 +16,9 @@ object Token {
         case DEF
         case DEFAULT
         case DELETE
-        case DISPEL
+        case DIVINE
         case DO
         case ELSE
-        case END
         case ENUM
         case EXTENDS
         case FALSE
@@ -31,7 +30,6 @@ object Token {
         case GOTO
         case IF
         case IN
-        case LOOP
         case NAMESPACE
         case NEW
         case NIL
@@ -46,9 +44,10 @@ object Token {
         case STRUCT
         case SWITCH
         case TEMPLATE
-        case THEN
         case THIS
+        case TRANSMUTE
         case TRUE
+        case TRY
         case TYPEALIAS
         case UNION
         case UNTIL

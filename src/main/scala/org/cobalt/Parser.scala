@@ -476,6 +476,10 @@ class Parser {
     unsignedIntegerLiteralFirstSet ++
     stringLiteralFirstSet
 
+  // Notice that we don't include 'if' in the first set for expression
+  // statements. This is because we want send the parser towards the statement
+  // version of 'if'.
+
   def statement (): AstNode =
     val kind = lookahead.kind
     var n: AstNode = null
@@ -492,8 +496,8 @@ class Parser {
       n = doStatement()
     else if kind == Token.Kind.FOR then
       n = forStatement()
-    // else if kind == Token.Kind.IF then
-    //   n = ifStatement()
+    else if kind == Token.Kind.IF then
+      n = ifStatement()
     else if kind == Token.Kind.SEMICOLON then
       n = nullStatement()
     else if kind == Token.Kind.RETURN then
@@ -562,6 +566,28 @@ class Parser {
       n.addChild(statement())
     return n
 
+  def ifStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.IF_STATEMENT, lookahead)
+    match_(Token.Kind.IF)
+    match_(Token.Kind.L_PARENTHESIS)
+    n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n.addChild(block())
+    else
+      n.addChild(statement())
+    if lookahead.kind == Token.Kind.ELSE then
+      n.addChild(elseClause())
+    return n
+
+  def elseClause (): AstNode =
+    val n = AstNode(AstNode.Kind.ELSE_CLAUSE, lookahead)
+    match_(Token.Kind.ELSE)
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n.addChild(block())
+    else
+      n.addChild(statement())
+    return n
 
   // Note: Null statements may be a type of expression statement under C++
   // rules. I am not sure how much sense that makes because an expression
@@ -955,16 +981,23 @@ class Parser {
     match_(Token.Kind.THIS)
     return n
 
+  // If expressions can have complicated semantics. For example, do we allow
+  // statements or only expressions? What about procedure calls, since they
+  // return no value? What about blocks -- can they yield results? Thus, we
+  // may only be able to implement this on a limited basis or perhaps not at
+  // all. Further investigation is required. I feel like we *should* be able to
+  // implement this with the same semantics as the ternary operator.
+
+  // It appears that the C ternary operator inputs must evaluate to expressions
+  // if the result is used in an expression. For example, the inputs cannot be
+  // void functions.
+
   def ifExpression (): AstNode =
     val n = AstNode(AstNode.Kind.IF_EXPRESSION, lookahead)
     match_(Token.Kind.IF)
-    if lookahead.kind == Token.Kind.L_PARENTHESIS then
-      match_(Token.Kind.L_PARENTHESIS)
-      n.addChild(expression())
-      match_(Token.Kind.R_PARENTHESIS)
-    else
-      n.addChild(expression())
-      match_(Token.Kind.THEN)
+    match_(Token.Kind.L_PARENTHESIS)
+    n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
     n.addChild(expression())
     match_(Token.Kind.ELSE)
     n.addChild(expression())
