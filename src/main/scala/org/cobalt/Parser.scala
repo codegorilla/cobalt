@@ -494,12 +494,12 @@ class Parser {
     //   n = forStatement()
     // else if kind == Token.Kind.IF then
     //   n = ifStatement()
-    else if kind == Token.Kind.RETURN then
-      n = returnStatement()
     else if kind == Token.Kind.SEMICOLON then
       n = nullStatement()
-    // else if kind == Token.Kind.WHILE then
-    //   n = whileStatement()
+    else if kind == Token.Kind.RETURN then
+      n = returnStatement()
+    else if kind == Token.Kind.WHILE then
+      n = whileStatement()
     // else if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
     //   n = declarationStatement()
     else
@@ -518,13 +518,6 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
-  def returnStatement (): AstNode =
-    print("GOT_HERE")
-    val n = AstNode(AstNode.Kind.RETURN_STATEMENT)
-    match_(Token.Kind.RETURN)
-    match_(Token.Kind.SEMICOLON)
-    return n
-
   // Note: Null statements may be a type of expression statement under C++
   // rules. I am not sure how much sense that makes because an expression
   // statement should presumably evaluate to some value, but a null statement
@@ -538,6 +531,28 @@ class Parser {
   def nullStatement (): AstNode =
     val n = AstNode(AstNode.Kind.NULL_STATEMENT, lookahead)
     match_(Token.Kind.SEMICOLON)
+    return n
+
+  def returnStatement (): AstNode =
+    print("GOT RETURN STATEMENT")
+    val n = AstNode(AstNode.Kind.RETURN_STATEMENT, lookahead)
+    // Todo: Allow optional expression to be provided to return statement
+    // n.addChild(expression())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def whileStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.WHILE_STATEMENT, lookahead)
+    match_(Token.Kind.WHILE)
+    match_(Token.Kind.L_PARENTHESIS)
+    // Not sure if this is always an expression or something else that is
+    // usually an expression.
+    n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
+    if lookahead.kind == Token.Kind.L_BRACKET then
+      n.addChild(block())
+    else
+      n.addChild(statement())
     return n
 
   def expressionStatement(): AstNode =

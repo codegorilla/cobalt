@@ -111,6 +111,7 @@ object AstNode:
     case CONTINUE_STATEMENT
     case NULL_STATEMENT
     case RETURN_STATEMENT
+    case WHILE_STATEMENT
 
     // Expressions
     case BINARY_EXPRESSION
