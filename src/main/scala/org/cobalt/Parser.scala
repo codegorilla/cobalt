@@ -488,8 +488,8 @@ class Parser {
       n = breakStatement()
     else if kind == Token.Kind.CONTINUE then
       n = continueStatement()
-    // else if kind == Token.Kind.DO then
-    //   n = doStatement()
+    else if kind == Token.Kind.DO then
+      n = doStatement()
     // else if kind == Token.Kind.FOR then
     //   n = forStatement()
     // else if kind == Token.Kind.IF then
@@ -498,6 +498,8 @@ class Parser {
       n = nullStatement()
     else if kind == Token.Kind.RETURN then
       n = returnStatement()
+    else if kind == Token.Kind.UNTIL then
+      n = untilStatement()
     else if kind == Token.Kind.WHILE then
       n = whileStatement()
     // else if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
@@ -516,6 +518,18 @@ class Parser {
     val n = AstNode(AstNode.Kind.CONTINUE_STATEMENT)
     match_(Token.Kind.CONTINUE)
     match_(Token.Kind.SEMICOLON)
+    return n
+
+  // The do statement is flexible and can either be a "do while" or a "do until"
+  // statement, depending on what follows the 'do' keyword.
+
+  def doStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.DO_STATEMENT, lookahead)
+    match_(Token.Kind.DO)
+    if lookahead.kind == Token.Kind.UNTIL then
+      n.addChild(untilStatement())
+    else if lookahead.kind == Token.Kind.WHILE then
+      n.addChild(whileStatement())
     return n
 
   // Note: Null statements may be a type of expression statement under C++
@@ -539,6 +553,20 @@ class Parser {
     // Todo: Allow optional expression to be provided to return statement
     // n.addChild(expression())
     match_(Token.Kind.SEMICOLON)
+    return n
+
+  def untilStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.UNTIL_STATEMENT, lookahead)
+    match_(Token.Kind.UNTIL)
+    match_(Token.Kind.L_PARENTHESIS)
+    // Not sure if this is always an expression or something else that is
+    // usually an expression.
+    n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
+    if lookahead.kind == Token.Kind.L_BRACKET then
+      n.addChild(block())
+    else
+      n.addChild(statement())
     return n
 
   def whileStatement (): AstNode =

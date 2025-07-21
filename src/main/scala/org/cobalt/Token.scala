@@ -51,6 +51,7 @@ object Token {
         case TRUE
         case TYPEALIAS
         case UNION
+        case UNTIL
         case USING
         case VAL
         case VAR

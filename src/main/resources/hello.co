@@ -6,6 +6,7 @@ var waypoint: *(*int[2][3])[4] = 1 + 2;
   // Do something
 //}
 
+
 //template [T]
 //def sort (x: int, y: int) {
 //}

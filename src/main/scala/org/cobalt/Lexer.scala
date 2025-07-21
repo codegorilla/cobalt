@@ -51,6 +51,7 @@ class Lexer {
     "true" -> Token.Kind.TRUE,
     "typealias" -> Token.Kind.TYPEALIAS,
     "union" -> Token.Kind.UNION,
+    "until" -> Token.Kind.UNTIL,
     "using" -> Token.Kind.USING,
     "val" -> Token.Kind.VAL,
     "var" -> Token.Kind.VAR,
