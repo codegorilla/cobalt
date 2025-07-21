@@ -490,8 +490,8 @@ class Parser {
       n = continueStatement()
     else if kind == Token.Kind.DO then
       n = doStatement()
-    // else if kind == Token.Kind.FOR then
-    //   n = forStatement()
+    else if kind == Token.Kind.FOR then
+      n = forStatement()
     // else if kind == Token.Kind.IF then
     //   n = ifStatement()
     else if kind == Token.Kind.SEMICOLON then
