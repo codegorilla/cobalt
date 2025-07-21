@@ -13,6 +13,7 @@ class Symbol (kind: Symbol.Kind, name: String) {
 object Symbol {
   enum Kind {
     case CLASS
+    case METHOD
     case PRIMITIVE_TYPE
     case ROUTINE
     case VARIABLE

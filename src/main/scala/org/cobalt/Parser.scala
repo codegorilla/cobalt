@@ -249,30 +249,74 @@ class Parser {
           null
     return n
 
+  // METHOD DECLARATION
+
+  // Todo: We need to push another scope onto the scope stack. Keep in mind that
+  // the method parameters may be in the same exact scope as the routine body
+  // (or top-most block of the routine).
+
   def methodDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.METHOD_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
     n.addChild(modifiers)
-    n.addChild(name())
-    n.addChild(routineParameters())
-    n.addChild(result())
+    n.addChild(methodName())
+    n.addChild(methodParameters())
+    n.addChild(methodResult())
     n.addChild(methodBody())
     return n
 
-  // Here we might not be able to set a token on the method body. This raises
-  // the question -- should any body nodes be associated with punctuation like
-  // curly braces?
+  // Todo: Should symbols point to AST node, and/or vice versa? This might come
+  // in handy later on, but wait until its needed before adding the code.
 
-  // Can a semicolon properly represent an abstract method? Or would that only
-  // signify a "noop" method?
+  def methodName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.METHOD, n.getToken().lexeme)
+    currentScope.define(s)
+    return n
+
+  // Todo: Method parameters includes parenthesis, check consistency of other
+  // parameter rules.
+
+  def methodParameters (): AstNode =
+    val n = AstNode(AstNode.Kind.METHOD_PARAMETERS)
+    match_(Token.Kind.L_PARENTHESIS)
+    if lookahead.kind == Token.Kind.IDENTIFIER then
+      n.addChild(methodParameter())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(methodParameter())
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  // Shoud name() be parameterName()?
+
+  def methodParameter (): AstNode =
+    val n = AstNode(AstNode.Kind.METHOD_PARAMETER)
+    n.addChild(name())
+    match_(Token.Kind.COLON)
+    n.addChild(typeRoot())
+    return n
+
+  def methodResult (): AstNode =
+    val n = AstNode(AstNode.Kind.METHOD_RESULT)
+    if lookahead.kind == Token.Kind.MINUS_GREATER then
+      match_(Token.Kind.MINUS_GREATER)
+      n.addChild(typeRoot())
+    return n
+
+  // If no method body is specified, then does that represent an abstract
+  // method? Or should we have a keyword for that?
 
   def methodBody (): AstNode =
     val n = AstNode(AstNode.Kind.METHOD_BODY)
     if lookahead.kind == Token.Kind.SEMICOLON then
       match_(Token.Kind.SEMICOLON)
     else
-      n.addChild(block())
+      n.addChild(compoundStatement())
     return n
+
+  // ENUMERATION DECLARATION
 
   def enumerationDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION, lookahead)
@@ -313,7 +357,7 @@ class Parser {
     n.addChild(modifiers)
     n.addChild(routineName())
     n.addChild(routineParameters())
-    n.addChild(result())
+    n.addChild(routineResult())
     n.addChild(routineBody())
     return n
 
@@ -358,8 +402,8 @@ class Parser {
   // appears in the program text); and whether it would lead to grammar
   // ambiguities. For now, we will use an arrow.
 
-  def result (): AstNode =
-    val n = AstNode(AstNode.Kind.RESULT)
+  def routineResult (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_RESULT)
     if lookahead.kind == Token.Kind.MINUS_GREATER then
       match_(Token.Kind.MINUS_GREATER)
       n.addChild(typeRoot())
@@ -374,7 +418,7 @@ class Parser {
     if lookahead.kind == Token.Kind.SEMICOLON then
       match_(Token.Kind.SEMICOLON)
     else
-      n.addChild(block())
+      n.addChild(compoundStatement())
     return n
 
   // VARIABLE DECLARATION
@@ -507,18 +551,6 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
-  def compoundStatement (): AstNode =
-    val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
-    match_(Token.Kind.L_BRACE)
-    while lookahead.kind != Token.Kind.R_BRACE do
-      Thread.sleep(SLEEP_TIME)
-      // Do blocks only contain statements? If so, then we don't need
-      // blockElement. Otherwise, if we full distinguish between
-      // declarations and statements, then we need blockElement.
-      n.addChild(statement())
-    match_(Token.Kind.R_BRACE)
-    return n
-
   // Per C++ standard, compound statements are also equivalently called blocks.
 
   // The top-most block needs to use the scope of the routine itself
@@ -526,8 +558,14 @@ class Parser {
   // pass in a parameter that says whether or not to create a new
   // scope.
 
-  def block (): AstNode =
-    return compoundStatement()
+  def compoundStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
+    match_(Token.Kind.L_BRACE)
+    while lookahead.kind != Token.Kind.R_BRACE do
+      Thread.sleep(SLEEP_TIME)
+      n.addChild(statement())
+    match_(Token.Kind.R_BRACE)
+    return n
 
   def continueStatement (): AstNode =
     val n = AstNode(AstNode.Kind.CONTINUE_STATEMENT)
@@ -628,7 +666,7 @@ class Parser {
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(block())
+      n.addChild(compoundStatement())
     else
       n.addChild(statement())
     return n
@@ -640,7 +678,7 @@ class Parser {
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(block())
+      n.addChild(compoundStatement())
     else
       n.addChild(statement())
     if lookahead.kind == Token.Kind.ELSE then
@@ -651,7 +689,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.ELSE_CLAUSE, lookahead)
     match_(Token.Kind.ELSE)
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(block())
+      n.addChild(compoundStatement())
     else
       n.addChild(statement())
     return n
@@ -673,7 +711,7 @@ class Parser {
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(block())
+      n.addChild(compoundStatement())
     else
       n.addChild(statement())
     return n
@@ -687,7 +725,7 @@ class Parser {
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(block())
+      n.addChild(compoundStatement())
     else
       n.addChild(statement())
     return n

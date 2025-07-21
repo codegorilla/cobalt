@@ -77,21 +77,24 @@ object AstNode:
     case CLASS_DECLARATION
     case CLASS_BODY
 
-    // Method declaration
-    case METHOD_DECLARATION
-    case METHOD_BODY
-
     // Eumeration declaration
     case ENUMERATION_DECLARATION
     case ENUMERATION_BODY
     case ENUMERATION_CONSTANT_DECLARATION
 
+    // Method declaration
+    case METHOD_BODY
+    case METHOD_DECLARATION
+    case METHOD_PARAMETER
+    case METHOD_PARAMETERS
+    case METHOD_RESULT
+
     // Routine declaration
-    case RESULT
-    case ROUTINE_DECLARATION
-    case ROUTINE_PARAMETERS
-    case ROUTINE_PARAMETER
     case ROUTINE_BODY
+    case ROUTINE_DECLARATION
+    case ROUTINE_PARAMETER
+    case ROUTINE_PARAMETERS
+    case ROUTINE_RESULT
 
     // Template declaration
     case TEMPLATE_DECLARATION
