@@ -377,23 +377,6 @@ class Parser {
       n.addChild(block())
     return n
 
-  // The top-most block needs to use the scope of the routine itself
-  // so we might need a topBlock production. Alternatively, we can
-  // pass in a parameter that says whether or not to create a new
-  // scope.
-
-  def block (): AstNode =
-    val n = AstNode(AstNode.Kind.BLOCK)
-    match_(Token.Kind.L_BRACE)
-    while lookahead.kind != Token.Kind.R_BRACE do
-      Thread.sleep(SLEEP_TIME)
-      // Do blocks only contain statements? If so, then we don't need
-      // blockElement. Otherwise, if we full distinguish between
-      // declarations and statements, then we need blockElement.
-      n.addChild(statement())
-    match_(Token.Kind.R_BRACE)
-    return n
-
   // VARIABLE DECLARATION
 
   def variableDeclaration (modifiers: AstNode): AstNode =
@@ -476,6 +459,10 @@ class Parser {
     unsignedIntegerLiteralFirstSet ++
     stringLiteralFirstSet
 
+  // Todo: Also need to add modifiers in here
+
+  val declarationStatementFirstSet = Set(Token.Kind.VAL, Token.Kind.VAR)
+
   // Notice that we don't include 'if' in the first set for expression
   // statements. This is because we want send the parser towards the statement
   // version of 'if'.
@@ -490,24 +477,26 @@ class Parser {
       n = expressionStatement()
     else if kind == Token.Kind.BREAK then
       n = breakStatement()
+    else if kind == Token.Kind.L_BRACE then
+      n = compoundStatement()
     else if kind == Token.Kind.CONTINUE then
       n = continueStatement()
+    else if declarationStatementFirstSet.contains(kind) then
+      n = declarationStatement()
     else if kind == Token.Kind.DO then
       n = doStatement()
+    else if kind == Token.Kind.SEMICOLON then
+      n = emptyStatement()
     else if kind == Token.Kind.FOR then
       n = forStatement()
     else if kind == Token.Kind.IF then
       n = ifStatement()
-    else if kind == Token.Kind.SEMICOLON then
-      n = nullStatement()
     else if kind == Token.Kind.RETURN then
       n = returnStatement()
     else if kind == Token.Kind.UNTIL then
       n = untilStatement()
     else if kind == Token.Kind.WHILE then
       n = whileStatement()
-    // else if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
-    //   n = declarationStatement()
     else
       print("Error: Invalid statement")
     return n
@@ -518,11 +507,64 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  def compoundStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
+    match_(Token.Kind.L_BRACE)
+    while lookahead.kind != Token.Kind.R_BRACE do
+      Thread.sleep(SLEEP_TIME)
+      // Do blocks only contain statements? If so, then we don't need
+      // blockElement. Otherwise, if we full distinguish between
+      // declarations and statements, then we need blockElement.
+      n.addChild(statement())
+    match_(Token.Kind.R_BRACE)
+    return n
+
+  // Per C++ standard, compound statements are also equivalently called blocks.
+
+  // The top-most block needs to use the scope of the routine itself
+  // so we might need a topBlock production. Alternatively, we can
+  // pass in a parameter that says whether or not to create a new
+  // scope.
+
+  def block (): AstNode =
+    return compoundStatement()
+
   def continueStatement (): AstNode =
     val n = AstNode(AstNode.Kind.CONTINUE_STATEMENT)
     match_(Token.Kind.CONTINUE)
     match_(Token.Kind.SEMICOLON)
     return n
+
+  def declarationStatement (): AstNode =
+    val n = lookahead.kind match
+      case Token.Kind.VAL =>
+        localVariableDeclaration()
+      case Token.Kind.VAR =>
+        localVariableDeclaration()
+    return n
+
+  // Todo: Need to handle modifiers
+
+  def localVariableDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.LOCAL_VARIABLE_DECLARATION, lookahead)
+    if lookahead.kind == Token.Kind.VAL then
+      // Keyword 'val' is equivalent to 'final var'
+      match_(Token.Kind.VAL)
+      // This final modifier won't have a token since it is an implied modifier
+      // that doesn't actually appear in the source code.
+      // Update: We might not want to add an implicit modifier like this.
+      // Instead, when it comes time to set attributes, we can set one base on
+      // the token (val or var).
+//      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
+    else
+      match_(Token.Kind.VAR)
+//    n.addChild(modifiers)
+    n.addChild(variableName())
+    n.addChild(typeSpecifier())
+    n.addChild(initializer())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
 
   // The do statement is flexible and can either be a "do while" or a "do until"
   // statement, depending on what follows the 'do' keyword.
@@ -535,6 +577,31 @@ class Parser {
     else if lookahead.kind == Token.Kind.WHILE then
       n.addChild(whileStatement())
     return n
+
+  // Note: Microsoft calls this a "null statement", but the offical C++ standard
+  // (latest ISO/IEC 14882:2023) has always used the term "empty statement". I
+  // like the official term more.
+
+  // Update: The situation might be a little more complex, see ISO/IEC IS 14882
+  // Draft C++ standard, N3092.
+
+  // Note: Empty statements may be a type of expression statement under C++
+  // rules. I am not sure how much sense that makes because an expression
+  // statement should presumably evaluate to some value, but a null statement
+  // does not. (On the other hand, a procedure call is considered an expression
+  // statement and also does not evaluate to a value.)
+
+  // An empty statement could theoretically produce no AST node at all, since it
+  // is a "noop". However, this may be useful to do because it will provide a
+  // more faithful translation to C++. It will be optimized out by C++ anyways.
+
+  def emptyStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.EMPTY_STATEMENT, lookahead)
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def expressionStatement(): AstNode =
+    return null
 
   // We would like to eventually add "foreach" support. This is a bit tricky
   // because our LL(1) grammar cannot look that far ahead to tell whether it is
@@ -589,21 +656,6 @@ class Parser {
       n.addChild(statement())
     return n
 
-  // Note: Null statements may be a type of expression statement under C++
-  // rules. I am not sure how much sense that makes because an expression
-  // statement should presumably evaluate to some value, but a null statement
-  // does not. (On the other hand, a procedure call is considered an expression
-  // statement and also does not evaluate to a value.)
-
-  // A null statement could theoretically produce no AST node at all, since it
-  // is a "noop". However, this may be useful to do because it will provide a
-  // more faithful translation to C++. It will be optimized out by C++ anyways.
-
-  def nullStatement (): AstNode =
-    val n = AstNode(AstNode.Kind.NULL_STATEMENT, lookahead)
-    match_(Token.Kind.SEMICOLON)
-    return n
-
   def returnStatement (): AstNode =
     print("GOT RETURN STATEMENT")
     val n = AstNode(AstNode.Kind.RETURN_STATEMENT, lookahead)
@@ -639,9 +691,6 @@ class Parser {
     else
       n.addChild(statement())
     return n
-
-  def expressionStatement(): AstNode =
-    return null
 
   // EXPRESSIONS
 

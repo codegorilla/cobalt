@@ -87,7 +87,6 @@ object AstNode:
     case ENUMERATION_CONSTANT_DECLARATION
 
     // Routine declaration
-    case BLOCK
     case RESULT
     case ROUTINE_DECLARATION
     case ROUTINE_PARAMETERS
@@ -100,6 +99,7 @@ object AstNode:
     case TEMPLATE_PARAMETER
 
     // Variable declaration
+    case LOCAL_VARIABLE_DECLARATION
     case VARIABLE_DECLARATION
     case TYPE_SPECIFIER
     case INITIALIZER
@@ -108,12 +108,13 @@ object AstNode:
 
     // Statements
     case BREAK_STATEMENT
+    case COMPOUND_STATEMENT
     case CONTINUE_STATEMENT
     case DO_STATEMENT
+    case ELSE_CLAUSE
+    case EMPTY_STATEMENT
     case FOR_STATEMENT
     case IF_STATEMENT
-    case ELSE_CLAUSE
-    case NULL_STATEMENT
     case RETURN_STATEMENT
     case UNTIL_STATEMENT
     case WHILE_STATEMENT
