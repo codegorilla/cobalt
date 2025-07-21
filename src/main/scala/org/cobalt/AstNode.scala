@@ -110,6 +110,9 @@ object AstNode:
     case BREAK_STATEMENT
     case CONTINUE_STATEMENT
     case DO_STATEMENT
+    case FOR_STATEMENT
+    case IF_STATEMENT
+    case ELSE_CLAUSE
     case NULL_STATEMENT
     case RETURN_STATEMENT
     case UNTIL_STATEMENT

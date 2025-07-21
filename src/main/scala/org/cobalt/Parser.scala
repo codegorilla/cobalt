@@ -532,6 +532,37 @@ class Parser {
       n.addChild(whileStatement())
     return n
 
+  // We would like to eventually add "foreach" support. This is a bit tricky
+  // because our LL(1) grammar cannot look that far ahead to tell whether it is
+  // a for statement or a foreach statement. LL(k) doesn't help because the
+  // first expression could be arbitrarily long. Although it is extremely
+  // common for it to be something very simple like "i: int = 0", we cannot
+  // rule out the possibility of it being a much more complex expression. We
+  // do not want to introduce backtracking just for this purpose. Therefore, we
+  // will probably split the rule into two parts later on in order to add the
+  // required support. Alternatively, we could add a "foreach" keyword, but I
+  // really don't want to do that.
+
+  def forStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.FOR_STATEMENT, lookahead)
+    match_(Token.Kind.FOR)
+    match_(Token.Kind.L_PARENTHESIS)
+    // Technically, these expressions can be empty. Perhaps this is why null
+    // statements are really expressions. We can research that and tidy up the
+    // grammar later.
+    n.addChild(expression())
+    match_(Token.Kind.SEMICOLON)
+    n.addChild(expression())
+    match_(Token.Kind.SEMICOLON)
+    n.addChild(expression())
+    match_(Token.Kind.R_PARENTHESIS)
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n.addChild(block())
+    else
+      n.addChild(statement())
+    return n
+
+
   // Note: Null statements may be a type of expression statement under C++
   // rules. I am not sure how much sense that makes because an expression
   // statement should presumably evaluate to some value, but a null statement
@@ -563,7 +594,7 @@ class Parser {
     // usually an expression.
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
-    if lookahead.kind == Token.Kind.L_BRACKET then
+    if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(block())
     else
       n.addChild(statement())
@@ -577,7 +608,7 @@ class Parser {
     // usually an expression.
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
-    if lookahead.kind == Token.Kind.L_BRACKET then
+    if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(block())
     else
       n.addChild(statement())
