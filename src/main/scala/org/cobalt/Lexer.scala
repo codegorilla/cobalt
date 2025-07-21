@@ -100,6 +100,9 @@ class Lexer {
     tokens = tokens.reverse
     return tokens
 
+  // Todo: For multi-character lexemes, we need to ensure that the column is
+  // calculated as the start of the lexeme, not the end.
+
   def getToken (): Token =
 
     var kind: Token.Kind = null
@@ -416,7 +419,7 @@ class Lexer {
         val end = position
         lexeme = input.slice(begin, end)
         kind = if keywordLookup.contains(lexeme) then keywordLookup(lexeme) else Token.Kind.IDENTIFIER
-        return Token(kind, lexeme, position, line, column)
+        return Token(kind, lexeme, position, line, column - lexeme.length() + 1)
 
       else if current.isDigit then
         return number()

@@ -1,14 +1,7 @@
 package org.cobalt
 
-//import scala.collection.mutable.ArrayDeque
-//import scala.collection.mutable.Map
-
 import scala.collection.mutable.Queue
 import scala.collection.mutable.Stack
-
-// Try java linked list instead of scala deque
-//import java.util.LinkedList
-//import symbol.SymbolTable
 
 import symbol.Symbol
 import symbol.Scope
@@ -310,6 +303,10 @@ class Parser {
 
   // ROUTINE DECLARATION
 
+  // Todo: We need to push another scope onto the scope stack. Keep in mind that
+  // the routine parameters may be in the same exact scope as the routine body
+  // (or top-most block of the routine).
+
   def routineDeclaration (modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION)
     match_(Token.Kind.DEF)
@@ -330,6 +327,9 @@ class Parser {
     currentScope.define(s)
     return n
 
+  // Todo: Routine parameters includes parenthesis, check consistency of other
+  // parameter rules.
+
   def routineParameters (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETERS)
     match_(Token.Kind.L_PARENTHESIS)
@@ -341,6 +341,8 @@ class Parser {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
+  // Shoud name() be parameterName()?
+
   def routineParameter (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER)
     n.addChild(name())
@@ -348,12 +350,24 @@ class Parser {
     n.addChild(typeRoot())
     return n
 
+  // We need to decide if we want to use an arrow or a colon for the result
+  // type. C++, python, ruby, swift, ocaml, haskell, and rust all use an arrow,
+  // while scala, kotlin, typescript, and pascal all use a colon. The proper
+  // choice probably depends on whether or not the language in question already
+  // uses colons and/or arrows for other things (and the amount that the symbol
+  // appears in the program text); and whether it would lead to grammar
+  // ambiguities. For now, we will use an arrow.
+
   def result (): AstNode =
     val n = AstNode(AstNode.Kind.RESULT)
     if lookahead.kind == Token.Kind.MINUS_GREATER then
       match_(Token.Kind.MINUS_GREATER)
       n.addChild(typeRoot())
     return n
+
+  // If no routine body is specified, then this is simply a forward declaration.
+  // It is not clear at this time whether forward declarations of routines are
+  // ever required in cobalt, but we can keep the option open for now.
 
   def routineBody (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_BODY)
@@ -363,7 +377,7 @@ class Parser {
       n.addChild(block())
     return n
 
-  // The top-most block needs to use the scope of the function itself
+  // The top-most block needs to use the scope of the routine itself
   // so we might need a topBlock production. Alternatively, we can
   // pass in a parameter that says whether or not to create a new
   // scope.
@@ -375,7 +389,7 @@ class Parser {
       Thread.sleep(SLEEP_TIME)
       // Do blocks only contain statements? If so, then we don't need
       // blockElement. Otherwise, if we full distinguish between
-      // declarations and statements, then we need blockElement
+      // declarations and statements, then we need blockElement.
       n.addChild(statement())
     match_(Token.Kind.R_BRACE)
     return n
@@ -398,6 +412,7 @@ class Parser {
     n.addChild(modifiers)
     n.addChild(variableName())
     n.addChild(typeSpecifier())
+    n.addChild(initializer())
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -415,9 +430,13 @@ class Parser {
     val n = AstNode(AstNode.Kind.TYPE_SPECIFIER)
     if lookahead.kind == Token.Kind.COLON then
       match_(Token.Kind.COLON)
-      // Need to fix up array handling
+      // Need to fix up array handling. Is this still true?
       n.addChild(typeRoot())
     return n
+
+  // For now, we require an initializer for all variable declarations. This may
+  // not be efficient, so the requirement may eventually be relaxed for certain
+  // types or conditions.
 
   def initializer (): AstNode =
     val n = AstNode(AstNode.Kind.INITIALIZER)
@@ -477,10 +496,10 @@ class Parser {
     //   n = ifStatement()
     else if kind == Token.Kind.RETURN then
       n = returnStatement()
+    else if kind == Token.Kind.SEMICOLON then
+      n = nullStatement()
     // else if kind == Token.Kind.WHILE then
     //   n = whileStatement()
-    // else if kind == Token.Kind.SEMICOLON then
-    //   n = nullStatement()
     // else if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
     //   n = declarationStatement()
     else
@@ -503,6 +522,21 @@ class Parser {
     print("GOT_HERE")
     val n = AstNode(AstNode.Kind.RETURN_STATEMENT)
     match_(Token.Kind.RETURN)
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  // Note: Null statements may be a type of expression statement under C++
+  // rules. I am not sure how much sense that makes because an expression
+  // statement should presumably evaluate to some value, but a null statement
+  // does not. (On the other hand, a procedure call is considered an expression
+  // statement and also does not evaluate to a value.)
+
+  // A null statement could theoretically produce no AST node at all, since it
+  // is a "noop". However, this may be useful to do because it will provide a
+  // more faithful translation to C++. It will be optimized out by C++ anyways.
+
+  def nullStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.NULL_STATEMENT, lookahead)
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -914,7 +948,7 @@ class Parser {
 
   // Algorithm below is to handle the C++ spiral rule for type specifiers. The
   // type is broken into three fragments: left, consisting of pointers; center,
-  // which is either a primitive type, function pointer, nominal type, or some
+  // which is either a primitive type, routine pointer, nominal type, or some
   // compounded type enclosed in parenthesis; and right, consisting of arrays.
   // First, pointers are placed onto a stack. Next, the center is processed,
   // which may entail a recursive call to directType(). Then, arrays are placed

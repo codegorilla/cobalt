@@ -29,7 +29,6 @@ import java.io.IOException
   val result1 = st1.render()
   println(result1)
 
-
   // Get program directory
   val programDir = this.getClass().getClassLoader().getResource("")
 

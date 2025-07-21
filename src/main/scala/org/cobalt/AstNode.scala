@@ -109,6 +109,7 @@ object AstNode:
     // Statements
     case BREAK_STATEMENT
     case CONTINUE_STATEMENT
+    case NULL_STATEMENT
     case RETURN_STATEMENT
 
     // Expressions
