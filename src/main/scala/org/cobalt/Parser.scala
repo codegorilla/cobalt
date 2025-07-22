@@ -512,8 +512,8 @@ class Parser {
   // version of 'if'.
 
   def statement (): AstNode =
-    val kind = lookahead.kind
     var n: AstNode = null
+    val kind = lookahead.kind
     if kind == Token.Kind.IDENTIFIER ||
        kind == Token.Kind.THIS       ||
        literalFirstSet.contains(kind)
@@ -656,6 +656,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.FOR_STATEMENT, lookahead)
     match_(Token.Kind.FOR)
     match_(Token.Kind.L_PARENTHESIS)
+    n.addChild(forInit())
     // Technically, these expressions can be empty. Perhaps this is why null
     // statements are really expressions. We can research that and tidy up the
     // grammar later.
@@ -669,7 +670,40 @@ class Parser {
       n.addChild(compoundStatement())
     else
       n.addChild(statement())
+
+    val list = List(1, 2, 3)
+    
+    for (i <- list) {}
+
     return n
+
+  def forInit (): AstNode =
+    var n: AstNode = null
+    val kind = lookahead.kind
+    if kind == Token.Kind.IDENTIFIER ||
+       literalFirstSet.contains(kind)
+    then
+      n = AstNode(AstNode.Kind.FOR_BASIC, lookahead)
+//      n = expressionStatement()
+    else if kind == Token.Kind.VAR then
+      // Create a declaration
+      n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
+      match_(Token.Kind.VAR)
+      n.addChild(variableName())
+      n.addChild(typeSpecifier())
+      if lookahead.kind == Token.Kind.EQUAL then
+        n.addChild(initializer())
+        val p = AstNode(AstNode.Kind.FOR_BASIC, lookahead)
+        p.addChild(n)
+        n = p
+        // expression next
+      else if lookahead.kind == Token.Kind.IN then
+        val p = AstNode(AstNode.Kind.FOR_EACH, lookahead)
+        match_(Token.Kind.IN)
+        p.addChild(n)
+        n = p
+    return n
+
 
   def ifStatement (): AstNode =
     val n = AstNode(AstNode.Kind.IF_STATEMENT, lookahead)

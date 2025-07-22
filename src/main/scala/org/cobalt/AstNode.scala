@@ -122,6 +122,9 @@ object AstNode:
     case UNTIL_STATEMENT
     case WHILE_STATEMENT
 
+    case FOR_BASIC
+    case FOR_EACH
+
     // Expressions
     case BINARY_EXPRESSION
     case EXPRESSION_ROOT

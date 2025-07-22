@@ -3,6 +3,35 @@
 
 var waypoint: *(*int[2][3])[4] = 1 + 2;
 
+
+statement
+
+for (var i: int = 0; i < 10; i++) {
+  // Do something
+}
+
+for (var i: int <- map.getWaypoints()) {
+  // Do something
+}
+
+
+
+
+for (expressionStatement ...)
+
+for (declarationStatement ...)
+
+for (declaration)
+
+for (var x: int )
+
+
+forInitExpression
+  any expression
+
+forInitDeclaration
+  var x: int
+
 //def myfun (x: int) -> int {
   // Do something
 //}
