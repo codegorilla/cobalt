@@ -14,16 +14,11 @@ for (var i: int <- map.getWaypoints()) {
   // Do something
 }
 
+foreach (i: int <- map.getWaypoints()) {
+  // Do something
+}
 
 
-
-for (expressionStatement ...)
-
-for (declarationStatement ...)
-
-for (declaration)
-
-for (var x: int )
 
 
 forInitExpression

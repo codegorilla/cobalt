@@ -117,13 +117,14 @@ object AstNode:
     case ELSE_CLAUSE
     case EMPTY_STATEMENT
     case FOR_STATEMENT
+    case FOR_INIT
+    case FOR_INIT_DECLARATION
+    case FOREACH_STATEMENT
     case IF_STATEMENT
     case RETURN_STATEMENT
     case UNTIL_STATEMENT
     case WHILE_STATEMENT
 
-    case FOR_BASIC
-    case FOR_EACH
 
     // Expressions
     case BINARY_EXPRESSION

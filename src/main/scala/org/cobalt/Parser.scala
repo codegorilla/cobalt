@@ -533,6 +533,8 @@ class Parser {
       n = emptyStatement()
     else if kind == Token.Kind.FOR then
       n = forStatement()
+    else if kind == Token.Kind.FOREACH then
+      n = foreachStatement()
     else if kind == Token.Kind.IF then
       n = ifStatement()
     else if kind == Token.Kind.RETURN then
@@ -641,28 +643,15 @@ class Parser {
   def expressionStatement(): AstNode =
     return null
 
-  // We would like to eventually add "foreach" support. This is a bit tricky
-  // because our LL(1) grammar cannot look that far ahead to tell whether it is
-  // a for statement or a foreach statement. LL(k) doesn't help because the
-  // first expression could be arbitrarily long. Although it is extremely
-  // common for it to be something very simple like "i: int = 0", we cannot
-  // rule out the possibility of it being a much more complex expression. We
-  // do not want to introduce backtracking just for this purpose. Therefore, we
-  // will probably split the rule into two parts later on in order to add the
-  // required support. Alternatively, we could add a "foreach" keyword, but I
-  // really don't want to do that.
-
   def forStatement (): AstNode =
     val n = AstNode(AstNode.Kind.FOR_STATEMENT, lookahead)
     match_(Token.Kind.FOR)
     match_(Token.Kind.L_PARENTHESIS)
-    n.addChild(forInit())
     // Technically, these expressions can be empty. Perhaps this is why null
     // statements are really expressions. We can research that and tidy up the
     // grammar later.
-    n.addChild(expression())
-    match_(Token.Kind.SEMICOLON)
-    n.addChild(expression())
+    n.addChild(forInit())
+    n.addChild(forUpdate())
     match_(Token.Kind.SEMICOLON)
     n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
@@ -670,40 +659,51 @@ class Parser {
       n.addChild(compoundStatement())
     else
       n.addChild(statement())
-
-    val list = List(1, 2, 3)
-    
-    for (i <- list) {}
-
     return n
+
+  // The for initialization part consists of either a special declaration or an
+  // expression sequence.
 
   def forInit (): AstNode =
-    var n: AstNode = null
-    val kind = lookahead.kind
-    if kind == Token.Kind.IDENTIFIER ||
-       literalFirstSet.contains(kind)
-    then
-      n = AstNode(AstNode.Kind.FOR_BASIC, lookahead)
-//      n = expressionStatement()
-    else if kind == Token.Kind.VAR then
-      // Create a declaration
-      n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
-      match_(Token.Kind.VAR)
-      n.addChild(variableName())
-      n.addChild(typeSpecifier())
-      if lookahead.kind == Token.Kind.EQUAL then
-        n.addChild(initializer())
-        val p = AstNode(AstNode.Kind.FOR_BASIC, lookahead)
-        p.addChild(n)
-        n = p
-        // expression next
-      else if lookahead.kind == Token.Kind.IN then
-        val p = AstNode(AstNode.Kind.FOR_EACH, lookahead)
-        match_(Token.Kind.IN)
-        p.addChild(n)
-        n = p
+    val n = AstNode(AstNode.Kind.FOR_INIT, lookahead)
+    if lookahead.kind == Token.Kind.VAR then
+      n.addChild(forInitDeclaration())
+    else
+      n.addChild(forInitExpression())
     return n
 
+  def forInitDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.FOR_INIT_DECLARATION, lookahead)
+    match_(Token.Kind.VAR)
+    n.addChild(variableName())
+    n.addChild(typeSpecifier())
+    n.addChild(initializer())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  // Todo: Add support for expression sequences.
+
+  def forInitExpression (): AstNode =
+    return expressionRoot()
+
+  def forUpdate (): AstNode =
+    return expressionRoot()
+
+
+  // After trying to handle basic and enhanced for loops with a single keyword,
+  // it became clear that it is much cleaner and easier to use two separate
+  // ones. Basic for loops use 'for', whereas enhanced for loops use 'foreach'.
+  
+  // Most languages seem to either combine the two kinds of for loops or forego
+  // basic for loops altogether on the basis that they are too low-level. In
+  // this case, they use the (now free) 'for' keyword to handle enhanced for
+  // loops exclusively. However, basic for loops are too useful for low-level
+  // languages like C++ and Cobalt to give up. Thus, we choose to keep both
+  // kinds of loops and give each their own dedicated keyword.
+
+  def foreachStatement (): AstNode =
+    val n = AstNode(AstNode.Kind.FOREACH_STATEMENT, lookahead)
+    return n
 
   def ifStatement (): AstNode =
     val n = AstNode(AstNode.Kind.IF_STATEMENT, lookahead)
