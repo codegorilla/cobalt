@@ -651,9 +651,8 @@ class Parser {
     // statements are really expressions. We can research that and tidy up the
     // grammar later.
     n.addChild(forInit())
+    n.addChild(forCondition())
     n.addChild(forUpdate())
-    match_(Token.Kind.SEMICOLON)
-    n.addChild(expression())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(compoundStatement())
@@ -661,15 +660,23 @@ class Parser {
       n.addChild(statement())
     return n
 
-  // The for initialization part consists of either a special declaration or an
-  // expression sequence.
+  // The for initialization part consists of either a special variable
+  // declaration or a list of expressions; or it may be empty.
 
   def forInit (): AstNode =
     val n = AstNode(AstNode.Kind.FOR_INIT, lookahead)
     if lookahead.kind == Token.Kind.VAR then
+      // Are any modifiers allowed on this declaration? Probably not.
       n.addChild(forInitDeclaration())
+    else if
+      // This really needs to be an expression first set
+      lookahead.kind == Token.Kind.IDENTIFIER ||
+      lookahead.kind == Token.Kind.THIS
+    then
+      n.addChild(forInitExpressionList())
     else
-      n.addChild(forInitExpression())
+      // Empty case
+      match_(Token.Kind.SEMICOLON)
     return n
 
   def forInitDeclaration (): AstNode =
@@ -681,14 +688,43 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
-  // Todo: Add support for expression sequences.
+  def forInitExpressionList (): AstNode =
+    val n = AstNode(AstNode.Kind.FOR_INIT_EXPRESSION_LIST)
+    n.addChild(expressionRoot())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(expressionRoot())
+    match_(Token.Kind.SEMICOLON)
+    return n
 
-  def forInitExpression (): AstNode =
-    return expressionRoot()
+  // Todo: Do we need a condition node or is a plain expression good enough?
+
+  def forCondition (): AstNode =
+    val n = AstNode(AstNode.Kind.FOR_CONDITION)
+    if
+      // This really needs to be an expression first set
+      lookahead.kind == Token.Kind.IDENTIFIER ||
+      lookahead.kind == Token.Kind.THIS
+    then
+      n.addChild(expressionRoot())
+      match_(Token.Kind.SEMICOLON)
+    else
+      // Empty case
+      match_(Token.Kind.SEMICOLON)
+    return n
 
   def forUpdate (): AstNode =
-    return expressionRoot()
-
+    val n = AstNode(AstNode.Kind.FOR_UPDATE)
+    if
+      // This really needs to be an expression first set
+      lookahead.kind == Token.Kind.IDENTIFIER ||
+      lookahead.kind == Token.Kind.THIS
+    then
+      n.addChild(expressionRoot())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(expressionRoot())
+    return n
 
   // After trying to handle basic and enhanced for loops with a single keyword,
   // it became clear that it is much cleaner and easier to use two separate
