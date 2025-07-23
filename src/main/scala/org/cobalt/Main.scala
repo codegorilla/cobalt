@@ -35,4 +35,7 @@ import java.io.IOException
   val generator = Generator()
   generator.setInput(root)
   // Todo: The output should be text
-  generator.process()
+  val template = generator.process()
+
+  val code = template.render()
+  println(code)

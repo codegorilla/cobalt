@@ -12,13 +12,12 @@ class Generator {
   val templateDir = this.getClass().getClassLoader().getResource("templates")
   val group = STGroupDir(templateDir)
   
-  val st = group.getInstanceOf("decl")
-  st.add("type", "int")
-  st.add("name", "x")
-  st.add("value", 0)
-  val result = st.render()
-  println(result)
-
+  // val st = group.getInstanceOf("decl")
+  // st.add("type", "int")
+  // st.add("name", "x")
+  // st.add("value", 0)
+  // val result = st.render()
+  // println(result)
   // val st1 = group.getInstanceOf("enumerationDeclaration");
   // st1.add("name", "TokenType")
   // st1.add("value", 1)
@@ -28,30 +27,25 @@ class Generator {
   def setInput (input: AstNode) =
     this.input = input
 
-  def process () =
-    translationUnit(input)
+  def process (): ST =
+    val template = translationUnit(input)
+    return template
 
-  def translationUnit (current: AstNode) =
+  def translationUnit (current: AstNode): ST =
+    var t: ST = null
     for child <- current.getChildren() do
       if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-        variableDeclaration(child)
+        t = variableDeclaration(child)
+    return t
 
-  def variableDeclaration (current: AstNode) =
+  def variableDeclaration (current: AstNode): ST =
     val t = group.getInstanceOf("variableDeclaration")
     modifiers(current.getChild(0))
     val tName = variableName(current.getChild(1))
     val tType = typeSpecifier(current.getChild(2))
     t.add("name", tName)
     t.add("type", tType)
-    val res = t.render()
-    println(res)
-
-    // Set up string template
-    // val st1 = group.getInstanceOf("enumerationDeclaration");
-    // st1.add("name", "TokenType")
-    // st1.add("value", 1)
-    // val result1 = st1.render()
-    // println(result1)
+    return t
 
   def variableName (current: AstNode): ST =
     val t = group.getInstanceOf("variableName")
