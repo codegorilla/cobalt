@@ -27,7 +27,7 @@ import java.io.IOException
   val tokens = lexer.process()
 
   println(tokens)
-
+  
   val parser = Parser()
   parser.setInput(tokens)
   val root = parser.process()

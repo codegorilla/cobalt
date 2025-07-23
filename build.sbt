@@ -18,4 +18,10 @@ lazy val root = project
       "org.antlr" % "ST4" % "4.3.4"
     )
 
+    // Doesn't seem to work
+    // Compile / resourceDirectories += (baseDirectory).value / "src" / "main" / "resources"
+    // watchSources ++= (Compile / resourceDirectories).value.flatMap {
+    //   dir => (dir ** "*").get
+    // }
+
   )

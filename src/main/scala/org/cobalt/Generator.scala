@@ -89,16 +89,35 @@ class Generator {
 
   def expression (current: AstNode): ST =
     val kind = current.getKind()
-    if kind == AstNode.Kind.INTEGER_LITERAL then
-      return integerLiteral(current)
-    else
-      return null
-    // else if kind == AstNode.Kind.FLOATING_POINT_LITERAL then
-    //   return floatingPointLiteral()
+    val st = kind match
+      case AstNode.Kind.BINARY_EXPRESSION => binaryExpression(current)
+      case AstNode.Kind.BOOLEAN_LITERAL => booleanLiteral(current)
+      case AstNode.Kind.FLOATING_POINT_LITERAL => floatingPointLiteral(current)
+      case AstNode.Kind.INTEGER_LITERAL => integerLiteral(current)
+      case _ => null
+    return st
 
+  def binaryExpression (current: AstNode): ST =
+    val st = group.getInstanceOf("expressions/binaryExpression")
+    // Note: If operators need to be translated, then we can map based on token
+    // kind, but for now just use the token lexeme.
+    st.add("op", current.getToken().lexeme)
+    st.add("leftExpr",  expression(current.getChild(0)))
+    st.add("rightExpr", expression(current.getChild(1)))
+    return st
+
+  def booleanLiteral (current: AstNode): ST =
+    val st = group.getInstanceOf("expressions/booleanLiteral")
+    st.add("value", current.getToken().lexeme)
+    return st
+
+  def floatingPointLiteral (current: AstNode): ST =
+    val st = group.getInstanceOf("expressions/floatingPointLiteral")
+    st.add("value", current.getToken().lexeme)
+    return st
 
   def integerLiteral (current: AstNode): ST =
-    val st = group.getInstanceOf("integerLiteral")
+    val st = group.getInstanceOf("expressions/integerLiteral")
     st.add("value", current.getToken().lexeme)
     return st
 

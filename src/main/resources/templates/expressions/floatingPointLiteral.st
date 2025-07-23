@@ -1,0 +1,3 @@
+floatingPointLiteral (value) ::= <<
+<value>
+>>

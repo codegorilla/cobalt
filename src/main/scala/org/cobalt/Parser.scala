@@ -1192,22 +1192,20 @@ class Parser {
     // Need to remove items from parsing stack and construct final type. With
     // just arrays and pointers it should be easy. Once other types are added,
     // it will require slightly more processing.
-    println("BEGIN STACK")
     // Stack must have at least one element, e.g. primitive type
     var n = stack.pop()
     while !stack.isEmpty do
       var p = n
       n = stack.pop()
       n.addChild(p)
-    println("END STACK")
-    // // Now trace through the type expression and print it out
-    while n.getChildCount() != 0 do
-      println(n)
-      if n.getKind() == AstNode.Kind.ARRAY_TYPE then
-        n = n.getChild(1)
-      else if n.getKind() == AstNode.Kind.POINTER_TYPE then
-        n = n.getChild(0)
-    println(n)
+    // Now trace through the type expression and print it out
+    // while n.getChildCount() != 0 do
+    //   println(n)
+    //   if n.getKind() == AstNode.Kind.ARRAY_TYPE then
+    //     n = n.getChild(1)
+    //   else if n.getKind() == AstNode.Kind.POINTER_TYPE then
+    //     n = n.getChild(0)
+    // println(n)
     return n
 
   // Algorithm below is to handle the C++ spiral rule for type specifiers. The
