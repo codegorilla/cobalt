@@ -28,18 +28,19 @@ class Generator {
     this.input = input
 
   def process (): ST =
-    val template = translationUnit(input)
-    return template
+    val st = translationUnit(input)
+    return st
 
   def translationUnit (current: AstNode): ST =
-    var t: ST = null
+    var st: ST = null
+    var st1 = group.getInstanceOf("translationUnit")
     for child <- current.getChildren() do
       if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-        t = variableDeclaration(child)
-    return t
+        st = variableDeclaration(child)
+        st1.add("item", st)
+    return st1
 
   // VARIABLE DECLARATION
-
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("variableDeclaration")
@@ -54,9 +55,9 @@ class Generator {
     return st
 
   def variableName (current: AstNode): ST =
-    val t = group.getInstanceOf("variableName")
-    t.add("name", current.getToken().lexeme)
-    return t
+    val st = group.getInstanceOf("variableName")
+    st.add("name", current.getToken().lexeme)
+    return st
 
   // Type specifiers may actually be empty, in which case type inference is
   // used. By the time we get to the code generation phase, a type will have
@@ -105,13 +106,13 @@ class Generator {
 
   def typeRoot (current: AstNode): ST =
     // Need to check kind here and dispatch accordingly. For now just use type_.
-    val t = type_(current.getChild(0))
-    return t
+    val st = type_(current.getChild(0))
+    return st
 
   def type_ (current: AstNode): ST =
-    val t = group.getInstanceOf("type")
-    t.add("name", current.getToken().lexeme)
-    return t
+    val st = group.getInstanceOf("type")
+    st.add("name", current.getToken().lexeme)
+    return st
 
   def modifiers (current: AstNode) =
     println(current)
