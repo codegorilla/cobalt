@@ -38,25 +38,70 @@ class Generator {
         t = variableDeclaration(child)
     return t
 
+  // VARIABLE DECLARATION
+
+
   def variableDeclaration (current: AstNode): ST =
-    val t = group.getInstanceOf("variableDeclaration")
+    val st = group.getInstanceOf("variableDeclaration")
     modifiers(current.getChild(0))
-    val tName = variableName(current.getChild(1))
-    val tType = typeSpecifier(current.getChild(2))
-    t.add("name", tName)
-    t.add("type", tType)
-    return t
+    st.add("name", variableName(current.getChild(1)))
+    var specST = typeSpecifier(current.getChild(2))
+    if specST != null then
+      st.add("type", specST)
+    val initST = initializer(current.getChild(3))
+    if initST != null then
+      st.add("init", initST)
+    return st
 
   def variableName (current: AstNode): ST =
     val t = group.getInstanceOf("variableName")
     t.add("name", current.getToken().lexeme)
     return t
 
+  // Type specifiers may actually be empty, in which case type inference is
+  // used. By the time we get to the code generation phase, a type will have
+  // already been inferred. However, it turns out that this information is
+  // stored in type objects and/or the symbol table, so we wouldn't actually be
+  // populating the string templates using token lexemes from the AST. Instead,
+  // we would be pulling information from the symbol table.
+
   def typeSpecifier (current: AstNode): ST =
     if current.hasChildren() then
       return typeRoot(current.getChild(0))
     else
       return null
+
+  // Initializers may be expressions or array/struct building code. The latter
+  // still needs to be implemented.
+
+  def initializer (current: AstNode): ST =
+    val child = current.getChild(0)
+    if child.getKind() == AstNode.Kind.EXPRESSION_ROOT then
+      return expressionRoot(child)
+    else
+      return null
+
+  // EXPRESSIONS
+
+  def expressionRoot (current: AstNode): ST =
+    return expression(current.getChild(0))
+
+  def expression (current: AstNode): ST =
+    val kind = current.getKind()
+    if kind == AstNode.Kind.INTEGER_LITERAL then
+      return integerLiteral(current)
+    else
+      return null
+    // else if kind == AstNode.Kind.FLOATING_POINT_LITERAL then
+    //   return floatingPointLiteral()
+
+
+  def integerLiteral (current: AstNode): ST =
+    val st = group.getInstanceOf("integerLiteral")
+    st.add("value", current.getToken().lexeme)
+    return st
+
+  // TYPES
 
   def typeRoot (current: AstNode): ST =
     // Need to check kind here and dispatch accordingly. For now just use type_.

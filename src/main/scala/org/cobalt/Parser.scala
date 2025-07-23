@@ -469,7 +469,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.INITIALIZER)
     if lookahead.kind == Token.Kind.EQUAL then
       match_(Token.Kind.EQUAL)
-      n.addChild(expression())
+      n.addChild(expressionRoot())
     return n
 
   // NAME
