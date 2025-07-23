@@ -1,8 +1,9 @@
 
 //public static val x: int;
 
-var waypoint: *(*int[2][3])[4] = 1 + 2;
+//var waypoint: *(*int[2][3])[4] = 1 + 2;
 
+var waypoint: int = 1;
 
 
 //def myfun (x: int) -> int {

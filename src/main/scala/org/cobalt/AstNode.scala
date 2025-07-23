@@ -52,6 +52,9 @@ class AstNode (
   def setToken (token: Token) =
     this.token = token
 
+  def hasChildren () =
+    if !children.isEmpty then true else false
+
   override def toString (): String =
     return s"AstNode(${kind}, ${token})"
 
