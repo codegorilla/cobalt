@@ -123,14 +123,42 @@ class Generator {
 
   // TYPES
 
+  // Translation just seems to need AST nodes from the parser rather than the
+  // types computed during semantic analysis, which will just be used for type
+  // checking.
+
   def typeRoot (current: AstNode): ST =
     // Need to check kind here and dispatch accordingly. For now just use type_.
     val st = type_(current.getChild(0))
     return st
 
   def type_ (current: AstNode): ST =
-    val st = group.getInstanceOf("type")
-    st.add("name", current.getToken().lexeme)
+    val kind = current.getKind()
+    val st = kind match
+      case AstNode.Kind.ARRAY_TYPE => arrayType(current)
+      case AstNode.Kind.POINTER_TYPE => pointerType(current)
+      case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
+    return st
+
+  def arrayType (current: AstNode): ST =
+    val st = group.getInstanceOf("types/arrayType")
+    st.add("type", type_(current.getChild(1)))
+    return st
+
+  def pointerType (current: AstNode): ST =
+    val st = group.getInstanceOf("types/pointerType")
+    st.add("type", type_(current.getChild(0)))
+    return st
+
+  def primitiveType (current: AstNode): ST =
+    val st = group.getInstanceOf("types/primitiveType")
+    val kind = current.getToken().kind
+    // We can probably just use the token lexeme, but we could also map from
+    // token kind to a string representing the target language type.
+    val type_ = kind match
+      case Token.Kind.INT => "int"
+      case Token.Kind.FLOAT => "float"
+    st.add("name", type_)
     return st
 
   def modifiers (current: AstNode) =

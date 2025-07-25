@@ -1,0 +1,3 @@
+primitiveType (name) ::= <<
+<name>
+>>

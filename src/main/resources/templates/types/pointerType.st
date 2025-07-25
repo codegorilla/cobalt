@@ -1,0 +1,3 @@
+pointerType (type) ::= <<
+(*<type>)
+>>
