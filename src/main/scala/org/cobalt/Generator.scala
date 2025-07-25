@@ -128,27 +128,35 @@ class Generator {
   // checking.
 
   def typeRoot (current: AstNode): ST =
+    val st = group.getInstanceOf("types/dummy")
     // Need to check kind here and dispatch accordingly. For now just use type_.
-    val st = type_(current.getChild(0))
-    return st
+    val st1 = type_(current.getChild(0), st)
+    return st1
 
-  def type_ (current: AstNode): ST =
+  def type_ (current: AstNode, other: ST): ST =
     val kind = current.getKind()
-    val st = kind match
-      case AstNode.Kind.ARRAY_TYPE => arrayType(current)
-      case AstNode.Kind.POINTER_TYPE => pointerType(current)
-      case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
+    var st: ST = null
+    kind match
+      case AstNode.Kind.ARRAY_TYPE =>
+        st = arrayType(current, other)
+      case AstNode.Kind.POINTER_TYPE =>
+        st = pointerType(current, other)
+      //case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
+      case _ =>
+        st = other
     return st
 
-  def arrayType (current: AstNode): ST =
+  def arrayType (current: AstNode, other: ST): ST =
     val st = group.getInstanceOf("types/arrayType")
-    st.add("type", type_(current.getChild(1)))
-    return st
+    st.add("type", other)
+    val st1 = type_(current.getChild(1), st)
+    return st1
 
-  def pointerType (current: AstNode): ST =
+  def pointerType (current: AstNode, other: ST): ST =
     val st = group.getInstanceOf("types/pointerType")
-    st.add("type", type_(current.getChild(0)))
-    return st
+    st.add("type", other)
+    val st1 = type_(current.getChild(0), st)
+    return st1
 
   def primitiveType (current: AstNode): ST =
     val st = group.getInstanceOf("types/primitiveType")

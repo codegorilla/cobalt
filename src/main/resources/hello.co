@@ -3,9 +3,7 @@
 
 //var waypoint: *(*int[2][3])[4] = 1 + 2;
 
-var waypoint: *int[1] = 1.5 + 2/4 - 10;
-
-//var waypoint: *List<int>[1][2] = 1.5 + 2/4 - 10;
+var waypoint: (*int)[1] = 1.5 + 2/4 - 10;
 
 
 //def myfun (x: int) -> int {
