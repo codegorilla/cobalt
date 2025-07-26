@@ -1,3 +1,0 @@
-arrayType (type) ::= <<
-(<type>[])
->>

@@ -47,29 +47,16 @@ class Generator {
 
   // VARIABLE DECLARATION
 
-  // We need to trade the variable name for the basic declarator. This will be
-  // done with the generator stack.
-
-  // <type> <name> = <init>;
-  // should be
-  // <typeSpec> <declarator> = <init>;
-
-
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("variableDeclaration")
     modifiers(current.getChild(0))
-    // We need to push the variable name onto the stack, which becomes the
-    // declarator.
-    //st.add("name", variableName(current.getChild(1)))
     variableName(current.getChild(1))
-    // We'll get the type specifier off of the stack. It should just be a basic
-    // type like 'int'.
     typeSpecifier(current.getChild(2))
-
-    // Get translated type specifier
+    // Get translated type specifier from stack. This should be something basic
+    // like 'int'.
     val typeSpec = stack.pop()
     st.add("type", typeSpec)
-    //Get translated declarator
+    // Get translated declarator
     val declarator = stack.pop()
     st.add("declarator", declarator)
 
@@ -78,8 +65,18 @@ class Generator {
       st.add("init", initST)
     return st
 
+  // The variable name becomes a "simple declarator", which is the core of the
+  // overall C++ declarator that gets built up. A C++ declaration is of the form
+  // "typeSpecifier declarator", which is essentially the reverse of the cobolt
+  // declaration of the form "variableName: typeSpecifier" (setting aside the
+  // fact that the term "type specifier" has a different interpretation between
+  // the two). Due to the need to swap the variable name with the base type from
+  // the type specifier, and that the base type may be several levels down in
+  // the type expression tree, we will use an explicit stack to facilitate the
+  // exchange.
+
   def variableName (current: AstNode) =
-    val st = group.getInstanceOf("variableName")
+    val st = group.getInstanceOf("types/simpleDeclarator")
     st.add("name", current.getToken().lexeme)
     stack.push(st)
 
@@ -93,8 +90,6 @@ class Generator {
   def typeSpecifier (current: AstNode) =
     if current.hasChildren() then
       typeRoot(current.getChild(0))
-    // else
-    //   return null
 
   // Initializers may be expressions or array/struct building code. The latter
   // still needs to be implemented.
@@ -171,14 +166,14 @@ class Generator {
         primitiveType(current)
 
   def arrayType (current: AstNode) =
-    val st = group.getInstanceOf("types/arrayType")
-    st.add("type", stack.pop())
+    val st = group.getInstanceOf("types/arrayDeclarator")
+    st.add("declarator", stack.pop())
     stack.push(st)
     type_(current.getChild(1))
 
   def pointerType (current: AstNode) =
-    val st = group.getInstanceOf("types/pointerType")
-    st.add("type", stack.pop())
+    val st = group.getInstanceOf("types/pointerDeclarator")
+    st.add("declarator", stack.pop())
     stack.push(st)
     type_(current.getChild(0))
 
