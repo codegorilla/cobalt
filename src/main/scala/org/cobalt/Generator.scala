@@ -1,5 +1,7 @@
 package org.cobalt
 
+import scala.collection.mutable.Stack
+
 import org.stringtemplate.v4.*
 
 // The code generator converts the AST into the target language.
@@ -24,6 +26,9 @@ class Generator {
   // val result1 = st1.render()
   // println(result1)
 
+  // Used to pass string templates up and down during tree traversal
+  val stack = Stack[ST]()
+
   def setInput (input: AstNode) =
     this.input = input
 
@@ -42,22 +47,41 @@ class Generator {
 
   // VARIABLE DECLARATION
 
+  // We need to trade the variable name for the basic declarator. This will be
+  // done with the generator stack.
+
+  // <type> <name> = <init>;
+  // should be
+  // <typeSpec> <declarator> = <init>;
+
+
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("variableDeclaration")
     modifiers(current.getChild(0))
-    st.add("name", variableName(current.getChild(1)))
-    var specST = typeSpecifier(current.getChild(2))
-    if specST != null then
-      st.add("type", specST)
+    // We need to push the variable name onto the stack, which becomes the
+    // declarator.
+    //st.add("name", variableName(current.getChild(1)))
+    variableName(current.getChild(1))
+    // We'll get the type specifier off of the stack. It should just be a basic
+    // type like 'int'.
+    typeSpecifier(current.getChild(2))
+
+    // Get translated type specifier
+    val typeSpec = stack.pop()
+    st.add("type", typeSpec)
+    //Get translated declarator
+    val declarator = stack.pop()
+    st.add("declarator", declarator)
+
     val initST = initializer(current.getChild(3))
     if initST != null then
       st.add("init", initST)
     return st
 
-  def variableName (current: AstNode): ST =
+  def variableName (current: AstNode) =
     val st = group.getInstanceOf("variableName")
     st.add("name", current.getToken().lexeme)
-    return st
+    stack.push(st)
 
   // Type specifiers may actually be empty, in which case type inference is
   // used. By the time we get to the code generation phase, a type will have
@@ -66,11 +90,11 @@ class Generator {
   // populating the string templates using token lexemes from the AST. Instead,
   // we would be pulling information from the symbol table.
 
-  def typeSpecifier (current: AstNode): ST =
+  def typeSpecifier (current: AstNode) =
     if current.hasChildren() then
-      return typeRoot(current.getChild(0))
-    else
-      return null
+      typeRoot(current.getChild(0))
+    // else
+    //   return null
 
   // Initializers may be expressions or array/struct building code. The latter
   // still needs to be implemented.
@@ -127,38 +151,38 @@ class Generator {
   // types computed during semantic analysis, which will just be used for type
   // checking.
 
-  def typeRoot (current: AstNode): ST =
-    val st = group.getInstanceOf("types/dummy")
-    // Need to check kind here and dispatch accordingly. For now just use type_.
-    val st1 = type_(current.getChild(0), st)
-    return st1
+  // We can create a stack of string templates and push/pull them as we go down.
+  // Probably don't need to return anything. Just use the stack.
 
-  def type_ (current: AstNode, other: ST): ST =
+  def typeRoot (current: AstNode) =
+    // Variable name should be on the stack at this point.
+    type_(current.getChild(0))
+    // At this point, the stack should contain a C++ declarator as the bottom
+    // element and a C++ type specifier as the top element.
+
+  def type_ (current: AstNode): Unit =
     val kind = current.getKind()
-    var st: ST = null
     kind match
       case AstNode.Kind.ARRAY_TYPE =>
-        st = arrayType(current, other)
+        arrayType(current)
       case AstNode.Kind.POINTER_TYPE =>
-        st = pointerType(current, other)
-      //case AstNode.Kind.PRIMITIVE_TYPE => primitiveType(current)
-      case _ =>
-        st = other
-    return st
+        pointerType(current)
+      case AstNode.Kind.PRIMITIVE_TYPE =>
+        primitiveType(current)
 
-  def arrayType (current: AstNode, other: ST): ST =
+  def arrayType (current: AstNode) =
     val st = group.getInstanceOf("types/arrayType")
-    st.add("type", other)
-    val st1 = type_(current.getChild(1), st)
-    return st1
+    st.add("type", stack.pop())
+    stack.push(st)
+    type_(current.getChild(1))
 
-  def pointerType (current: AstNode, other: ST): ST =
+  def pointerType (current: AstNode) =
     val st = group.getInstanceOf("types/pointerType")
-    st.add("type", other)
-    val st1 = type_(current.getChild(0), st)
-    return st1
+    st.add("type", stack.pop())
+    stack.push(st)
+    type_(current.getChild(0))
 
-  def primitiveType (current: AstNode): ST =
+  def primitiveType (current: AstNode) =
     val st = group.getInstanceOf("types/primitiveType")
     val kind = current.getToken().kind
     // We can probably just use the token lexeme, but we could also map from
@@ -166,8 +190,8 @@ class Generator {
     val type_ = kind match
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
-    st.add("name", type_)
-    return st
+    st.add("declarator", type_)
+    stack.push(st)
 
   def modifiers (current: AstNode) =
     println(current)
