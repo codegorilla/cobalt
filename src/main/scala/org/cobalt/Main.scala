@@ -1,7 +1,5 @@
 package org.cobalt
 
-import scala.collection.mutable.ListBuffer
-
 import java.util.LinkedList
 import java.nio.file.Paths
 import java.nio.file.Files

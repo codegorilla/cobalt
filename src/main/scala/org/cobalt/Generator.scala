@@ -47,22 +47,23 @@ class Generator {
 
   // VARIABLE DECLARATION
 
+  // Since cobalt supports type inference, we probably need to use the computed
+  // type expression rather than the AST nodes since some variable declarations
+  // will not have AST nodes for the type specifier.
+
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("variableDeclaration")
     modifiers(current.getChild(0))
     variableName(current.getChild(1))
     typeSpecifier(current.getChild(2))
-    // Get translated type specifier from stack. This should be something basic
-    // like 'int'.
-    val typeSpec = stack.pop()
-    st.add("type", typeSpec)
-    // Get translated declarator
-    val declarator = stack.pop()
-    st.add("declarator", declarator)
+    // Get translated type specifier and declarator from stack. The type
+    // specifier should be something basic like 'int'.
+    st.add("typeSpecifier", stack.pop())
+    st.add("declarator", stack.pop())
 
     val initST = initializer(current.getChild(3))
     if initST != null then
-      st.add("init", initST)
+      st.add("initializer", initST)
     return st
 
   // The variable name becomes a "simple declarator", which is the core of the

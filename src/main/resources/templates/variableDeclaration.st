@@ -1,3 +1,3 @@
-variableDeclaration (declarator, type, init) ::= <<
-<type> <declarator> = <init>;
+variableDeclaration (typeSpecifier, declarator, initializer) ::= <<
+<typeSpecifier> <declarator> = <initializer>;
 >>
