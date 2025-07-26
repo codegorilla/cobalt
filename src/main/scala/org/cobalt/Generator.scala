@@ -161,16 +161,31 @@ class Generator {
     kind match
       case AstNode.Kind.ARRAY_TYPE =>
         arrayType(current)
+      case AstNode.Kind.NOMINAL_TYPE =>
+        nominalType(current)
       case AstNode.Kind.POINTER_TYPE =>
         pointerType(current)
       case AstNode.Kind.PRIMITIVE_TYPE =>
         primitiveType(current)
+
+  // Todo: We might be able to reduce the number of parenthesis by peeking at
+  // the next item on the stack. If it is the same type, then no parenthesis
+  // should be required.
 
   def arrayType (current: AstNode) =
     val st = group.getInstanceOf("types/arrayDeclarator")
     st.add("declarator", stack.pop())
     stack.push(st)
     type_(current.getChild(1))
+
+  // Todo: Also need to handle templates, which fall in the category of a
+  // noiminal type.
+
+  def nominalType (current: AstNode) =
+    val st = group.getInstanceOf("types/nominalType")
+    val lexeme = current.getToken().lexeme
+    st.add("name", lexeme)
+    stack.push(st)
 
   def pointerType (current: AstNode) =
     val st = group.getInstanceOf("types/pointerDeclarator")
@@ -186,7 +201,7 @@ class Generator {
     val type_ = kind match
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
-    st.add("declarator", type_)
+    st.add("name", type_)
     stack.push(st)
 
   def modifiers (current: AstNode) =

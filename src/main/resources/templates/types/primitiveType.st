@@ -1,3 +1,3 @@
-primitiveType (declarator) ::= <<
-<declarator>
+primitiveType (name) ::= <<
+<name>
 >>

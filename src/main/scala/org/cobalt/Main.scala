@@ -30,10 +30,10 @@ import java.io.IOException
   parser.setInput(tokens)
   val root = parser.process()
 
-  val generator = Generator()
-  generator.setInput(root)
-  // Todo: The output should be text
-  val template = generator.process()
+  // val generator = Generator()
+  // generator.setInput(root)
+  // // Todo: The output should be text
+  // val template = generator.process()
 
-  val code = template.render()
-  println(code)
+  // val code = template.render()
+  // println(code)
