@@ -1353,22 +1353,33 @@ class Parser {
 
   // For now, just support primitive and nominal types for template arguments.
   // Eventually, this needs to be expanded to pointers, references, literals,
-  // etc. with various caveats.
+  // templates, etc. with various caveats.
 
   // We might need to just use direct type here, or a special variant of direct
   // type. If we use direct type, but only some types are supported, then we
   // need to handle that with semantic analysis.
 
   def templateArgument (): AstNode =
-    // No token for this
-    val n = AstNode(AstNode.Kind.TEMPLATE_ARGUMENT)
+    var n: AstNode = null
     if
-      lookahead.kind == Token.Kind.INT   ||
-      lookahead.kind == Token.Kind.FLOAT
+      lookahead.kind == Token.Kind.BOOL    ||
+      lookahead.kind == Token.Kind.INT     ||
+      lookahead.kind == Token.Kind.INT8    ||
+      lookahead.kind == Token.Kind.INT16   ||
+      lookahead.kind == Token.Kind.INT32   ||
+      lookahead.kind == Token.Kind.INT64   ||
+      lookahead.kind == Token.Kind.UINT    ||
+      lookahead.kind == Token.Kind.UINT8   ||
+      lookahead.kind == Token.Kind.UINT16  ||
+      lookahead.kind == Token.Kind.UINT32  ||
+      lookahead.kind == Token.Kind.UINT64  ||
+      lookahead.kind == Token.Kind.FLOAT   ||
+      lookahead.kind == Token.Kind.FLOAT32 ||
+      lookahead.kind == Token.Kind.FLOAT64
     then
-      n.addChild(primitiveType())
+      n = primitiveType()
     else if lookahead.kind == Token.Kind.IDENTIFIER then
-      n.addChild(nominalType())
+      n = nominalType()
     return n
 
 

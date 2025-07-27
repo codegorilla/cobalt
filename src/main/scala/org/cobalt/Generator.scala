@@ -220,10 +220,9 @@ class Generator {
     // The template argument is just a dummy node. We need to get the child
     // node. We can change this in the parser later if we want.
     val st = group.getInstanceOf("types/templateArgument")
-    val child = current.getChild(0)
-    val kind = child.getKind()
+    val kind = current.getKind()
     if kind == AstNode.Kind.PRIMITIVE_TYPE then
-      primitiveType(child)
+      primitiveType(current)
     // Get the primitive type off of the stack
     st.add("argument", stack.pop())
     return st
