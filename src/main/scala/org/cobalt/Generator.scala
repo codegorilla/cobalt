@@ -2,6 +2,10 @@ package org.cobalt
 
 import scala.collection.mutable.Stack
 
+// If something goes wrong, and this is underlined in red, check that there are
+// a bunch of libraries in metals. If not, use metals doctor. Might need to
+// delete .bloop and .metals and re-import project.
+
 import org.stringtemplate.v4.*
 
 // The code generator converts the AST into the target language.
