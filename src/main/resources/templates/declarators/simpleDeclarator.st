@@ -1,0 +1,3 @@
+simpleDeclarator (name) ::= <<
+<name>
+>>

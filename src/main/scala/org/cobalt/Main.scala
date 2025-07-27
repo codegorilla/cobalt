@@ -1,6 +1,6 @@
 package org.cobalt
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.Map
 
 import java.util.LinkedList
 import java.nio.file.Paths
@@ -27,7 +27,7 @@ import java.io.IOException
   val tokens = lexer.process()
 
   println(tokens)
-  
+
   val parser = Parser()
   parser.setInput(tokens)
   val root = parser.process()

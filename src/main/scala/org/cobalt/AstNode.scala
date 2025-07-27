@@ -164,3 +164,7 @@ object AstNode:
     case NOMINAL_TYPE
     case POINTER_TYPE
     case PRIMITIVE_TYPE
+    case TEMPLATE_TYPE
+
+    case TEMPLATE_ARGUMENTS
+    case TEMPLATE_ARGUMENT

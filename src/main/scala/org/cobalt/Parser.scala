@@ -1041,6 +1041,8 @@ class Parser {
     n.addChild(arguments())
     return n
 
+  // Todo: Maybe change to routineArguments and add routineArgument
+
   def arguments (): AstNode =
     val n = AstNode(AstNode.Kind.ARGUMENTS)
     match_(Token.Kind.L_PARENTHESIS)
@@ -1256,9 +1258,23 @@ class Parser {
     then
       centerFragment = primitiveType()
     else if lookahead.kind == Token.Kind.IDENTIFIER then
-      // Nominal type. Need to look up name in symbol table to tell
-      // what kind it is (e.g. struct, class). For now assume class.
-      centerFragment = nominalType()
+      // Need to look up name in symbol table to tell what kind it is (e.g.
+      // class, template). If it is defined as a class, then a left bracket
+      // following indicates an array of that class type. If it is not defined
+      // at all, then assume it is a class and treat it as such. If it is
+      // defined as a class template, then a left bracket following denotes
+      // class template parameters.
+      currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
+      val symbol = currentScope.resolve(lookahead.lexeme)
+      if symbol == null then
+        // Nominal types include classes and enums. They do NOT include
+        // primitive types or template types.
+        centerFragment = nominalType()
+      else
+        if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
+          centerFragment = templateType()
+        else
+          centerFragment = nominalType()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       match_(Token.Kind.L_PARENTHESIS)
       directType()
@@ -1292,12 +1308,13 @@ class Parser {
     // To do: Process parameters
     return n
 
+  // Perhaps treat class types, enum types, and template types as kinds of
+  // nominal types. Or get rid of nominal type altogether.
+
   def nominalType (): AstNode =
     val n = AstNode(AstNode.Kind.NOMINAL_TYPE, lookahead)
-    // I don't think we want to add a name here, we just want to set
-    // the token instead, but we can revisit this later.
-    // n.add_child(self.name())
     match_(Token.Kind.IDENTIFIER)
+    println("FOUND NOMINAL TYPE")
     // Need to eventually allow for type parameters. (This would allow
     // us to know that this was a class type, if that matters.)
     return n
@@ -1315,5 +1332,56 @@ class Parser {
     val n = AstNode(AstNode.Kind.PRIMITIVE_TYPE, lookahead)
     match_(lookahead.kind)
     return n
+
+  // Is a template type a kind of nominal type?
+
+  def templateType (): AstNode =
+    val n = AstNode(AstNode.Kind.TEMPLATE_TYPE, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    n.addChild(templateArguments())
+    return n
+
+  def templateArguments (): AstNode =
+    val n = AstNode(AstNode.Kind.TEMPLATE_ARGUMENTS, lookahead)
+    match_(Token.Kind.L_BRACKET)
+    n.addChild(templateArgument())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(templateArgument())
+    match_(Token.Kind.R_BRACKET)
+    return n
+
+  // For now, just support primitive and nominal types for template arguments.
+  // Eventually, this needs to be expanded to pointers, references, literals,
+  // templates, etc. with various caveats.
+
+  // We might need to just use direct type here, or a special variant of direct
+  // type. If we use direct type, but only some types are supported, then we
+  // need to handle that with semantic analysis.
+
+  def templateArgument (): AstNode =
+    var n: AstNode = null
+    if
+      lookahead.kind == Token.Kind.BOOL    ||
+      lookahead.kind == Token.Kind.INT     ||
+      lookahead.kind == Token.Kind.INT8    ||
+      lookahead.kind == Token.Kind.INT16   ||
+      lookahead.kind == Token.Kind.INT32   ||
+      lookahead.kind == Token.Kind.INT64   ||
+      lookahead.kind == Token.Kind.UINT    ||
+      lookahead.kind == Token.Kind.UINT8   ||
+      lookahead.kind == Token.Kind.UINT16  ||
+      lookahead.kind == Token.Kind.UINT32  ||
+      lookahead.kind == Token.Kind.UINT64  ||
+      lookahead.kind == Token.Kind.FLOAT   ||
+      lookahead.kind == Token.Kind.FLOAT32 ||
+      lookahead.kind == Token.Kind.FLOAT64
+    then
+      n = primitiveType()
+    else if lookahead.kind == Token.Kind.IDENTIFIER then
+      n = nominalType()
+    return n
+
+
 
 }

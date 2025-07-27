@@ -1,10 +1,9 @@
 
 //public static val x: int;
 
-//var waypoint: *(*int[2][3])[4] = 1 + 2;
+//var waypoint: *(*int)[1] = 1.5 + 2/4 - 10;
 
-var waypoint: (*int)[1] = 1.5 + 2/4 - 10;
-
+var waypoint: Token[int, float] = 0;
 
 //def myfun (x: int) -> int {
   // Do something

@@ -1,0 +1,3 @@
+arrayDeclarator (declarator) ::= <<
+(<declarator>[])
+>>
