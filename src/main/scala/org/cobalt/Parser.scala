@@ -1041,6 +1041,8 @@ class Parser {
     n.addChild(arguments())
     return n
 
+  // Todo: Maybe change to routineArguments and add routineArgument
+
   def arguments (): AstNode =
     val n = AstNode(AstNode.Kind.ARGUMENTS)
     match_(Token.Kind.L_PARENTHESIS)
@@ -1256,20 +1258,21 @@ class Parser {
     then
       centerFragment = primitiveType()
     else if lookahead.kind == Token.Kind.IDENTIFIER then
-      // Nominal type. Need to look up name in symbol table to tell what kind it
-      // is (e.g. class, template). If it is defined as a class, then a left
-      // bracket following indicates an array of that class type. If it is not
-      // defined at all, then assume it is a class and treat it as such. If it
-      // is defined as a class template, then a left bracket following denotes
+      // Need to look up name in symbol table to tell what kind it is (e.g.
+      // class, template). If it is defined as a class, then a left bracket
+      // following indicates an array of that class type. If it is not defined
+      // at all, then assume it is a class and treat it as such. If it is
+      // defined as a class template, then a left bracket following denotes
       // class template parameters.
-      // val symbol = currentScope.resolve(lookahead.lexeme)
-      // if symbol != null then
-      //   if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
-      //     centerFragment = templateType()
-      //   else
-      //     centerFragment = nominalType()
-      // else
-      centerFragment = nominalType()
+      currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
+      val symbol = currentScope.resolve(lookahead.lexeme)
+      if symbol == null then
+        centerFragment = nominalType()
+      else
+        if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
+          centerFragment = templateType()
+        else
+          centerFragment = nominalType()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       match_(Token.Kind.L_PARENTHESIS)
       directType()
@@ -1303,6 +1306,9 @@ class Parser {
     // To do: Process parameters
     return n
 
+  // Perhaps treat class types, enum types, and template types as kinds of
+  // nominal types. Or get rid of nominal type altogether.
+
   def nominalType (): AstNode =
     val n = AstNode(AstNode.Kind.NOMINAL_TYPE, lookahead)
     match_(Token.Kind.IDENTIFIER)
@@ -1325,10 +1331,41 @@ class Parser {
     match_(lookahead.kind)
     return n
 
+  // Is a template type a kind of nominal type?
+
   def templateType (): AstNode =
-    val n = AstNode(AstNode.Kind.TEMPLATE_TYPE, lookahead)
-    match_(lookahead.kind)
     println("FOUND TEMPLATE TYPE")
+    val n = AstNode(AstNode.Kind.TEMPLATE_TYPE, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    n.addChild(templateArguments())
     return n
+
+  def templateArguments (): AstNode =
+    val n = AstNode(AstNode.Kind.TEMPLATE_ARGUMENTS, lookahead)
+    match_(Token.Kind.L_BRACKET)
+    n.addChild(templateArgument())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(templateArgument())
+    match_(Token.Kind.R_BRACKET)
+    return n
+
+  // For now, just support primitive and nominal types for template arguments.
+  // Eventually, this needs to be expanded to pointers, references, literals,
+  // etc. with various caveats.
+
+  def templateArgument (): AstNode =
+    // No token for this
+    val n = AstNode(AstNode.Kind.TEMPLATE_ARGUMENT)
+    if
+      lookahead.kind == Token.Kind.INT   ||
+      lookahead.kind == Token.Kind.FLOAT
+    then
+      n.addChild(primitiveType())
+    else if lookahead.kind == Token.Kind.IDENTIFIER then
+      n.addChild(nominalType())
+    return n
+
+
 
 }

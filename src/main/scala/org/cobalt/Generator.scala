@@ -77,7 +77,7 @@ class Generator {
   // exchange.
 
   def variableName (current: AstNode) =
-    val st = group.getInstanceOf("types/simpleDeclarator")
+    val st = group.getInstanceOf("declarators/simpleDeclarator")
     st.add("name", current.getToken().lexeme)
     stack.push(st)
 
@@ -167,19 +167,18 @@ class Generator {
         pointerType(current)
       case AstNode.Kind.PRIMITIVE_TYPE =>
         primitiveType(current)
+      case AstNode.Kind.TEMPLATE_TYPE =>
+        templateType(current)
 
   // Todo: We might be able to reduce the number of parenthesis by peeking at
   // the next item on the stack. If it is the same type, then no parenthesis
   // should be required.
 
   def arrayType (current: AstNode) =
-    val st = group.getInstanceOf("types/arrayDeclarator")
+    val st = group.getInstanceOf("declarators/arrayDeclarator")
     st.add("declarator", stack.pop())
     stack.push(st)
     type_(current.getChild(1))
-
-  // Todo: Also need to handle templates, which fall in the category of a
-  // noiminal type.
 
   def nominalType (current: AstNode) =
     val st = group.getInstanceOf("types/nominalType")
@@ -188,7 +187,7 @@ class Generator {
     stack.push(st)
 
   def pointerType (current: AstNode) =
-    val st = group.getInstanceOf("types/pointerDeclarator")
+    val st = group.getInstanceOf("declarators/pointerDeclarator")
     st.add("declarator", stack.pop())
     stack.push(st)
     type_(current.getChild(0))
@@ -202,6 +201,14 @@ class Generator {
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
     st.add("name", type_)
+    stack.push(st)
+
+  // I don't think template types are considered nominal types.
+
+  def templateType (current: AstNode) =
+    val st = group.getInstanceOf("types/templateType")
+    val lexeme = current.getToken().lexeme
+    st.add("name", lexeme)
     stack.push(st)
 
   def modifiers (current: AstNode) =

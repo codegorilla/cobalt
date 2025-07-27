@@ -1,5 +1,7 @@
 package org.cobalt
 
+import scala.collection.mutable.Map
+
 import java.util.LinkedList
 import java.nio.file.Paths
 import java.nio.file.Files
@@ -25,15 +27,15 @@ import java.io.IOException
   val tokens = lexer.process()
 
   println(tokens)
-  
+
   val parser = Parser()
   parser.setInput(tokens)
   val root = parser.process()
 
-  // val generator = Generator()
-  // generator.setInput(root)
-  // // Todo: The output should be text
-  // val template = generator.process()
+  val generator = Generator()
+  generator.setInput(root)
+  // Todo: The output should be text
+  val template = generator.process()
 
-  // val code = template.render()
-  // println(code)
+  val code = template.render()
+  println(code)
