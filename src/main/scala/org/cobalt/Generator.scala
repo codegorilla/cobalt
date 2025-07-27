@@ -203,13 +203,30 @@ class Generator {
     st.add("name", type_)
     stack.push(st)
 
-  // I don't think template types are considered nominal types.
-
   def templateType (current: AstNode) =
     val st = group.getInstanceOf("types/templateType")
     val lexeme = current.getToken().lexeme
     st.add("name", lexeme)
+    st.add("arguments", templateArguments(current.getChild(0)))
     stack.push(st)
+
+  def templateArguments (current: AstNode): ST =
+    val st = group.getInstanceOf("types/templateArguments")
+    for child <- current.getChildren() do
+      st.add("arguments", templateArgument(child))
+    return st
+
+  def templateArgument (current: AstNode): ST =
+    // The template argument is just a dummy node. We need to get the child
+    // node. We can change this in the parser later if we want.
+    val st = group.getInstanceOf("types/templateArgument")
+    val child = current.getChild(0)
+    val kind = child.getKind()
+    if kind == AstNode.Kind.PRIMITIVE_TYPE then
+      primitiveType(child)
+    // Get the primitive type off of the stack
+    st.add("argument", stack.pop())
+    return st
 
   def modifiers (current: AstNode) =
     println(current)

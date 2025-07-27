@@ -69,6 +69,10 @@ class Lexer {
     "uint16" -> Token.Kind.UINT16,
     "uint32" -> Token.Kind.UINT32,
     "uint64" -> Token.Kind.UINT64,
+
+    "float" -> Token.Kind.FLOAT,
+    "float32" -> Token.Kind.FLOAT32,
+    "float64" -> Token.Kind.FLOAT64
   )
 
   def setInput (input: String) =

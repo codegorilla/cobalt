@@ -1267,6 +1267,8 @@ class Parser {
       currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
       val symbol = currentScope.resolve(lookahead.lexeme)
       if symbol == null then
+        // Nominal types include classes and enums. They do NOT include
+        // primitive types or template types.
         centerFragment = nominalType()
       else
         if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
@@ -1334,7 +1336,6 @@ class Parser {
   // Is a template type a kind of nominal type?
 
   def templateType (): AstNode =
-    println("FOUND TEMPLATE TYPE")
     val n = AstNode(AstNode.Kind.TEMPLATE_TYPE, lookahead)
     match_(Token.Kind.IDENTIFIER)
     n.addChild(templateArguments())
@@ -1353,6 +1354,10 @@ class Parser {
   // For now, just support primitive and nominal types for template arguments.
   // Eventually, this needs to be expanded to pointers, references, literals,
   // etc. with various caveats.
+
+  // We might need to just use direct type here, or a special variant of direct
+  // type. If we use direct type, but only some types are supported, then we
+  // need to handle that with semantic analysis.
 
   def templateArgument (): AstNode =
     // No token for this

@@ -1,3 +1,3 @@
-templateType (name) ::= <<
-<name>\<\>
+templateType (name, arguments) ::= <<
+<name><arguments>
 >>
