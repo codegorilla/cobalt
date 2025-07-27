@@ -3,11 +3,11 @@
 
 //var waypoint: *(*int)[1] = 1.5 + 2/4 - 10;
 
-var waypoint: Token[int, float] = 0;
+//var waypoint: Token[int, float] = 0;
 
-//def myfun (x: int) -> int {
-  // Do something
-//}
+def myfun (x: int) -> int {
+  Do something
+}
 
 //template [T]
 //def sort (x: int, y: int) {

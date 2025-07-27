@@ -372,7 +372,7 @@ class Parser {
     return n
 
   // Todo: Routine parameters includes parenthesis, check consistency of other
-  // parameter rules.
+  // parameter rules. Answer: Yes, this makes sense.
 
   def routineParameters (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETERS)
