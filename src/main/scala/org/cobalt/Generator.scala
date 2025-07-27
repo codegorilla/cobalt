@@ -221,8 +221,8 @@ class Generator {
     return st
 
   def templateArgument (current: AstNode): ST =
-    // The template argument is just a dummy node. We need to get the child
-    // node. We can change this in the parser later if we want.
+    // The template argument is just a dummy method with no AST node. Can use
+    // more thought.
     val st = group.getInstanceOf("types/templateArgument")
     val kind = current.getKind()
     if kind == AstNode.Kind.PRIMITIVE_TYPE then
