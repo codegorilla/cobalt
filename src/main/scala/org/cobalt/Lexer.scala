@@ -12,6 +12,7 @@ class Lexer {
   var column = 1
 
   val keywordLookup = Map (
+    "abstract" -> Token.Kind.ABSTRACT,
     "and" -> Token.Kind.AND,
     "break" -> Token.Kind.BREAK,
     "case" -> Token.Kind.CASE,

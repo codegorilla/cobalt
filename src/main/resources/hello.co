@@ -5,8 +5,10 @@
 
 //var waypoint: Token[int, float] = 0;
 
-def myfun (x: int) -> int {
-  Do something
+def myfun (x: int, y: float) -> int {
+  // Do something
+  var t: int = 1;
+  var u: float = 1;
 }
 
 //template [T]

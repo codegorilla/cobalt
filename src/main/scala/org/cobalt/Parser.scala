@@ -305,8 +305,8 @@ class Parser {
       n.addChild(typeRoot())
     return n
 
-  // If no method body is specified, then does that represent an abstract
-  // method? Or should we have a keyword for that?
+  // A combination of 'abstract' keyword and an empty body indicates an abstract
+  // method.
 
   def methodBody (): AstNode =
     val n = AstNode(AstNode.Kind.METHOD_BODY)
@@ -371,9 +371,6 @@ class Parser {
     currentScope.define(s)
     return n
 
-  // Todo: Routine parameters includes parenthesis, check consistency of other
-  // parameter rules. Answer: Yes, this makes sense.
-
   def routineParameters (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETERS)
     match_(Token.Kind.L_PARENTHESIS)
@@ -385,13 +382,20 @@ class Parser {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
-  // Shoud name() be parameterName()?
+  // Routine parameters are for all intents and purposes local variables
 
   def routineParameter (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER)
-    n.addChild(name())
+    n.addChild(routineParameterName())
     match_(Token.Kind.COLON)
     n.addChild(typeRoot())
+    return n
+
+  def routineParameterName (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER_NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    currentScope.define(s)
     return n
 
   // We need to decide if we want to use an arrow or a colon for the result
@@ -409,15 +413,12 @@ class Parser {
       n.addChild(typeRoot())
     return n
 
-  // If no routine body is specified, then this is simply a forward declaration.
-  // It is not clear at this time whether forward declarations of routines are
-  // ever required in cobalt, but we can keep the option open for now.
+  // Do we need to distinguish between a top compound statement and a regular
+  // compound statement? The top compound statement does not need to introduce a
+  // new scope.
 
   def routineBody (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_BODY)
-    if lookahead.kind == Token.Kind.SEMICOLON then
-      match_(Token.Kind.SEMICOLON)
-    else
       n.addChild(compoundStatement())
     return n
 
@@ -503,6 +504,10 @@ class Parser {
     unsignedIntegerLiteralFirstSet ++
     stringLiteralFirstSet
 
+  val expressionStatementFirstSet =
+    Set(Token.Kind.IDENTIFIER, Token.Kind.THIS) ++
+    literalFirstSet
+
   // Todo: Also need to add modifiers in here
 
   val declarationStatementFirstSet = Set(Token.Kind.VAL, Token.Kind.VAR)
@@ -514,12 +519,7 @@ class Parser {
   def statement (): AstNode =
     var n: AstNode = null
     val kind = lookahead.kind
-    if kind == Token.Kind.IDENTIFIER ||
-       kind == Token.Kind.THIS       ||
-       literalFirstSet.contains(kind)
-    then
-      n = expressionStatement()
-    else if kind == Token.Kind.BREAK then
+    if kind == Token.Kind.BREAK then
       n = breakStatement()
     else if kind == Token.Kind.L_BRACE then
       n = compoundStatement()
@@ -527,6 +527,8 @@ class Parser {
       n = continueStatement()
     else if declarationStatementFirstSet.contains(kind) then
       n = declarationStatement()
+    else if expressionStatementFirstSet.contains(kind) then
+      n = expressionStatement()
     else if kind == Token.Kind.DO then
       n = doStatement()
     else if kind == Token.Kind.SEMICOLON then
@@ -560,11 +562,31 @@ class Parser {
   // pass in a parameter that says whether or not to create a new
   // scope.
 
+  val standardStatementFirstSet = Set(
+    Token.Kind.BREAK,
+    Token.Kind.CONTINUE,
+    Token.Kind.BREAK,
+    Token.Kind.L_BRACE,
+    Token.Kind.CONTINUE,
+    Token.Kind.DO,
+    Token.Kind.SEMICOLON,
+    Token.Kind.FOR,
+    Token.Kind.FOREACH,
+    Token.Kind.IF,
+    Token.Kind.RETURN,
+    Token.Kind.UNTIL,
+    Token.Kind.WHILE
+  )
+
+  val statementFirstSet =
+    standardStatementFirstSet ++
+    declarationStatementFirstSet ++
+    expressionStatementFirstSet
+
   def compoundStatement (): AstNode =
     val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
     match_(Token.Kind.L_BRACE)
-    while lookahead.kind != Token.Kind.R_BRACE do
-      Thread.sleep(SLEEP_TIME)
+    while statementFirstSet.contains(lookahead.kind) do
       n.addChild(statement())
     match_(Token.Kind.R_BRACE)
     return n
@@ -1344,6 +1366,7 @@ class Parser {
   def templateArguments (): AstNode =
     val n = AstNode(AstNode.Kind.TEMPLATE_ARGUMENTS, lookahead)
     match_(Token.Kind.L_BRACKET)
+    // There must be at least one template argument
     n.addChild(templateArgument())
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)

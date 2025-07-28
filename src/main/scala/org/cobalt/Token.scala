@@ -5,6 +5,7 @@ case class Token (val kind: Token.Kind, val lexeme: String, val position: Int, v
 object Token {
     enum Kind {
         // Keywords
+        case ABSTRACT
         case AND
         case BREAK
         case CASE
