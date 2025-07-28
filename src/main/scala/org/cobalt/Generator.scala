@@ -41,13 +41,32 @@ class Generator {
     return st
 
   def translationUnit (current: AstNode): ST =
-    var st: ST = null
-    var st1 = group.getInstanceOf("translationUnit")
+    var st = group.getInstanceOf("translationUnit")
     for child <- current.getChildren() do
-      if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-        st = variableDeclaration(child)
-        st1.add("item", st)
-    return st1
+      st.add("item", declaration(child))
+    return st
+
+  def declaration (current: AstNode): ST =
+    val kind = current.getKind()
+    val st = kind match
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
+      case AstNode.Kind.ROUTINE_DECLARATION =>
+        routineDeclaration(current)
+    return st
+
+  // ROUTINE DECLARATION
+
+  def routineDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionDeclaration")
+    st.add("functionName", routineName(current.getChild(1)))
+    return st
+
+  def routineName (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionName")
+    println(s"Current kind is ${current.getToken().kind} and ${current.getToken().lexeme}")
+    st.add("name", current.getToken().lexeme)
+    return st
 
   // VARIABLE DECLARATION
 
@@ -56,7 +75,7 @@ class Generator {
   // will not have AST nodes for the type specifier.
 
   def variableDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("variableDeclaration")
+    val st = group.getInstanceOf("declarations/variableDeclaration")
     modifiers(current.getChild(0))
     variableName(current.getChild(1))
     typeSpecifier(current.getChild(2))

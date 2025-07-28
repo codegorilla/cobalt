@@ -22,7 +22,7 @@ import symbol.Scope
 
 class Parser {
 
-  val SLEEP_TIME = 200
+  val SLEEP_TIME = 10
 
   var input: List[Token] = null
   var position = 0
@@ -587,6 +587,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
     match_(Token.Kind.L_BRACE)
     while statementFirstSet.contains(lookahead.kind) do
+      Thread.sleep(SLEEP_TIME)
       n.addChild(statement())
     match_(Token.Kind.R_BRACE)
     return n
@@ -787,10 +788,11 @@ class Parser {
     return n
 
   def returnStatement (): AstNode =
-    print("GOT RETURN STATEMENT")
     val n = AstNode(AstNode.Kind.RETURN_STATEMENT, lookahead)
-    // Todo: Allow optional expression to be provided to return statement
-    // n.addChild(expression())
+    match_(Token.Kind.RETURN)
+    // Should we explicitly check FIRST, or is it ok to just check FOLLOW?
+    if lookahead.kind != Token.Kind.SEMICOLON then
+      n.addChild(expressionRoot())
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -800,7 +802,7 @@ class Parser {
     match_(Token.Kind.L_PARENTHESIS)
     // Not sure if this is always an expression or something else that is
     // usually an expression.
-    n.addChild(expression())
+    n.addChild(expressionRoot())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(compoundStatement())
@@ -814,7 +816,7 @@ class Parser {
     match_(Token.Kind.L_PARENTHESIS)
     // Not sure if this is always an expression or something else that is
     // usually an expression.
-    n.addChild(expression())
+    n.addChild(expressionRoot())
     match_(Token.Kind.R_PARENTHESIS)
     if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(compoundStatement())

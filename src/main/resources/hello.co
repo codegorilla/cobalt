@@ -1,15 +1,17 @@
 
 //public static val x: int;
 
-//var waypoint: *(*int)[1] = 1.5 + 2/4 - 10;
+var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
 
-//var waypoint: Token[int, float] = 0;
+var beta: Token[int, float] = 0;
 
 def myfun (x: int, y: float) -> int {
   // Do something
   var t: int = 1;
   var u: float = 1;
+  return 0;
 }
+
 
 //template [T]
 //def sort (x: int, y: int) {

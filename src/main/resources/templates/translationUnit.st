@@ -1,4 +1,4 @@
 translationUnit (item) ::=  <<
 import std;
-<item>
+<item; separator="\n">
 >>
