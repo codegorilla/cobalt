@@ -167,12 +167,29 @@ class Generator {
 
   // STATEMENTS
 
-  // Test compound statement
+  def statement (current: AstNode): ST =
+    val st = current.getKind() match
+      case AstNode.Kind.BREAK_STATEMENT =>
+        breakStatement(current)
+      case AstNode.Kind.CONTINUE_STATEMENT =>
+        continueStatement(current)
+      case _ =>
+        println("No match in generator/statement")
+        null
+    return st
+
+  def breakStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/breakStatement")
+    return st
 
   def compoundStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/compoundStatement")
-    st.add("statement", "break;")
-    st.add("statement", "return 0;")
+    for child <- current.getChildren() do
+      st.add("statement", statement(child))
+    return st
+
+  def continueStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/continueStatement")
     return st
 
   // EXPRESSIONS
