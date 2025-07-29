@@ -62,6 +62,7 @@ class Generator {
     st.add("functionName", routineName(current.getChild(1)))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))
+    st.add("functionBody", routineBody(current.getChild(4)))
     return st
 
   def routineName (current: AstNode): ST =
@@ -100,6 +101,10 @@ class Generator {
     typeRoot(current.getChild(0))
     st.add("typeSpecifier", stack.pop())
     st.add("declarator", stack.pop())
+    return st
+
+  def routineBody (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionBody")
     return st
 
   // VARIABLE DECLARATION

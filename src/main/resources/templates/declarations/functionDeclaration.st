@@ -1,3 +1,3 @@
-functionDeclaration (functionName, functionParameters, functionReturnType) ::= <<
-auto <functionName> <functionParameters> -> <functionReturnType> {}
+functionDeclaration (functionName, functionParameters, functionReturnType, functionBody) ::= <<
+auto <functionName> <functionParameters> -> <functionReturnType> <functionBody>
 >>

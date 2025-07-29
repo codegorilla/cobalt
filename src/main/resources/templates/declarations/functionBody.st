@@ -1,0 +1,5 @@
+functionBody () ::= <<
+{
+  return 0;
+}
+>>
