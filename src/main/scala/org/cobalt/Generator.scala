@@ -105,6 +105,7 @@ class Generator {
 
   def routineBody (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionBody")
+    st.add("compoundStatement", compoundStatement(current.getChild(0)))
     return st
 
   // VARIABLE DECLARATION
@@ -163,6 +164,16 @@ class Generator {
       return expressionRoot(child)
     else
       return null
+
+  // STATEMENTS
+
+  // Test compound statement
+
+  def compoundStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/compoundStatement")
+    st.add("statement", "break;")
+    st.add("statement", "return 0;")
+    return st
 
   // EXPRESSIONS
 

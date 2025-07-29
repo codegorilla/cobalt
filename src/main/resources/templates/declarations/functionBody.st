@@ -1,5 +1,3 @@
-functionBody () ::= <<
-{
-  return 0;
-}
+functionBody (compoundStatement) ::= <<
+<compoundStatement>
 >>
