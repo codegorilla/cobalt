@@ -357,7 +357,7 @@ class Parser {
     n.addChild(modifiers)
     n.addChild(routineName())
     n.addChild(routineParameters())
-    n.addChild(routineResult())
+    n.addChild(routineReturnType())
     n.addChild(routineBody())
     return n
 
@@ -406,8 +406,11 @@ class Parser {
   // appears in the program text); and whether it would lead to grammar
   // ambiguities. For now, we will use an arrow.
 
-  def routineResult (): AstNode =
-    val n = AstNode(AstNode.Kind.ROUTINE_RESULT)
+  // We can either treat this like a type specifier or use it as a passthrough
+  // to a type specifier.
+
+  def routineReturnType (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_RETURN_TYPE)
     if lookahead.kind == Token.Kind.MINUS_GREATER then
       match_(Token.Kind.MINUS_GREATER)
       n.addChild(typeRoot())

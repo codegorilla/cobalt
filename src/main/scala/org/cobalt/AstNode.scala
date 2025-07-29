@@ -98,7 +98,7 @@ object AstNode:
     case ROUTINE_PARAMETER
     case ROUTINE_PARAMETER_NAME
     case ROUTINE_PARAMETERS
-    case ROUTINE_RESULT
+    case ROUTINE_RETURN_TYPE
 
     // Template declaration
     case TEMPLATE_DECLARATION

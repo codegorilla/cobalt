@@ -60,12 +60,27 @@ class Generator {
   def routineDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionDeclaration")
     st.add("functionName", routineName(current.getChild(1)))
+    // Todo: Need functionParameters
+    st.add("functionReturnType", routineReturnType(current.getChild(3)))
     return st
 
   def routineName (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionName")
     println(s"Current kind is ${current.getToken().kind} and ${current.getToken().lexeme}")
     st.add("name", current.getToken().lexeme)
+    return st
+
+  // The routineReturnType node is somewhat like the variable declaration's type
+  // specifier node.
+
+  def routineReturnType (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionReturnType")
+    // Push an empty ST because there isn't a name to go with the type.
+    val emptyST = group.getInstanceOf("declarators/emptyDeclarator")
+    stack.push(emptyST)
+    typeRoot(current.getChild(0))
+    st.add("typeSpecifier", stack.pop())
+    st.add("declarator", stack.pop())
     return st
 
   // VARIABLE DECLARATION

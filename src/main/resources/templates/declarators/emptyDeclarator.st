@@ -1,0 +1,2 @@
+emptyDeclarator () ::= <<
+>>
