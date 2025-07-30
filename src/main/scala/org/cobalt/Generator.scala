@@ -173,6 +173,8 @@ class Generator {
         breakStatement(current)
       case AstNode.Kind.CONTINUE_STATEMENT =>
         continueStatement(current)
+      case AstNode.Kind.RETURN_STATEMENT =>
+        returnStatement(current)
       case _ =>
         println("No match in generator/statement")
         null
@@ -191,6 +193,13 @@ class Generator {
   def continueStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/continueStatement")
     return st
+
+  def returnStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/returnStatement")
+    if current.hasChildren() then
+      st.add("expression", expressionRoot(current.getChild(0)))
+    return st
+
 
   // EXPRESSIONS
 
