@@ -38,4 +38,5 @@ import java.io.IOException
   val template = generator.process()
 
   val code = template.render()
+  println("---")
   println(code)

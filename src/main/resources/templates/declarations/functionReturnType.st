@@ -1,4 +1,4 @@
 functionReturnType (typeSpecifier, declarator) ::= <<
-<! todo: empty declarator will result in extra space -- need to remove !>
-<typeSpecifier> <declarator>
+<! todo: need to remove extraneous spacing !>
+-> <if(typeSpecifier)><typeSpecifier> <declarator><else>void<endif>
 >>

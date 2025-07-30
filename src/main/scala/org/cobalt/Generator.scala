@@ -93,14 +93,18 @@ class Generator {
   // The routineReturnType node is somewhat like the variable declaration's type
   // specifier node.
 
+  // Todo: Currently, if there is no return type, the return arrow is still
+  // rendered. That needs to be fixed.
+
   def routineReturnType (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionReturnType")
-    // Push an empty ST because there isn't a name to go with the type.
-    val emptyST = group.getInstanceOf("declarators/emptyDeclarator")
-    stack.push(emptyST)
-    typeRoot(current.getChild(0))
-    st.add("typeSpecifier", stack.pop())
-    st.add("declarator", stack.pop())
+    if current.hasChildren() then
+      // Push an empty ST because there isn't a name to go with the type.
+      val emptyST = group.getInstanceOf("declarators/emptyDeclarator")
+      stack.push(emptyST)
+      typeRoot(current.getChild(0))
+      st.add("typeSpecifier", stack.pop())
+      st.add("declarator", stack.pop())
     return st
 
   def routineBody (current: AstNode): ST =

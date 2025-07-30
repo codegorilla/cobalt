@@ -833,7 +833,6 @@ class Parser {
   // Do we need an expression root AST node?
 
   def expressionRoot (): AstNode =
-    println("EXPRESSION_ROOT")
     val n = AstNode(AstNode.Kind.EXPRESSION_ROOT)
     n.addChild(expression())
     return n
