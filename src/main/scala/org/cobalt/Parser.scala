@@ -848,20 +848,19 @@ class Parser {
 
   def assignmentExpression (): AstNode =
     var n = logicalOrExpression()
-    val firstSet = Set(
-      Token.Kind.EQUAL,
-      Token.Kind.ASTERISK_EQUAL,
-      Token.Kind.SLASH_EQUAL,
-      Token.Kind.PERCENT_EQUAL,
-      Token.Kind.PLUS_EQUAL,
-      Token.Kind.MINUS_EQUAL,
-      Token.Kind.LESS_LESS_EQUAL,
-      Token.Kind.GREATER_GREATER_EQUAL,
-      Token.Kind.AMPERSAND_EQUAL,
-      Token.Kind.CARET_EQUAL,
-      Token.Kind.BAR_EQUAL
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.EQUAL                 ||
+      lookahead.kind == Token.Kind.ASTERISK_EQUAL        ||
+      lookahead.kind == Token.Kind.SLASH_EQUAL           ||
+      lookahead.kind == Token.Kind.PERCENT_EQUAL         ||
+      lookahead.kind == Token.Kind.PLUS_EQUAL            ||
+      lookahead.kind == Token.Kind.MINUS_EQUAL           ||
+      lookahead.kind == Token.Kind.LESS_LESS_EQUAL       ||
+      lookahead.kind == Token.Kind.GREATER_GREATER_EQUAL ||
+      lookahead.kind == Token.Kind.AMPERSAND_EQUAL       ||
+      lookahead.kind == Token.Kind.CARET_EQUAL           ||
+      lookahead.kind == Token.Kind.BAR_EQUAL
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -922,11 +921,10 @@ class Parser {
 
   def equalityExpression (): AstNode =
     var n = relationalExpression()
-    val firstSet = Set(
-      Token.Kind.EQUAL_EQUAL,
-      Token.Kind.EXCLAMATION_EQUAL
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.EQUAL_EQUAL ||
+      lookahead.kind == Token.Kind.EXCLAMATION_EQUAL
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -936,13 +934,12 @@ class Parser {
 
   def relationalExpression (): AstNode =
     var n = shiftExpression()
-    val firstSet = Set(
-      Token.Kind.GREATER,
-      Token.Kind.LESS,
-      Token.Kind.GREATER_EQUAL,
-      Token.Kind.LESS_EQUAL
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.GREATER       ||
+      lookahead.kind == Token.Kind.LESS          ||
+      lookahead.kind == Token.Kind.GREATER_EQUAL ||
+      lookahead.kind == Token.Kind.LESS_EQUAL
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -952,11 +949,10 @@ class Parser {
 
   def shiftExpression (): AstNode =
     var n = additiveExpression()
-    val firstSet = Set(
-      Token.Kind.GREATER_GREATER,
-      Token.Kind.LESS_LESS
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.GREATER_GREATER ||
+      lookahead.kind == Token.Kind.LESS_LESS
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -966,11 +962,10 @@ class Parser {
 
   def additiveExpression (): AstNode =
     var n = multiplicativeExpression()
-    val firstSet = Set(
-      Token.Kind.PLUS,
-      Token.Kind.MINUS
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.PLUS ||
+      lookahead.kind == Token.Kind.MINUS
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -980,12 +975,11 @@ class Parser {
 
   def multiplicativeExpression (): AstNode =
     var n = unaryExpression()
-    val firstSet = Set(
-      Token.Kind.ASTERISK,
-      Token.Kind.SLASH,
-      Token.Kind.PERCENT
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.ASTERISK ||
+      lookahead.kind == Token.Kind.SLASH    ||
+      lookahead.kind == Token.Kind.PERCENT
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -997,14 +991,13 @@ class Parser {
 
   def unaryExpression (): AstNode =
     var n: AstNode = null
-    // TODO: Need to add tilde
-    val firstSet = Set(
-      Token.Kind.ASTERISK,
-      Token.Kind.MINUS,
-      Token.Kind.PLUS,
-      Token.Kind.EXCLAMATION
-    )
-    if firstSet.contains(lookahead.kind) then
+    if
+      lookahead.kind == Token.Kind.ASTERISK    ||
+      lookahead.kind == Token.Kind.MINUS       ||
+      lookahead.kind == Token.Kind.PLUS        ||
+      lookahead.kind == Token.Kind.EXCLAMATION ||
+      lookahead.kind == Token.Kind.TILDE
+    then
       n = AstNode(AstNode.Kind.UNARY_EXPRESSION, lookahead)
       match_(lookahead.kind)
       n.addChild(unaryExpression())
@@ -1023,13 +1016,12 @@ class Parser {
 
   def postfixExpression (): AstNode =
     var node = primaryExpression()
-    val firstSet = Set(
-      Token.Kind.MINUS_GREATER,
-      Token.Kind.PERIOD,
-      Token.Kind.L_PARENTHESIS,
-      Token.Kind.L_BRACKET
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.MINUS_GREATER ||
+      lookahead.kind == Token.Kind.PERIOD        ||
+      lookahead.kind == Token.Kind.L_PARENTHESIS ||
+      lookahead.kind == Token.Kind.L_BRACKET
+    do
       lookahead.kind match
         case Token.Kind.MINUS_GREATER =>
           node = dereferencingMemberAccess(node)
