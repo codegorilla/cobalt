@@ -46,6 +46,7 @@ class Parser {
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float"))
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float32"))
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float64"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "void"))
 
   def setInput (input: List[Token]) =
     this.input = input
@@ -1378,6 +1379,8 @@ class Parser {
   // We might need to just use direct type here, or a special variant of direct
   // type. If we use direct type, but only some types are supported, then we
   // need to handle that with semantic analysis.
+
+  // Todo: Do we need void here?
 
   def templateArgument (): AstNode =
     var n: AstNode = null

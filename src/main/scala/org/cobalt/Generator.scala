@@ -299,6 +299,7 @@ class Generator {
     val type_ = kind match
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
+      case Token.Kind.VOID => "void"
     st.add("name", type_)
     stack.push(st)
 
