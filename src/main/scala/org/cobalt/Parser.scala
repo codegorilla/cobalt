@@ -512,9 +512,13 @@ class Parser {
     Set(Token.Kind.IDENTIFIER, Token.Kind.THIS) ++
     literalFirstSet
 
-  // Todo: Also need to add modifiers in here
+  // Todo: Need to add any other required modifiers in here
 
-  val declarationStatementFirstSet = Set(Token.Kind.VAL, Token.Kind.VAR)
+  val declarationStatementFirstSet = Set(
+    Token.Kind.STATIC,
+    Token.Kind.VAL,
+    Token.Kind.VAR
+  )
 
   // Notice that we don't include 'if' in the first set for expression
   // statements. This is because we want send the parser towards the statement
@@ -602,36 +606,25 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  // For now we only support variable declaration statements (i.e. local
+  // variables). I do not think cobalt needs local classes since they have
+  // significant limitations in C++ and only niche use cases. I would like to
+  // have nested routines, but since C++ doesn't have them, I need to research
+  // the feasibility of that idea. We might be able to compile nested routines
+  // into C++ lambda functions.
+
+  // It seems that we can just use the existing variableDeclaration production
+  // but if we need to distinguish between local and global variables, then we
+  // might need a separate production. Alternatively, we could use a flag to
+  // signify one or the other. Or we can defer the question to later phases.
+
   def declarationStatement (): AstNode =
-    val n = lookahead.kind match
-      case Token.Kind.VAL =>
-        localVariableDeclaration()
-      case Token.Kind.VAR =>
-        localVariableDeclaration()
+    var n: AstNode = null
+    var p = modifiers()
+    val kind = lookahead.kind
+    if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
+      n = variableDeclaration(p)
     return n
-
-  // Todo: Need to handle modifiers
-
-  def localVariableDeclaration (): AstNode =
-    val n = AstNode(AstNode.Kind.LOCAL_VARIABLE_DECLARATION, lookahead)
-    if lookahead.kind == Token.Kind.VAL then
-      // Keyword 'val' is equivalent to 'final var'
-      match_(Token.Kind.VAL)
-      // This final modifier won't have a token since it is an implied modifier
-      // that doesn't actually appear in the source code.
-      // Update: We might not want to add an implicit modifier like this.
-      // Instead, when it comes time to set attributes, we can set one base on
-      // the token (val or var).
-//      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
-    else
-      match_(Token.Kind.VAR)
-//    n.addChild(modifiers)
-    n.addChild(variableName())
-    n.addChild(typeSpecifier())
-    n.addChild(initializer())
-    match_(Token.Kind.SEMICOLON)
-    return n
-
 
   // The do statement is flexible and can either be a "do while" or a "do until"
   // statement, depending on what follows the 'do' keyword.

@@ -67,7 +67,6 @@ class Generator {
 
   def routineName (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionName")
-    println(s"Current kind is ${current.getToken().kind} and ${current.getToken().lexeme}")
     st.add("name", current.getToken().lexeme)
     return st
 
@@ -177,6 +176,8 @@ class Generator {
         breakStatement(current)
       case AstNode.Kind.CONTINUE_STATEMENT =>
         continueStatement(current)
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
       case AstNode.Kind.RETURN_STATEMENT =>
         returnStatement(current)
       case _ =>
