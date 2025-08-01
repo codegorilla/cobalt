@@ -821,10 +821,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.UNTIL_STATEMENT, lookahead)
     match_(Token.Kind.UNTIL)
     n.addChild(untilCondition())
-    if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
-    else
-      n.addChild(statement())
+    n.addChild(statement())
     return n
 
   // In C++26 the condition can be an expression or a declaration. For now, we
@@ -836,14 +833,13 @@ class Parser {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
+  // Todo: Having a while body may make generating indented code easier.
+
   def whileStatement (): AstNode =
     val n = AstNode(AstNode.Kind.WHILE_STATEMENT, lookahead)
     match_(Token.Kind.WHILE)
     n.addChild(whileCondition())
-    if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
-    else
-      n.addChild(statement())
+    n.addChild(statement())
     return n
 
   // In C++26 the condition can be an expression or a declaration. For now, we

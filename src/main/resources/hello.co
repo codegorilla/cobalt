@@ -14,11 +14,11 @@ def myfun (x: *int, y: float) -> int {
   1 + 2 * -3.14;
   return 1.5;
 
-  while (1 < 10)
+  while (1 < 10) {
     break;
-
-  continue;
-  return 10;
+    continue;
+    return 10;
+  }
 
 }
 
