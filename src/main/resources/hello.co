@@ -13,6 +13,13 @@ def myfun (x: *int, y: float) -> int {
   var u: float = 1;
   1 + 2 * -3.14;
   return 1.5;
+
+  while (1 < 10)
+    break;
+
+  continue;
+  return 10;
+
 }
 
 //template [T]

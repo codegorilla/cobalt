@@ -174,6 +174,8 @@ class Generator {
     val st = current.getKind() match
       case AstNode.Kind.BREAK_STATEMENT =>
         breakStatement(current)
+      case AstNode.Kind.COMPOUND_STATEMENT =>
+        compoundStatement(current)
       case AstNode.Kind.CONTINUE_STATEMENT =>
         continueStatement(current)
       case AstNode.Kind.EMPTY_STATEMENT =>
@@ -184,6 +186,8 @@ class Generator {
         variableDeclaration(current)
       case AstNode.Kind.RETURN_STATEMENT =>
         returnStatement(current)
+      case AstNode.Kind.WHILE_STATEMENT =>
+        whileStatement(current)
       case _ =>
         println("No match in generator/statement")
         null
@@ -221,6 +225,16 @@ class Generator {
     val st = group.getInstanceOf("statements/returnStatement")
     if current.hasChildren() then
       st.add("expression", expression(current.getChild(0)))
+    return st
+
+  def whileStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/whileStatement")
+    st.add("whileCondition", whileCondition(current.getChild(0)))
+    st.add("statement", statement(current.getChild(1)))
+    return st
+
+  def whileCondition (current: AstNode): ST =
+    val st = expression(current)
     return st
 
   // EXPRESSIONS
