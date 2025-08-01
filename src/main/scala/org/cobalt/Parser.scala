@@ -474,7 +474,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.INITIALIZER)
     if lookahead.kind == Token.Kind.EQUAL then
       match_(Token.Kind.EQUAL)
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     return n
 
   // NAME
@@ -668,7 +668,7 @@ class Parser {
 
   def expressionStatement(): AstNode =
     val n = AstNode(AstNode.Kind.EXPRESSION_STATEMENT)
-    n.addChild(expressionRoot())
+    n.addChild(expression(root=true))
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -719,10 +719,10 @@ class Parser {
 
   def forInitExpressionList (): AstNode =
     val n = AstNode(AstNode.Kind.FOR_INIT_EXPRESSION_LIST)
-    n.addChild(expressionRoot())
+    n.addChild(expression(root=true))
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -735,7 +735,7 @@ class Parser {
       lookahead.kind == Token.Kind.IDENTIFIER ||
       lookahead.kind == Token.Kind.THIS
     then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
       match_(Token.Kind.SEMICOLON)
     else
       // Empty case
@@ -749,10 +749,10 @@ class Parser {
       lookahead.kind == Token.Kind.IDENTIFIER ||
       lookahead.kind == Token.Kind.THIS
     then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     return n
 
   // After trying to handle basic and enhanced for loops with a single keyword,
@@ -798,50 +798,64 @@ class Parser {
     match_(Token.Kind.RETURN)
     // Should we explicitly check FIRST, or is it ok to just check FOLLOW?
     if lookahead.kind != Token.Kind.SEMICOLON then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     match_(Token.Kind.SEMICOLON)
     return n
+
+  // C++ doesn't have 'until' statements, but I would like to have them. I often
+  // need an "until (done) doSomething();" loop. Yes, that requirement can be
+  // met by a 'while' statement such as "while (!done) doSomething();" but I
+  // prefer to have the option to use either one. If the 'until' statement
+  // proves controversial or unpopular (or is deemed to not be orthogonal
+  // enough) then it can be removed later.
 
   def untilStatement (): AstNode =
     val n = AstNode(AstNode.Kind.UNTIL_STATEMENT, lookahead)
     match_(Token.Kind.UNTIL)
-    match_(Token.Kind.L_PARENTHESIS)
-    // Not sure if this is always an expression or something else that is
-    // usually an expression.
-    n.addChild(expressionRoot())
-    match_(Token.Kind.R_PARENTHESIS)
+    n.addChild(untilCondition())
     if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(compoundStatement())
     else
       n.addChild(statement())
+    return n
+
+  // In C++26 the condition can be an expression or a declaration. For now, we
+  // will only support expressions, and use the rule as a passthrough.
+
+  def untilCondition (): AstNode =
+    match_(Token.Kind.L_PARENTHESIS)
+    val n = expression(root=true)
+    match_(Token.Kind.R_PARENTHESIS)
     return n
 
   def whileStatement (): AstNode =
     val n = AstNode(AstNode.Kind.WHILE_STATEMENT, lookahead)
     match_(Token.Kind.WHILE)
-    match_(Token.Kind.L_PARENTHESIS)
-    // Not sure if this is always an expression or something else that is
-    // usually an expression.
-    n.addChild(expressionRoot())
-    match_(Token.Kind.R_PARENTHESIS)
+    n.addChild(whileCondition())
     if lookahead.kind == Token.Kind.L_BRACE then
       n.addChild(compoundStatement())
     else
       n.addChild(statement())
     return n
 
+  // In C++26 the condition can be an expression or a declaration. For now, we
+  // will only support expressions, and use the rule as a passthrough.
+
+  def whileCondition (): AstNode =
+    match_(Token.Kind.L_PARENTHESIS)
+    val n = expression(root=true)
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
   // EXPRESSIONS
 
-  // Do we need an expression root AST node?
-
-  def expressionRoot (): AstNode =
-    val n = AstNode(AstNode.Kind.EXPRESSION_ROOT)
-    n.addChild(expression())
-    return n
-
-  def expression (): AstNode =
-    val n = assignmentExpression()
-    return n
+  def expression (root: Boolean = false): AstNode =
+    if root then
+      val n = AstNode(AstNode.Kind.EXPRESSION)
+      n.addChild(assignmentExpression())
+      return n
+    else
+      return assignmentExpression()
 
   // Note: It is inefficient to define first sets inside of each method because
   // these methods may be called over and over again, resulting in repeated
@@ -1319,7 +1333,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.ARRAY_TYPE, lookahead)
     match_(Token.Kind.L_BRACKET)
     if lookahead.kind != Token.Kind.R_BRACKET then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     match_(Token.Kind.R_BRACKET)
     return n
 

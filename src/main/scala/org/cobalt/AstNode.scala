@@ -116,6 +116,7 @@ object AstNode:
     // Statements
     case BREAK_STATEMENT
     case COMPOUND_STATEMENT
+    case CONDITION
     case CONTINUE_STATEMENT
     case DO_STATEMENT
     case ELSE_CLAUSE
@@ -136,7 +137,7 @@ object AstNode:
 
     // Expressions
     case BINARY_EXPRESSION
-    case EXPRESSION_ROOT
+    case EXPRESSION
     case UNARY_EXPRESSION
 
     // Postfix expressions

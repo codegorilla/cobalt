@@ -163,8 +163,8 @@ class Generator {
 
   def initializer (current: AstNode): ST =
     val child = current.getChild(0)
-    if child.getKind() == AstNode.Kind.EXPRESSION_ROOT then
-      return expressionRoot(child)
+    if child.getKind() == AstNode.Kind.EXPRESSION then
+      return expression(child)
     else
       return null
 
@@ -214,24 +214,28 @@ class Generator {
 
   def expressionStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/expressionStatement")
-    st.add("expression", expressionRoot(current.getChild(0)))
+    st.add("expression", expression(current.getChild(0)))
     return st
 
   def returnStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/returnStatement")
     if current.hasChildren() then
-      st.add("expression", expressionRoot(current.getChild(0)))
+      st.add("expression", expression(current.getChild(0)))
     return st
-
 
   // EXPRESSIONS
 
-  def expressionRoot (current: AstNode): ST =
-    return expression(current.getChild(0))
+  // def expressionRoot (current: AstNode): ST =
+  //   val kind = current.getKind()
+  //   if kind == AstNode.Kind.EXPRESSION then
+  //     return expression(current.getChild(0))
+  //   else
+  //     return
 
   def expression (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
+      case AstNode.Kind.EXPRESSION => expression(current.getChild(0))
       case AstNode.Kind.BINARY_EXPRESSION => binaryExpression(current)
       case AstNode.Kind.BOOLEAN_LITERAL => booleanLiteral(current)
       case AstNode.Kind.FLOATING_POINT_LITERAL => floatingPointLiteral(current)
