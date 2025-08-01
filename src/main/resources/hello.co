@@ -1,7 +1,9 @@
 
 //public static val x: int;
 
-var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
+//var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
+
+var alpha: *(*int)[1] = (1.5 + 2)/4;
 
 var beta: Token[int, float] = 0;
 
@@ -14,9 +16,11 @@ def myfun (x: *int, y: float) -> int {
   1 + 2 * -3.14;
   return 1.5;
 
+  until (1 < 10)
+    break;
+
   while (1 < 10) {
     break;
-    continue;
     return 10;
   }
 

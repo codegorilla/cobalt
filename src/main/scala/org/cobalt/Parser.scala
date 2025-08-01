@@ -821,11 +821,17 @@ class Parser {
     val n = AstNode(AstNode.Kind.UNTIL_STATEMENT, lookahead)
     match_(Token.Kind.UNTIL)
     n.addChild(untilCondition())
-    n.addChild(statement())
+    n.addChild(untilBody())
     return n
 
   // In C++26 the condition can be an expression or a declaration. For now, we
   // will only support expressions, and use the rule as a passthrough.
+
+  // We can handle transformation to a 'while' statement here by inserting an
+  // AST node that complements the expression. However, the parser should not
+  // concern itself with the details of the target language. The lack of an
+  // 'until' statement is a concern of the target language, so we will leave it
+  // up to a separate transformation or generation phase to make that change.
 
   def untilCondition (): AstNode =
     match_(Token.Kind.L_PARENTHESIS)
@@ -833,13 +839,21 @@ class Parser {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
-  // Todo: Having a while body may make generating indented code easier.
+  def untilBody (): AstNode =
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n = statement()
+    else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
+      n.addChild(statement())
+    return n
 
   def whileStatement (): AstNode =
     val n = AstNode(AstNode.Kind.WHILE_STATEMENT, lookahead)
     match_(Token.Kind.WHILE)
     n.addChild(whileCondition())
-    n.addChild(statement())
+    n.addChild(whileBody())
     return n
 
   // In C++26 the condition can be an expression or a declaration. For now, we
@@ -849,6 +863,16 @@ class Parser {
     match_(Token.Kind.L_PARENTHESIS)
     val n = expression(root=true)
     match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def whileBody (): AstNode =
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n = statement()
+    else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
+      n.addChild(statement())
     return n
 
   // EXPRESSIONS

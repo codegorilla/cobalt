@@ -186,6 +186,8 @@ class Generator {
         variableDeclaration(current)
       case AstNode.Kind.RETURN_STATEMENT =>
         returnStatement(current)
+      case AstNode.Kind.UNTIL_STATEMENT =>
+        untilStatement(current)
       case AstNode.Kind.WHILE_STATEMENT =>
         whileStatement(current)
       case _ =>
@@ -227,15 +229,34 @@ class Generator {
       st.add("expression", expression(current.getChild(0)))
     return st
 
+  def untilStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/untilStatement")
+    st.add("untilCondition", untilCondition(current.getChild(0)))
+    st.add("whileBody", whileBody(current.getChild(1)))
+    return st
+
+  def untilCondition (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/untilCondition")
+    st.add("expression", expression(current))
+    return st
+
+  // def whileBody (current: AstNode): ST =
+  //   return statement(current)
+
   def whileStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/whileStatement")
     st.add("whileCondition", whileCondition(current.getChild(0)))
-    st.add("statement", statement(current.getChild(1)))
+    st.add("whileBody", whileBody(current.getChild(1)))
     return st
 
   def whileCondition (current: AstNode): ST =
-    val st = expression(current)
+    val st = group.getInstanceOf("statements/whileCondition")
+    st.add("expression", expression(current))
     return st
+
+  def whileBody (current: AstNode): ST =
+    return statement(current)
+
 
   // EXPRESSIONS
 
