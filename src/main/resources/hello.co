@@ -9,7 +9,7 @@ def myfun (x: *int, y: float) -> int {
   // Do something
   break;
   continue;
-  var t: int = 1;
+  var t: int = 1;;
   var u: float = 1;
   return 1.5;
 }

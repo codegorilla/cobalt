@@ -176,6 +176,8 @@ class Generator {
         breakStatement(current)
       case AstNode.Kind.CONTINUE_STATEMENT =>
         continueStatement(current)
+      case AstNode.Kind.EMPTY_STATEMENT =>
+        emptyStatement(current)
       case AstNode.Kind.VARIABLE_DECLARATION =>
         variableDeclaration(current)
       case AstNode.Kind.RETURN_STATEMENT =>
@@ -197,6 +199,15 @@ class Generator {
 
   def continueStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/continueStatement")
+    return st
+
+  // The empty statement could simply be omitted from the output since it
+  // constitutes a "no-op" that has no effect. But it might be useful to keep
+  // it in to serve as a marker for troubleshooting purposes. It is trivial to
+  // implement anyways.
+
+  def emptyStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/emptyStatement")
     return st
 
   def returnStatement (current: AstNode): ST =
