@@ -618,6 +618,9 @@ class Parser {
   // might need a separate production. Alternatively, we could use a flag to
   // signify one or the other. Or we can defer the question to later phases.
 
+  // Should this just be a passthrough or do we want dedicated AST nodes at the
+  // root of all statement sub-trees?
+
   def declarationStatement (): AstNode =
     var n: AstNode = null
     var p = modifiers()
@@ -660,8 +663,14 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  // The expression statement is primarily just a passthrough, but we want a
+  // dedicated AST node at the root of all statement sub-trees.
+
   def expressionStatement(): AstNode =
-    return null
+    val n = AstNode(AstNode.Kind.EXPRESSION_STATEMENT)
+    n.addChild(expressionRoot())
+    match_(Token.Kind.SEMICOLON)
+    return n
 
   def forStatement (): AstNode =
     val n = AstNode(AstNode.Kind.FOR_STATEMENT, lookahead)

@@ -120,6 +120,7 @@ object AstNode:
     case DO_STATEMENT
     case ELSE_CLAUSE
     case EMPTY_STATEMENT
+    case EXPRESSION_STATEMENT
     case FOR_STATEMENT
     case FOR_CONDITION
     case FOR_INIT
