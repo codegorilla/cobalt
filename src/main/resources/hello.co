@@ -11,7 +11,7 @@ def myfun (x: *int, y: float) -> int {
   continue;
   var t: int = 1;;
   var u: float = 1;
-  1 + 2 * 3.14;
+  1 + 2 * -3.14;
   return 1.5;
 }
 

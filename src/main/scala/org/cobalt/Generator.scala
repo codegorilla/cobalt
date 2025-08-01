@@ -225,18 +225,12 @@ class Generator {
 
   // EXPRESSIONS
 
-  // def expressionRoot (current: AstNode): ST =
-  //   val kind = current.getKind()
-  //   if kind == AstNode.Kind.EXPRESSION then
-  //     return expression(current.getChild(0))
-  //   else
-  //     return
-
   def expression (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
       case AstNode.Kind.EXPRESSION => expression(current.getChild(0))
       case AstNode.Kind.BINARY_EXPRESSION => binaryExpression(current)
+      case AstNode.Kind.UNARY_EXPRESSION => unaryExpression(current)
       case AstNode.Kind.BOOLEAN_LITERAL => booleanLiteral(current)
       case AstNode.Kind.FLOATING_POINT_LITERAL => floatingPointLiteral(current)
       case AstNode.Kind.INTEGER_LITERAL => integerLiteral(current)
@@ -247,9 +241,15 @@ class Generator {
     val st = group.getInstanceOf("expressions/binaryExpression")
     // Note: If operators need to be translated, then we can map based on token
     // kind, but for now just use the token lexeme.
-    st.add("op", current.getToken().lexeme)
+    st.add("operation", current.getToken().lexeme)
     st.add("leftExpr",  expression(current.getChild(0)))
     st.add("rightExpr", expression(current.getChild(1)))
+    return st
+
+  def unaryExpression (current: AstNode): ST =
+    val st = group.getInstanceOf("expressions/unaryExpression")
+    st.add("operation", current.getToken().lexeme)
+    st.add("expression", expression(current.getChild(0)))
     return st
 
   def booleanLiteral (current: AstNode): ST =

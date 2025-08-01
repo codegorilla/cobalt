@@ -37,6 +37,14 @@ class Parser {
   val builtinScope = Scope(Scope.Kind.BUILT_IN)
   var currentScope = builtinScope
 
+  // Todo: we may also need a 'null_t' type, for which there is exactly one
+  // value, which is 'null'. This is to match the C++ 'nullptr_t' type and its
+  // corresponding single 'nullptr' value. I am not sure if this is a primitive
+  // type or not. Needs research.
+
+  // Todo: We may decide that 'int', 'short', 'float', etc. should just be
+  // typealiases for the various fixed size types.
+
   def definePrimitiveTypes () =
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int"))
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int8"))
@@ -849,6 +857,10 @@ class Parser {
 
   // EXPRESSIONS
 
+  // The root of every expression sub-tree has an explicit 'expression' AST
+  // node, where the final computed type and other synthesized attributes can be
+  // stored to aid in such things as type-checking.
+
   def expression (root: Boolean = false): AstNode =
     if root then
       val n = AstNode(AstNode.Kind.EXPRESSION)
@@ -857,10 +869,9 @@ class Parser {
     else
       return assignmentExpression()
 
-  // Note: It is inefficient to define first sets inside of each method because
-  // these methods may be called over and over again, resulting in repeated
-  // creation of first sets, which all contain constant information. However, it
-  // is convenient to define them like so. We can optimize this later.
+  // We may wish to add a 'walrus' operator (:=), which can be used inside a
+  // conditional statement to indicate that the developer truly intends to have
+  // and assignment rather than an equality check.
 
   def assignmentExpression (): AstNode =
     var n = logicalOrExpression()
