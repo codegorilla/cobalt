@@ -20,31 +20,21 @@ def myfun (x: *int, y: float) -> int {
     break;
 
   while (1 < 10) {
+    1 + 2;
     break;
     return 10;
   }
 
+  if (1 < 10) {
+    1 + 2;
+    break;
+  } else {
+    3 + 4;
+    continue;
+  }
+
 }
 
-//template [T]
-//def sort (x: int, y: int) {
-//}
-
-//template [T]
-//class List {
-//}
-
-//static var hello: float;
-
-//def myfun (x: float) -> int {
-//  return;
-//}
-
-//enum TokenKind {
-//  val DEF;
-//  val VAL;
-//  val VAR;
-//}
 
 //class Token {
 
@@ -56,4 +46,17 @@ def myfun (x: *int, y: float) -> int {
 
 //}
 
+//enum TokenKind {
+//  val DEF;
+//  val VAL;
+//  val VAR;
+//}
+
+//template [T]
+//def sort (x: int, y: int) {
+//}
+
+//template [T]
+//class List {
+//}
 

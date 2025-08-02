@@ -89,6 +89,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
+      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
       Thread.sleep(SLEEP_TIME)
       n.addChild(declaration())
     return n
@@ -110,6 +111,7 @@ class Parser {
         case Token.Kind.VAL   => variableDeclaration(p)
         case Token.Kind.VAR   => variableDeclaration(p)
         case _ =>
+          // We REALLY need to start some real error handling...
           println(s"Found something else! ${lookahead.kind}")
           null
     return n
@@ -603,6 +605,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
     match_(Token.Kind.L_BRACE)
     while statementFirstSet.contains(lookahead.kind) do
+      println(s"Sleeping for ${SLEEP_TIME} seconds in compoundStatement...")
       Thread.sleep(SLEEP_TIME)
       n.addChild(statement())
     match_(Token.Kind.R_BRACE)
@@ -781,23 +784,41 @@ class Parser {
   def ifStatement (): AstNode =
     val n = AstNode(AstNode.Kind.IF_STATEMENT, lookahead)
     match_(Token.Kind.IF)
-    match_(Token.Kind.L_PARENTHESIS)
-    n.addChild(expression())
-    match_(Token.Kind.R_PARENTHESIS)
-    if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
-    else
-      n.addChild(statement())
+    n.addChild(ifCondition())
+    n.addChild(ifBody())
     if lookahead.kind == Token.Kind.ELSE then
       n.addChild(elseClause())
+    return n
+
+  def ifCondition (): AstNode =
+    match_(Token.Kind.L_PARENTHESIS)
+    val n = expression(root=true)
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def ifBody (): AstNode =
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n = compoundStatement()
+    else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
+      n.addChild(statement())
     return n
 
   def elseClause (): AstNode =
     val n = AstNode(AstNode.Kind.ELSE_CLAUSE, lookahead)
     match_(Token.Kind.ELSE)
+    n.addChild(elseBody())
+    return n
+
+  def elseBody (): AstNode =
+    var n: AstNode = null
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
+      n = compoundStatement()
     else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
       n.addChild(statement())
     return n
 

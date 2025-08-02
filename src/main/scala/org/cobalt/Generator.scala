@@ -182,6 +182,8 @@ class Generator {
         emptyStatement(current)
       case AstNode.Kind.EXPRESSION_STATEMENT =>
         expressionStatement(current)
+      case AstNode.Kind.IF_STATEMENT =>
+        ifStatement(current)
       case AstNode.Kind.VARIABLE_DECLARATION =>
         variableDeclaration(current)
       case AstNode.Kind.RETURN_STATEMENT =>
@@ -223,6 +225,30 @@ class Generator {
     st.add("expression", expression(current.getChild(0)))
     return st
 
+  def ifStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/ifStatement")
+    st.add("ifCondition", ifCondition(current.getChild(0)))
+    st.add("ifBody", ifBody(current.getChild(1)))
+    if current.getChildCount() == 3 then
+      st.add("elseClause", elseClause(current.getChild(2)))
+    return st
+
+  def ifCondition (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/ifCondition")
+    st.add("expression", expression(current))
+    return st
+
+  def ifBody (current: AstNode): ST =
+    return statement(current)
+
+  def elseClause (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/elseClause")
+    st.add("elseBody", elseBody(current.getChild(0)))
+    return st
+
+  def elseBody (current: AstNode): ST =
+    return statement(current)
+
   def returnStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/returnStatement")
     if current.hasChildren() then
@@ -232,7 +258,7 @@ class Generator {
   def untilStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/untilStatement")
     st.add("untilCondition", untilCondition(current.getChild(0)))
-    st.add("whileBody", whileBody(current.getChild(1)))
+    st.add("untilBody", whileBody(current.getChild(1)))
     return st
 
   def untilCondition (current: AstNode): ST =
@@ -240,8 +266,8 @@ class Generator {
     st.add("expression", expression(current))
     return st
 
-  // def whileBody (current: AstNode): ST =
-  //   return statement(current)
+  def untilBody (current: AstNode): ST =
+    return statement(current)
 
   def whileStatement (current: AstNode): ST =
     val st = group.getInstanceOf("statements/whileStatement")
@@ -256,7 +282,6 @@ class Generator {
 
   def whileBody (current: AstNode): ST =
     return statement(current)
-
 
   // EXPRESSIONS
 
