@@ -2,6 +2,7 @@ package org.cobalt
 
 import scala.collection.mutable.Map
 
+
 import java.util.LinkedList
 import java.nio.file.Paths
 import java.nio.file.Files
@@ -40,3 +41,8 @@ import java.io.IOException
   val code = template.render()
   println("---")
   println(code)
+
+  // Test errors
+  // val error = ErrorMessage(lookahead.line, lookahead.column)
+  // error.setMessage("Internal error in parser/modifiers.")
+  // error.print()

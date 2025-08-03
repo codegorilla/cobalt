@@ -119,17 +119,32 @@ class Generator {
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
-    modifiers(current.getChild(0))
+    val modST = variableModifiers(current.getChild(0))
+    if modST != null then
+      st.add("variableModifiers", modST)
     variableName(current.getChild(1))
     typeSpecifier(current.getChild(2))
     // Get translated type specifier and declarator from stack. The type
     // specifier should be something basic like 'int'.
     st.add("typeSpecifier", stack.pop())
     st.add("declarator", stack.pop())
-
     val initST = initializer(current.getChild(3))
     if initST != null then
       st.add("initializer", initST)
+    return st
+
+  def variableModifiers (current: AstNode): ST =
+    if current.hasChildren() then
+      val st = group.getInstanceOf("declarations/variableModifiers")
+      for child <- current.getChildren() do
+        st.add("variableModifier", variableModifier(child))
+      return st
+    else
+      return null
+
+  def variableModifier (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/variableModifier")
+      st.add("value", current.getToken().lexeme)
     return st
 
   // The variable name becomes a "simple declarator", which is the core of the

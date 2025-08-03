@@ -130,33 +130,40 @@ class Parser {
   // but it would not have a position in the character stream, so it would lack
   // things like a column and line number.
 
-  // Todo: Check best practice on whether or not we should gratuitously store
-  // keyword tokens in their corresponding AST nodes. This might make sense for
-  // error reporting, so that even the semantic analysis passes can trace
-  // problems back to their originating column and line numbers.
-  // Update: Yes, it seems we should be storing tokens in AST nodes (Parr, 81).
-
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
-    while lookahead.kind == Token.Kind.FINAL   ||
-          lookahead.kind == Token.Kind.PRIVATE ||
-          lookahead.kind == Token.Kind.PUBLIC  ||
-          lookahead.kind == Token.Kind.STATIC
+    while
+      lookahead.kind == Token.Kind.FINAL    ||
+      lookahead.kind == Token.Kind.OVERRIDE ||
+      lookahead.kind == Token.Kind.PRIVATE  ||
+      lookahead.kind == Token.Kind.PUBLIC   ||
+      lookahead.kind == Token.Kind.STATIC
     do
       val modifier = lookahead.kind match
-        case Token.Kind.FINAL   => finalModifier()
-        case Token.Kind.PRIVATE => privateModifier()
-        case Token.Kind.PUBLIC  => publicModifier()
-        case Token.Kind.STATIC  => staticModifier()
+        case Token.Kind.FINAL    => finalModifier()
+        case Token.Kind.OVERRIDE => overrideModifier()
+        case Token.Kind.PRIVATE  => privateModifier()
+        case Token.Kind.PUBLIC   => publicModifier()
+        case Token.Kind.STATIC   => staticModifier()
         case _ =>
-          print("error: This can only happen if there is a parser error.")
-          null
+          throw new Exception("Parser error: impossible case reached.")
       n.addChild(modifier)
     return n
 
+  // I would like the 'final' modifier on variables to be equivalent to using
+  // 'const' in C++ because I want to use the 'const' modifier to mean the same
+  // as 'constexpr' in C++. This might not be possible because 'const' in C++
+  // is not really equivalent to 'final' in Java -- it implies additional
+  // constraints on the code, where it requires other things to be 'const' as
+  // well. It would be strange if we made 'final' require other things to be
+  // 'final' as well, if in that other context, 'final' didn't sound right or
+  // 'final' was already defined to mean something else. If we have to use
+  // 'const' instead of 'final' then we'll need to find something else to use
+  // instead of 'const' for compile-time constants, such as 'comptime'. I have a
+  // natural aversion to 'constexpr' for some reason... it's a bit obtuse for my
+  // taste.
+
   def finalModifier (): AstNode =
-    // We need to define the node at the top so that we can set its token to the
-    // current lookahead before it advances and we lose the chance to do so.
     val n = AstNode(AstNode.Kind.FINAL_MODIFIER, lookahead)
     match_(Token.Kind.FINAL)
     return n
