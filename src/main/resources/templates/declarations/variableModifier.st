@@ -1,3 +1,0 @@
-variableModifier (value) ::= <<
-<value>
->>

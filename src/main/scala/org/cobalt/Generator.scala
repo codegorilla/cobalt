@@ -119,9 +119,7 @@ class Generator {
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
-    val modST = variableModifiers(current.getChild(0))
-    if modST != null then
-      st.add("variableModifiers", modST)
+    st.add("variableModifiers", variableModifiers(current.getChild(0)))
     variableName(current.getChild(1))
     typeSpecifier(current.getChild(2))
     // Get translated type specifier and declarator from stack. The type
@@ -134,18 +132,22 @@ class Generator {
     return st
 
   def variableModifiers (current: AstNode): ST =
-    if current.hasChildren() then
-      val st = group.getInstanceOf("declarations/variableModifiers")
-      for child <- current.getChildren() do
-        st.add("variableModifier", variableModifier(child))
-      return st
-    else
-      return null
-
-  def variableModifier (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/variableModifier")
-      st.add("value", current.getToken().lexeme)
+    val st = group.getInstanceOf("declarations/variableModifiers")
+    for child <- current.getChildren() do
+      st.add("variableModifier", variableModifier(child))
     return st
+
+  val variableModifierMap = Map (
+    "const"  -> "constexpr",
+    "final"  -> "const",
+    "static" -> "static"
+  )
+
+  // String templates are only needed if we actually need to embed a string
+  // inside other content. Otherwise a plain string can be used directly.
+
+  def variableModifier (current: AstNode): String =
+    return variableModifierMap(current.getToken().lexeme)
 
   // The variable name becomes a "simple declarator", which is the core of the
   // overall C++ declarator that gets built up. A C++ declaration is of the form
