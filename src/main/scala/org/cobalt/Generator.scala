@@ -57,13 +57,45 @@ class Generator {
 
   // ROUTINE DECLARATION
 
+  // C++ function modifiers are seemingly very inconsistent. Some go at the
+  // front, some go in the middle, and some go at the back; depending on what
+  // the modifier in question is.
+
+  // A good way to handle this might be to get all of the modifiers into a list.
+  // Then for each element of the list, figure out if it goes at the front,
+  // middle, or back.
+
   def routineDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionDeclaration")
+    st.add("functionModifiers1", routineModifiers(current.getChild(0)))
     st.add("functionName", routineName(current.getChild(1)))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))
     st.add("functionBody", routineBody(current.getChild(4)))
     return st
+
+  // Todo: Need to finish this part. Might have to lift this functionality to
+  // routineDeclaration() because of the various modifier placements.
+
+  def routineModifiers (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers")
+    for child <- current.getChildren() do
+      if child.getKind() == AstNode.Kind.STATIC_MODIFIER then
+        st.add("modifier1", "static")
+      //st.add("functionModifier", routineModifier(child))
+    return st
+
+  val routineModifierMap = Map (
+    "constexpr" -> "constexpr",
+    "const" -> "const",
+    "final" -> "final",
+    "static" -> "static",
+    "override" -> "override",
+    "virtual" -> "virtual"
+  )
+
+  def routineModifier (current: AstNode): String =
+    return routineModifierMap(current.getToken().lexeme)
 
   def routineName (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionName")
@@ -91,9 +123,6 @@ class Generator {
 
   // The routineReturnType node is somewhat like the variable declaration's type
   // specifier node.
-
-  // Todo: Currently, if there is no return type, the return arrow is still
-  // rendered. That needs to be fixed.
 
   def routineReturnType (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionReturnType")
@@ -137,9 +166,21 @@ class Generator {
       st.add("variableModifier", variableModifier(child))
     return st
 
+  // We might use 'public' and 'private' in cobalt to decide whether variables
+  // should be exported or not from C++ modules. But they could mean something
+  // different for global variables vs. local variables and member variables. So
+  // this would have to be checked during semantic analysis phases.
+
+  // Cobalt doesn't intend to make use of 'static' for global variables to mean
+  // "do not export". I believe this is the only use of static at the global
+  // level so it means this would be an invalid keyword on global variables.
+
+  // We could use pattern matching instead of a map lookup. That would allow us
+  // better control over output handling.
+
   val variableModifierMap = Map (
-    "const"  -> "constexpr",
-    "final"  -> "const",
+    "constexpr" -> "constexpr",
+    "const" -> "const",
     "static" -> "static"
   )
 

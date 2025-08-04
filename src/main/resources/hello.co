@@ -5,9 +5,9 @@
 
 static var alpha: *(*int)[1] = (1.5 + 2)/4;
 
-final var beta: Token[int, float] = 5;
+var beta: Token[int, float] = 5;
 
-def myfun (x: *int, y: float) -> int {
+def myfun (x: *int, y: float) {
   // Do something
   break;
   continue;
