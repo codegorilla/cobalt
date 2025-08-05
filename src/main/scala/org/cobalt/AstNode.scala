@@ -75,6 +75,7 @@ object AstNode:
     case PRIVATE_MODIFIER
     case PUBLIC_MODIFIER
     case STATIC_MODIFIER
+    case VIRTUAL_MODIFIER
 
     // Class declaration
     case CLASS_DECLARATION

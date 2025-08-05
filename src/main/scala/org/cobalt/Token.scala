@@ -55,6 +55,7 @@ object Token {
         case USING
         case VAL
         case VAR
+        case VIRTUAL
         case WHILE
 
         // Basic types

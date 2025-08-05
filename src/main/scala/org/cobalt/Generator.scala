@@ -17,7 +17,10 @@ class Generator {
   // Load template group from template directory
   val templateDir = this.getClass().getClassLoader().getResource("templates")
   val group = STGroupDir(templateDir)
-  
+
+  // val templateFile = this.getClass().getClassLoader().getResource("templates/declarations/functionDeclaration1.stg")
+  // val group1: STGroup = new STGroupFile(templateFile);
+
   // val st = group.getInstanceOf("decl")
   // st.add("type", "int")
   // st.add("name", "x")
@@ -65,24 +68,53 @@ class Generator {
   // Then for each element of the list, figure out if it goes at the front,
   // middle, or back.
 
+  // Having separate modifier processing functions probably isn't the most
+  // sophisticated way to handle this, but its super simple to understand.
+
   def routineDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionDeclaration")
-    st.add("functionModifiers1", routineModifiers(current.getChild(0)))
+    st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
+    st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
+    st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
+    st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
     st.add("functionName", routineName(current.getChild(1)))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))
     st.add("functionBody", routineBody(current.getChild(4)))
     return st
 
-  // Todo: Need to finish this part. Might have to lift this functionality to
-  // routineDeclaration() because of the various modifier placements.
-
-  def routineModifiers (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionModifiers")
+  def routineModifiers1 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers1")
     for child <- current.getChildren() do
-      if child.getKind() == AstNode.Kind.STATIC_MODIFIER then
-        st.add("modifier1", "static")
-      //st.add("functionModifier", routineModifier(child))
+      val kind = child.getKind()
+      if kind == AstNode.Kind.STATIC_MODIFIER then
+        st.add("functionModifier", "static")
+    return st
+
+  def routineModifiers2 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers2")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.VIRTUAL_MODIFIER then
+        st.add("functionModifier", "virtual")
+    return st
+
+  def routineModifiers3 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers3")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.CONST_MODIFIER then
+        st.add("functionModifier", "const")
+    return st
+
+  def routineModifiers4 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers4")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.FINAL_MODIFIER then
+        st.add("functionModifier", "final")
+      else if kind == AstNode.Kind.OVERRIDE_MODIFIER then
+        st.add("functionModifier", "override")
     return st
 
   val routineModifierMap = Map (

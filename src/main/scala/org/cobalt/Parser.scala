@@ -133,18 +133,22 @@ class Parser {
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
     while
+      lookahead.kind == Token.Kind.CONST    ||
       lookahead.kind == Token.Kind.FINAL    ||
       lookahead.kind == Token.Kind.OVERRIDE ||
       lookahead.kind == Token.Kind.PRIVATE  ||
       lookahead.kind == Token.Kind.PUBLIC   ||
-      lookahead.kind == Token.Kind.STATIC
+      lookahead.kind == Token.Kind.STATIC   ||
+      lookahead.kind == Token.Kind.VIRTUAL
     do
       val modifier = lookahead.kind match
+        case Token.Kind.CONST    => constModifier()
         case Token.Kind.FINAL    => finalModifier()
         case Token.Kind.OVERRIDE => overrideModifier()
         case Token.Kind.PRIVATE  => privateModifier()
         case Token.Kind.PUBLIC   => publicModifier()
         case Token.Kind.STATIC   => staticModifier()
+        case Token.Kind.VIRTUAL  => virtualModifier()
         case _ =>
           throw new Exception("Parser error: impossible case reached.")
       n.addChild(modifier)
@@ -162,6 +166,11 @@ class Parser {
   // instead of 'const' for compile-time constants, such as 'comptime'. I have a
   // natural aversion to 'constexpr' for some reason... it's a bit obtuse for my
   // taste.
+
+  def constModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.CONST_MODIFIER, lookahead)
+    match_(Token.Kind.CONST)
+    return n
 
   def finalModifier (): AstNode =
     val n = AstNode(AstNode.Kind.FINAL_MODIFIER, lookahead)
@@ -186,6 +195,11 @@ class Parser {
   def staticModifier (): AstNode =
     val n = AstNode(AstNode.Kind.STATIC_MODIFIER, lookahead)
     match_(Token.Kind.STATIC)
+    return n
+
+  def virtualModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.VIRTUAL_MODIFIER, lookahead)
+    match_(Token.Kind.VIRTUAL)
     return n
 
   // TEMPLATE DECLARATION
@@ -268,6 +282,10 @@ class Parser {
     return n
 
   // METHOD DECLARATION
+
+  // Note: The C++ specification calls these "member functions" rather than
+  // "methods". We may decide to call them "member routines" in keeping with C++
+  // tradition.
 
   // Todo: We need to push another scope onto the scope stack. Keep in mind that
   // the method parameters may be in the same exact scope as the routine body
