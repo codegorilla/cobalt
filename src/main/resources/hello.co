@@ -35,6 +35,9 @@ static const def myfun (x: *int, y: float) -> int {
 
 }
 
+private final class Token {
+
+}
 
 //class Token {
 

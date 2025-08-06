@@ -133,6 +133,7 @@ class Parser {
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
     while
+      lookahead.kind == Token.Kind.ABSTRACT ||
       lookahead.kind == Token.Kind.CONST    ||
       lookahead.kind == Token.Kind.FINAL    ||
       lookahead.kind == Token.Kind.OVERRIDE ||
@@ -141,7 +142,10 @@ class Parser {
       lookahead.kind == Token.Kind.STATIC   ||
       lookahead.kind == Token.Kind.VIRTUAL
     do
+      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
+      Thread.sleep(SLEEP_TIME)
       val modifier = lookahead.kind match
+        case Token.Kind.ABSTRACT => abstractModifier()
         case Token.Kind.CONST    => constModifier()
         case Token.Kind.FINAL    => finalModifier()
         case Token.Kind.OVERRIDE => overrideModifier()
@@ -166,6 +170,11 @@ class Parser {
   // instead of 'const' for compile-time constants, such as 'comptime'. I have a
   // natural aversion to 'constexpr' for some reason... it's a bit obtuse for my
   // taste.
+
+  def abstractModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.ABSTRACT_MODIFIER, lookahead)
+    match_(Token.Kind.ABSTRACT)
+    return n
 
   def constModifier (): AstNode =
     val n = AstNode(AstNode.Kind.CONST_MODIFIER, lookahead)

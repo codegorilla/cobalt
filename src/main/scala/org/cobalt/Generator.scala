@@ -52,10 +52,51 @@ class Generator {
   def declaration (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
-      case AstNode.Kind.VARIABLE_DECLARATION =>
-        variableDeclaration(current)
+      case AstNode.Kind.CLASS_DECLARATION =>
+        classDeclaration(current)
       case AstNode.Kind.ROUTINE_DECLARATION =>
         routineDeclaration(current)
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
+      case _ =>
+        println("No match in generator/declaration.")
+        null
+    return st
+
+  // CLASS DECLARATION
+
+  def classDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classDeclaration")
+    st.add("classModifiers1", classModifiers1(current.getChild(0)))
+    st.add("classModifiers2", classModifiers2(current.getChild(0)))
+    st.add("className", className(current.getChild(1)))
+    return st
+
+  // C++ does not actually have an 'abstract' modifier for classes themselves.
+  // Any class with at least one pure virtual function is considered an abstract
+  // class.
+
+  def classModifiers1 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classModifiers1")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.PRIVATE_MODIFIER then
+        st.add("classModifier", "")
+      else if kind == AstNode.Kind.PUBLIC_MODIFIER then
+        st.add("classModifier", "export")
+    return st
+
+  def classModifiers2 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classModifiers2")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.FINAL_MODIFIER then
+        st.add("classModifier", "final")
+    return st
+
+  def className (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/className")
+    st.add("name", current.getToken().lexeme)
     return st
 
   // ROUTINE DECLARATION

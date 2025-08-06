@@ -68,6 +68,7 @@ object AstNode:
     case NAME
 
     // Modifiers
+    case ABSTRACT_MODIFIER
     case CONST_MODIFIER
     case FINAL_MODIFIER
     case MODIFIERS
