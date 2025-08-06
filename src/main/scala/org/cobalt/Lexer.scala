@@ -12,6 +12,7 @@ class Lexer {
   var column = 1
 
   val keywordLookup = Map (
+    "abstract" -> Token.Kind.ABSTRACT,
     "and" -> Token.Kind.AND,
     "break" -> Token.Kind.BREAK,
     "case" -> Token.Kind.CASE,
@@ -56,6 +57,7 @@ class Lexer {
     "using" -> Token.Kind.USING,
     "val" -> Token.Kind.VAL,
     "var" -> Token.Kind.VAR,
+    "virtual" -> Token.Kind.VIRTUAL,
     "while" -> Token.Kind.WHILE,
 
     "int" -> Token.Kind.INT,
@@ -72,7 +74,9 @@ class Lexer {
 
     "float" -> Token.Kind.FLOAT,
     "float32" -> Token.Kind.FLOAT32,
-    "float64" -> Token.Kind.FLOAT64
+    "float64" -> Token.Kind.FLOAT64,
+
+    "void" -> Token.Kind.VOID
   )
 
   def setInput (input: String) =

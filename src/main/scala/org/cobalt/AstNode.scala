@@ -75,6 +75,7 @@ object AstNode:
     case PRIVATE_MODIFIER
     case PUBLIC_MODIFIER
     case STATIC_MODIFIER
+    case VIRTUAL_MODIFIER
 
     // Class declaration
     case CLASS_DECLARATION
@@ -96,8 +97,9 @@ object AstNode:
     case ROUTINE_BODY
     case ROUTINE_DECLARATION
     case ROUTINE_PARAMETER
+    case ROUTINE_PARAMETER_NAME
     case ROUTINE_PARAMETERS
-    case ROUTINE_RESULT
+    case ROUTINE_RETURN_TYPE
 
     // Template declaration
     case TEMPLATE_DECLARATION
@@ -115,10 +117,12 @@ object AstNode:
     // Statements
     case BREAK_STATEMENT
     case COMPOUND_STATEMENT
+    case CONDITION
     case CONTINUE_STATEMENT
     case DO_STATEMENT
     case ELSE_CLAUSE
     case EMPTY_STATEMENT
+    case EXPRESSION_STATEMENT
     case FOR_STATEMENT
     case FOR_CONDITION
     case FOR_INIT
@@ -134,7 +138,7 @@ object AstNode:
 
     // Expressions
     case BINARY_EXPRESSION
-    case EXPRESSION_ROOT
+    case EXPRESSION
     case UNARY_EXPRESSION
 
     // Postfix expressions

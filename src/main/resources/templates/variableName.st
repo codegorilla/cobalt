@@ -1,3 +1,0 @@
-variableName (name) ::= <<
-<name>
->>

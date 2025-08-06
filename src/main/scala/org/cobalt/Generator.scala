@@ -17,7 +17,10 @@ class Generator {
   // Load template group from template directory
   val templateDir = this.getClass().getClassLoader().getResource("templates")
   val group = STGroupDir(templateDir)
-  
+
+  // val templateFile = this.getClass().getClassLoader().getResource("templates/declarations/functionDeclaration1.stg")
+  // val group1: STGroup = new STGroupFile(templateFile);
+
   // val st = group.getInstanceOf("decl")
   // st.add("type", "int")
   // st.add("name", "x")
@@ -41,13 +44,133 @@ class Generator {
     return st
 
   def translationUnit (current: AstNode): ST =
-    var st: ST = null
-    var st1 = group.getInstanceOf("translationUnit")
+    var st = group.getInstanceOf("translationUnit")
     for child <- current.getChildren() do
-      if child.getKind() == AstNode.Kind.VARIABLE_DECLARATION then
-        st = variableDeclaration(child)
-        st1.add("item", st)
-    return st1
+      st.add("item", declaration(child))
+    return st
+
+  def declaration (current: AstNode): ST =
+    val kind = current.getKind()
+    val st = kind match
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
+      case AstNode.Kind.ROUTINE_DECLARATION =>
+        routineDeclaration(current)
+    return st
+
+  // ROUTINE DECLARATION
+
+  // C++ function modifiers are seemingly very inconsistent. Some go at the
+  // front, some go in the middle, and some go at the back; depending on what
+  // the modifier in question is.
+
+  // A good way to handle this might be to get all of the modifiers into a list.
+  // Then for each element of the list, figure out if it goes at the front,
+  // middle, or back.
+
+  // Having separate modifier processing functions probably isn't the most
+  // sophisticated way to handle this, but its super simple to understand.
+
+  def routineDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionDeclaration")
+    st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
+    st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
+    st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
+    st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
+    st.add("functionName", routineName(current.getChild(1)))
+    st.add("functionParameters", routineParameters(current.getChild(2)))
+    st.add("functionReturnType", routineReturnType(current.getChild(3)))
+    st.add("functionBody", routineBody(current.getChild(4)))
+    return st
+
+  def routineModifiers1 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers1")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.STATIC_MODIFIER then
+        st.add("functionModifier", "static")
+    return st
+
+  def routineModifiers2 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers2")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.VIRTUAL_MODIFIER then
+        st.add("functionModifier", "virtual")
+    return st
+
+  def routineModifiers3 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers3")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.CONST_MODIFIER then
+        st.add("functionModifier", "const")
+    return st
+
+  def routineModifiers4 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionModifiers4")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.FINAL_MODIFIER then
+        st.add("functionModifier", "final")
+      else if kind == AstNode.Kind.OVERRIDE_MODIFIER then
+        st.add("functionModifier", "override")
+    return st
+
+  val routineModifierMap = Map (
+    "constexpr" -> "constexpr",
+    "const" -> "const",
+    "final" -> "final",
+    "static" -> "static",
+    "override" -> "override",
+    "virtual" -> "virtual"
+  )
+
+  def routineModifier (current: AstNode): String =
+    return routineModifierMap(current.getToken().lexeme)
+
+  def routineName (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionName")
+    st.add("name", current.getToken().lexeme)
+    return st
+
+  def routineParameters (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionParameters")
+    for child <- current.getChildren() do
+      st.add("functionParameter", routineParameter(child))
+    return st
+
+  def routineParameter (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionParameter")
+    routineParameterName(current.getChild(0))
+    typeRoot(current.getChild(1))
+    st.add("typeSpecifier", stack.pop())
+    st.add("declarator", stack.pop())
+    return st
+
+  def routineParameterName (current: AstNode) =
+    val st = group.getInstanceOf("declarators/simpleDeclarator")
+    st.add("name", current.getToken().lexeme)
+    stack.push(st)
+
+  // The routineReturnType node is somewhat like the variable declaration's type
+  // specifier node.
+
+  def routineReturnType (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionReturnType")
+    if current.hasChildren() then
+      // Push an empty ST because there isn't a name to go with the type.
+      val emptyST = group.getInstanceOf("declarators/emptyDeclarator")
+      stack.push(emptyST)
+      typeRoot(current.getChild(0))
+      st.add("typeSpecifier", stack.pop())
+      st.add("declarator", stack.pop())
+    return st
+
+  def routineBody (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionBody")
+    st.add("compoundStatement", compoundStatement(current.getChild(0)))
+    return st
 
   // VARIABLE DECLARATION
 
@@ -56,19 +179,48 @@ class Generator {
   // will not have AST nodes for the type specifier.
 
   def variableDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("variableDeclaration")
-    modifiers(current.getChild(0))
+    val st = group.getInstanceOf("declarations/variableDeclaration")
+    st.add("variableModifiers", variableModifiers(current.getChild(0)))
     variableName(current.getChild(1))
     typeSpecifier(current.getChild(2))
     // Get translated type specifier and declarator from stack. The type
     // specifier should be something basic like 'int'.
     st.add("typeSpecifier", stack.pop())
     st.add("declarator", stack.pop())
-
     val initST = initializer(current.getChild(3))
     if initST != null then
       st.add("initializer", initST)
     return st
+
+  def variableModifiers (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/variableModifiers")
+    for child <- current.getChildren() do
+      st.add("variableModifier", variableModifier(child))
+    return st
+
+  // We might use 'public' and 'private' in cobalt to decide whether variables
+  // should be exported or not from C++ modules. But they could mean something
+  // different for global variables vs. local variables and member variables. So
+  // this would have to be checked during semantic analysis phases.
+
+  // Cobalt doesn't intend to make use of 'static' for global variables to mean
+  // "do not export". I believe this is the only use of static at the global
+  // level so it means this would be an invalid keyword on global variables.
+
+  // We could use pattern matching instead of a map lookup. That would allow us
+  // better control over output handling.
+
+  val variableModifierMap = Map (
+    "constexpr" -> "constexpr",
+    "const" -> "const",
+    "static" -> "static"
+  )
+
+  // String templates are only needed if we actually need to embed a string
+  // inside other content. Otherwise a plain string can be used directly.
+
+  def variableModifier (current: AstNode): String =
+    return variableModifierMap(current.getToken().lexeme)
 
   // The variable name becomes a "simple declarator", which is the core of the
   // overall C++ declarator that gets built up. A C++ declaration is of the form
@@ -101,20 +253,134 @@ class Generator {
 
   def initializer (current: AstNode): ST =
     val child = current.getChild(0)
-    if child.getKind() == AstNode.Kind.EXPRESSION_ROOT then
-      return expressionRoot(child)
+    if child.getKind() == AstNode.Kind.EXPRESSION then
+      return expression(child)
     else
       return null
 
-  // EXPRESSIONS
+  // STATEMENTS
 
-  def expressionRoot (current: AstNode): ST =
-    return expression(current.getChild(0))
+  def statement (current: AstNode): ST =
+    val st = current.getKind() match
+      case AstNode.Kind.BREAK_STATEMENT =>
+        breakStatement(current)
+      case AstNode.Kind.COMPOUND_STATEMENT =>
+        compoundStatement(current)
+      case AstNode.Kind.CONTINUE_STATEMENT =>
+        continueStatement(current)
+      case AstNode.Kind.EMPTY_STATEMENT =>
+        emptyStatement(current)
+      case AstNode.Kind.EXPRESSION_STATEMENT =>
+        expressionStatement(current)
+      case AstNode.Kind.IF_STATEMENT =>
+        ifStatement(current)
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
+      case AstNode.Kind.RETURN_STATEMENT =>
+        returnStatement(current)
+      case AstNode.Kind.UNTIL_STATEMENT =>
+        untilStatement(current)
+      case AstNode.Kind.WHILE_STATEMENT =>
+        whileStatement(current)
+      case _ =>
+        println("No match in generator/statement")
+        null
+    return st
+
+  def breakStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/breakStatement")
+    return st
+
+  def compoundStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/compoundStatement")
+    for child <- current.getChildren() do
+      st.add("statement", statement(child))
+    return st
+
+  def continueStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/continueStatement")
+    return st
+
+  // The empty statement could simply be omitted from the output since it
+  // constitutes a "no-op" that has no effect. But it might serve as a useful
+  // marker for troubleshooting purposes and is trivial to implement, so we
+  // might as well keep it around for now.
+
+  def emptyStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/emptyStatement")
+    return st
+
+  def expressionStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/expressionStatement")
+    st.add("expression", expression(current.getChild(0)))
+    return st
+
+  def ifStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/ifStatement")
+    st.add("ifCondition", ifCondition(current.getChild(0)))
+    st.add("ifBody", ifBody(current.getChild(1)))
+    if current.getChildCount() == 3 then
+      st.add("elseClause", elseClause(current.getChild(2)))
+    return st
+
+  def ifCondition (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/ifCondition")
+    st.add("expression", expression(current))
+    return st
+
+  def ifBody (current: AstNode): ST =
+    return statement(current)
+
+  def elseClause (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/elseClause")
+    st.add("elseBody", elseBody(current.getChild(0)))
+    return st
+
+  def elseBody (current: AstNode): ST =
+    return statement(current)
+
+  def returnStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/returnStatement")
+    if current.hasChildren() then
+      st.add("expression", expression(current.getChild(0)))
+    return st
+
+  def untilStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/untilStatement")
+    st.add("untilCondition", untilCondition(current.getChild(0)))
+    st.add("untilBody", whileBody(current.getChild(1)))
+    return st
+
+  def untilCondition (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/untilCondition")
+    st.add("expression", expression(current))
+    return st
+
+  def untilBody (current: AstNode): ST =
+    return statement(current)
+
+  def whileStatement (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/whileStatement")
+    st.add("whileCondition", whileCondition(current.getChild(0)))
+    st.add("whileBody", whileBody(current.getChild(1)))
+    return st
+
+  def whileCondition (current: AstNode): ST =
+    val st = group.getInstanceOf("statements/whileCondition")
+    st.add("expression", expression(current))
+    return st
+
+  def whileBody (current: AstNode): ST =
+    return statement(current)
+
+  // EXPRESSIONS
 
   def expression (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
+      case AstNode.Kind.EXPRESSION => expression(current.getChild(0))
       case AstNode.Kind.BINARY_EXPRESSION => binaryExpression(current)
+      case AstNode.Kind.UNARY_EXPRESSION => unaryExpression(current)
       case AstNode.Kind.BOOLEAN_LITERAL => booleanLiteral(current)
       case AstNode.Kind.FLOATING_POINT_LITERAL => floatingPointLiteral(current)
       case AstNode.Kind.INTEGER_LITERAL => integerLiteral(current)
@@ -125,9 +391,15 @@ class Generator {
     val st = group.getInstanceOf("expressions/binaryExpression")
     // Note: If operators need to be translated, then we can map based on token
     // kind, but for now just use the token lexeme.
-    st.add("op", current.getToken().lexeme)
+    st.add("operation", current.getToken().lexeme)
     st.add("leftExpr",  expression(current.getChild(0)))
     st.add("rightExpr", expression(current.getChild(1)))
+    return st
+
+  def unaryExpression (current: AstNode): ST =
+    val st = group.getInstanceOf("expressions/unaryExpression")
+    st.add("operation", current.getToken().lexeme)
+    st.add("expression", expression(current.getChild(0)))
     return st
 
   def booleanLiteral (current: AstNode): ST =
@@ -204,6 +476,7 @@ class Generator {
     val type_ = kind match
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
+      case Token.Kind.VOID => "void"
     st.add("name", type_)
     stack.push(st)
 

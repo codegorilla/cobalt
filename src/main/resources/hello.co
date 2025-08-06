@@ -1,33 +1,40 @@
 
 //public static val x: int;
 
-//var waypoint: *(*int)[1] = 1.5 + 2/4 - 10;
+//var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
 
-var waypoint: Token[int, float] = 0;
+static var alpha: *(*int)[1] = (1.5 + 2)/4;
 
-//def myfun (x: int) -> int {
+var beta: Token[int, float] = 5;
+
+static const def myfun (x: *int, y: float) -> int {
   // Do something
-//}
+  break;
+  continue;
+  var t: int = 1;;
+  var u: float = 1;
+  1 + 2 * -3.14;
+  return 1.5;
 
-//template [T]
-//def sort (x: int, y: int) {
-//}
+  until (1 < 10)
+    break;
 
-//template [T]
-//class List {
-//}
+  while (1 < 10) {
+    1 + 2;
+    break;
+    return 10;
+  }
 
-//static var hello: float;
+  if (1 < 10) {
+    1 + 2;
+    break;
+  } else {
+    3 + 4;
+    continue;
+  }
 
-//def myfun (x: float) -> int {
-//  return;
-//}
+}
 
-//enum TokenKind {
-//  val DEF;
-//  val VAL;
-//  val VAR;
-//}
 
 //class Token {
 
@@ -39,4 +46,17 @@ var waypoint: Token[int, float] = 0;
 
 //}
 
+//enum TokenKind {
+//  val DEF;
+//  val VAL;
+//  val VAR;
+//}
+
+//template [T]
+//def sort (x: int, y: int) {
+//}
+
+//template [T]
+//class List {
+//}
 

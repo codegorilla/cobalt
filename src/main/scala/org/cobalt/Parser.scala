@@ -22,7 +22,7 @@ import symbol.Scope
 
 class Parser {
 
-  val SLEEP_TIME = 200
+  val SLEEP_TIME = 10
 
   var input: List[Token] = null
   var position = 0
@@ -37,6 +37,14 @@ class Parser {
   val builtinScope = Scope(Scope.Kind.BUILT_IN)
   var currentScope = builtinScope
 
+  // Todo: we may also need a 'null_t' type, for which there is exactly one
+  // value, which is 'null'. This is to match the C++ 'nullptr_t' type and its
+  // corresponding single 'nullptr' value. I am not sure if this is a primitive
+  // type or not. Needs research.
+
+  // Todo: We may decide that 'int', 'short', 'float', etc. should just be
+  // typealiases for the various fixed size types.
+
   def definePrimitiveTypes () =
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int"))
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int8"))
@@ -46,6 +54,7 @@ class Parser {
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float"))
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float32"))
     builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float64"))
+    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "void"))
 
   def setInput (input: List[Token]) =
     this.input = input
@@ -80,6 +89,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
+      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
       Thread.sleep(SLEEP_TIME)
       n.addChild(declaration())
     return n
@@ -101,6 +111,7 @@ class Parser {
         case Token.Kind.VAL   => variableDeclaration(p)
         case Token.Kind.VAR   => variableDeclaration(p)
         case _ =>
+          // We REALLY need to start some real error handling...
           println(s"Found something else! ${lookahead.kind}")
           null
     return n
@@ -119,33 +130,49 @@ class Parser {
   // but it would not have a position in the character stream, so it would lack
   // things like a column and line number.
 
-  // Todo: Check best practice on whether or not we should gratuitously store
-  // keyword tokens in their corresponding AST nodes. This might make sense for
-  // error reporting, so that even the semantic analysis passes can trace
-  // problems back to their originating column and line numbers.
-  // Update: Yes, it seems we should be storing tokens in AST nodes (Parr, 81).
-
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
-    while lookahead.kind == Token.Kind.FINAL   ||
-          lookahead.kind == Token.Kind.PRIVATE ||
-          lookahead.kind == Token.Kind.PUBLIC  ||
-          lookahead.kind == Token.Kind.STATIC
+    while
+      lookahead.kind == Token.Kind.CONST    ||
+      lookahead.kind == Token.Kind.FINAL    ||
+      lookahead.kind == Token.Kind.OVERRIDE ||
+      lookahead.kind == Token.Kind.PRIVATE  ||
+      lookahead.kind == Token.Kind.PUBLIC   ||
+      lookahead.kind == Token.Kind.STATIC   ||
+      lookahead.kind == Token.Kind.VIRTUAL
     do
       val modifier = lookahead.kind match
-        case Token.Kind.FINAL   => finalModifier()
-        case Token.Kind.PRIVATE => privateModifier()
-        case Token.Kind.PUBLIC  => publicModifier()
-        case Token.Kind.STATIC  => staticModifier()
+        case Token.Kind.CONST    => constModifier()
+        case Token.Kind.FINAL    => finalModifier()
+        case Token.Kind.OVERRIDE => overrideModifier()
+        case Token.Kind.PRIVATE  => privateModifier()
+        case Token.Kind.PUBLIC   => publicModifier()
+        case Token.Kind.STATIC   => staticModifier()
+        case Token.Kind.VIRTUAL  => virtualModifier()
         case _ =>
-          print("error: This can only happen if there is a parser error.")
-          null
+          throw new Exception("Parser error: impossible case reached.")
       n.addChild(modifier)
     return n
 
+  // I would like the 'final' modifier on variables to be equivalent to using
+  // 'const' in C++ because I want to use the 'const' modifier to mean the same
+  // as 'constexpr' in C++. This might not be possible because 'const' in C++
+  // is not really equivalent to 'final' in Java -- it implies additional
+  // constraints on the code, where it requires other things to be 'const' as
+  // well. It would be strange if we made 'final' require other things to be
+  // 'final' as well, if in that other context, 'final' didn't sound right or
+  // 'final' was already defined to mean something else. If we have to use
+  // 'const' instead of 'final' then we'll need to find something else to use
+  // instead of 'const' for compile-time constants, such as 'comptime'. I have a
+  // natural aversion to 'constexpr' for some reason... it's a bit obtuse for my
+  // taste.
+
+  def constModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.CONST_MODIFIER, lookahead)
+    match_(Token.Kind.CONST)
+    return n
+
   def finalModifier (): AstNode =
-    // We need to define the node at the top so that we can set its token to the
-    // current lookahead before it advances and we lose the chance to do so.
     val n = AstNode(AstNode.Kind.FINAL_MODIFIER, lookahead)
     match_(Token.Kind.FINAL)
     return n
@@ -168,6 +195,11 @@ class Parser {
   def staticModifier (): AstNode =
     val n = AstNode(AstNode.Kind.STATIC_MODIFIER, lookahead)
     match_(Token.Kind.STATIC)
+    return n
+
+  def virtualModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.VIRTUAL_MODIFIER, lookahead)
+    match_(Token.Kind.VIRTUAL)
     return n
 
   // TEMPLATE DECLARATION
@@ -251,6 +283,10 @@ class Parser {
 
   // METHOD DECLARATION
 
+  // Note: The C++ specification calls these "member functions" rather than
+  // "methods". We may decide to call them "member routines" in keeping with C++
+  // tradition.
+
   // Todo: We need to push another scope onto the scope stack. Keep in mind that
   // the method parameters may be in the same exact scope as the routine body
   // (or top-most block of the routine).
@@ -305,8 +341,8 @@ class Parser {
       n.addChild(typeRoot())
     return n
 
-  // If no method body is specified, then does that represent an abstract
-  // method? Or should we have a keyword for that?
+  // A combination of 'abstract' keyword and an empty body indicates an abstract
+  // method.
 
   def methodBody (): AstNode =
     val n = AstNode(AstNode.Kind.METHOD_BODY)
@@ -357,7 +393,7 @@ class Parser {
     n.addChild(modifiers)
     n.addChild(routineName())
     n.addChild(routineParameters())
-    n.addChild(routineResult())
+    n.addChild(routineReturnType())
     n.addChild(routineBody())
     return n
 
@@ -371,9 +407,6 @@ class Parser {
     currentScope.define(s)
     return n
 
-  // Todo: Routine parameters includes parenthesis, check consistency of other
-  // parameter rules.
-
   def routineParameters (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETERS)
     match_(Token.Kind.L_PARENTHESIS)
@@ -385,13 +418,20 @@ class Parser {
     match_(Token.Kind.R_PARENTHESIS)
     return n
 
-  // Shoud name() be parameterName()?
+  // Routine parameters are for all intents and purposes local variables
 
   def routineParameter (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER)
-    n.addChild(name())
+    n.addChild(routineParameterName())
     match_(Token.Kind.COLON)
     n.addChild(typeRoot())
+    return n
+
+  def routineParameterName (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER_NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    currentScope.define(s)
     return n
 
   // We need to decide if we want to use an arrow or a colon for the result
@@ -402,22 +442,22 @@ class Parser {
   // appears in the program text); and whether it would lead to grammar
   // ambiguities. For now, we will use an arrow.
 
-  def routineResult (): AstNode =
-    val n = AstNode(AstNode.Kind.ROUTINE_RESULT)
+  // We can either treat this like a type specifier or use it as a passthrough
+  // to a type specifier.
+
+  def routineReturnType (): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_RETURN_TYPE)
     if lookahead.kind == Token.Kind.MINUS_GREATER then
       match_(Token.Kind.MINUS_GREATER)
       n.addChild(typeRoot())
     return n
 
-  // If no routine body is specified, then this is simply a forward declaration.
-  // It is not clear at this time whether forward declarations of routines are
-  // ever required in cobalt, but we can keep the option open for now.
+  // Do we need to distinguish between a top compound statement and a regular
+  // compound statement? The top compound statement does not need to introduce a
+  // new scope.
 
   def routineBody (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_BODY)
-    if lookahead.kind == Token.Kind.SEMICOLON then
-      match_(Token.Kind.SEMICOLON)
-    else
       n.addChild(compoundStatement())
     return n
 
@@ -469,7 +509,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.INITIALIZER)
     if lookahead.kind == Token.Kind.EQUAL then
       match_(Token.Kind.EQUAL)
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     return n
 
   // NAME
@@ -503,9 +543,17 @@ class Parser {
     unsignedIntegerLiteralFirstSet ++
     stringLiteralFirstSet
 
-  // Todo: Also need to add modifiers in here
+  val expressionStatementFirstSet =
+    Set(Token.Kind.IDENTIFIER, Token.Kind.THIS) ++
+    literalFirstSet
 
-  val declarationStatementFirstSet = Set(Token.Kind.VAL, Token.Kind.VAR)
+  // Todo: Need to add any other required modifiers in here
+
+  val declarationStatementFirstSet = Set(
+    Token.Kind.STATIC,
+    Token.Kind.VAL,
+    Token.Kind.VAR
+  )
 
   // Notice that we don't include 'if' in the first set for expression
   // statements. This is because we want send the parser towards the statement
@@ -514,12 +562,7 @@ class Parser {
   def statement (): AstNode =
     var n: AstNode = null
     val kind = lookahead.kind
-    if kind == Token.Kind.IDENTIFIER ||
-       kind == Token.Kind.THIS       ||
-       literalFirstSet.contains(kind)
-    then
-      n = expressionStatement()
-    else if kind == Token.Kind.BREAK then
+    if kind == Token.Kind.BREAK then
       n = breakStatement()
     else if kind == Token.Kind.L_BRACE then
       n = compoundStatement()
@@ -527,6 +570,8 @@ class Parser {
       n = continueStatement()
     else if declarationStatementFirstSet.contains(kind) then
       n = declarationStatement()
+    else if expressionStatementFirstSet.contains(kind) then
+      n = expressionStatement()
     else if kind == Token.Kind.DO then
       n = doStatement()
     else if kind == Token.Kind.SEMICOLON then
@@ -560,10 +605,32 @@ class Parser {
   // pass in a parameter that says whether or not to create a new
   // scope.
 
+  val standardStatementFirstSet = Set(
+    Token.Kind.BREAK,
+    Token.Kind.CONTINUE,
+    Token.Kind.BREAK,
+    Token.Kind.L_BRACE,
+    Token.Kind.CONTINUE,
+    Token.Kind.DO,
+    Token.Kind.SEMICOLON,
+    Token.Kind.FOR,
+    Token.Kind.FOREACH,
+    Token.Kind.IF,
+    Token.Kind.RETURN,
+    Token.Kind.UNTIL,
+    Token.Kind.WHILE
+  )
+
+  val statementFirstSet =
+    standardStatementFirstSet ++
+    declarationStatementFirstSet ++
+    expressionStatementFirstSet
+
   def compoundStatement (): AstNode =
     val n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
     match_(Token.Kind.L_BRACE)
-    while lookahead.kind != Token.Kind.R_BRACE do
+    while statementFirstSet.contains(lookahead.kind) do
+      println(s"Sleeping for ${SLEEP_TIME} seconds in compoundStatement...")
       Thread.sleep(SLEEP_TIME)
       n.addChild(statement())
     match_(Token.Kind.R_BRACE)
@@ -575,36 +642,28 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  // For now we only support variable declaration statements (i.e. local
+  // variables). I do not think cobalt needs local classes since they have
+  // significant limitations in C++ and only niche use cases. I would like to
+  // have nested routines, but since C++ doesn't have them, I need to research
+  // the feasibility of that idea. We might be able to compile nested routines
+  // into C++ lambda functions.
+
+  // It seems that we can just use the existing variableDeclaration production
+  // but if we need to distinguish between local and global variables, then we
+  // might need a separate production. Alternatively, we could use a flag to
+  // signify one or the other. Or we can defer the question to later phases.
+
+  // Should this just be a passthrough or do we want dedicated AST nodes at the
+  // root of all statement sub-trees?
+
   def declarationStatement (): AstNode =
-    val n = lookahead.kind match
-      case Token.Kind.VAL =>
-        localVariableDeclaration()
-      case Token.Kind.VAR =>
-        localVariableDeclaration()
+    var n: AstNode = null
+    var p = modifiers()
+    val kind = lookahead.kind
+    if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
+      n = variableDeclaration(p)
     return n
-
-  // Todo: Need to handle modifiers
-
-  def localVariableDeclaration (): AstNode =
-    val n = AstNode(AstNode.Kind.LOCAL_VARIABLE_DECLARATION, lookahead)
-    if lookahead.kind == Token.Kind.VAL then
-      // Keyword 'val' is equivalent to 'final var'
-      match_(Token.Kind.VAL)
-      // This final modifier won't have a token since it is an implied modifier
-      // that doesn't actually appear in the source code.
-      // Update: We might not want to add an implicit modifier like this.
-      // Instead, when it comes time to set attributes, we can set one base on
-      // the token (val or var).
-//      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
-    else
-      match_(Token.Kind.VAR)
-//    n.addChild(modifiers)
-    n.addChild(variableName())
-    n.addChild(typeSpecifier())
-    n.addChild(initializer())
-    match_(Token.Kind.SEMICOLON)
-    return n
-
 
   // The do statement is flexible and can either be a "do while" or a "do until"
   // statement, depending on what follows the 'do' keyword.
@@ -640,8 +699,14 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  // The expression statement is primarily just a passthrough, but we want a
+  // dedicated AST node at the root of all statement sub-trees.
+
   def expressionStatement(): AstNode =
-    return null
+    val n = AstNode(AstNode.Kind.EXPRESSION_STATEMENT)
+    n.addChild(expression(root=true))
+    match_(Token.Kind.SEMICOLON)
+    return n
 
   def forStatement (): AstNode =
     val n = AstNode(AstNode.Kind.FOR_STATEMENT, lookahead)
@@ -690,10 +755,10 @@ class Parser {
 
   def forInitExpressionList (): AstNode =
     val n = AstNode(AstNode.Kind.FOR_INIT_EXPRESSION_LIST)
-    n.addChild(expressionRoot())
+    n.addChild(expression(root=true))
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -706,7 +771,7 @@ class Parser {
       lookahead.kind == Token.Kind.IDENTIFIER ||
       lookahead.kind == Token.Kind.THIS
     then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
       match_(Token.Kind.SEMICOLON)
     else
       // Empty case
@@ -720,10 +785,10 @@ class Parser {
       lookahead.kind == Token.Kind.IDENTIFIER ||
       lookahead.kind == Token.Kind.THIS
     then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     return n
 
   // After trying to handle basic and enhanced for loops with a single keyword,
@@ -744,97 +809,151 @@ class Parser {
   def ifStatement (): AstNode =
     val n = AstNode(AstNode.Kind.IF_STATEMENT, lookahead)
     match_(Token.Kind.IF)
-    match_(Token.Kind.L_PARENTHESIS)
-    n.addChild(expression())
-    match_(Token.Kind.R_PARENTHESIS)
-    if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
-    else
-      n.addChild(statement())
+    n.addChild(ifCondition())
+    n.addChild(ifBody())
     if lookahead.kind == Token.Kind.ELSE then
       n.addChild(elseClause())
+    return n
+
+  def ifCondition (): AstNode =
+    match_(Token.Kind.L_PARENTHESIS)
+    val n = expression(root=true)
+    match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def ifBody (): AstNode =
+    var n: AstNode = null
+    if lookahead.kind == Token.Kind.L_BRACE then
+      n = compoundStatement()
+    else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
+      n.addChild(statement())
     return n
 
   def elseClause (): AstNode =
     val n = AstNode(AstNode.Kind.ELSE_CLAUSE, lookahead)
     match_(Token.Kind.ELSE)
+    n.addChild(elseBody())
+    return n
+
+  def elseBody (): AstNode =
+    var n: AstNode = null
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
+      n = compoundStatement()
     else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
       n.addChild(statement())
     return n
 
   def returnStatement (): AstNode =
-    print("GOT RETURN STATEMENT")
     val n = AstNode(AstNode.Kind.RETURN_STATEMENT, lookahead)
-    // Todo: Allow optional expression to be provided to return statement
-    // n.addChild(expression())
+    match_(Token.Kind.RETURN)
+    // Should we explicitly check FIRST, or is it ok to just check FOLLOW?
+    if lookahead.kind != Token.Kind.SEMICOLON then
+      n.addChild(expression(root=true))
     match_(Token.Kind.SEMICOLON)
     return n
+
+  // C++ doesn't have 'until' statements, but I would like to have them. I often
+  // need an "until (done) doSomething();" loop. Yes, that requirement can be
+  // met by a 'while' statement such as "while (!done) doSomething();" but I
+  // prefer to have the option to use either one. If the 'until' statement
+  // proves controversial or unpopular (or is deemed to not be orthogonal
+  // enough) then it can be removed later.
 
   def untilStatement (): AstNode =
     val n = AstNode(AstNode.Kind.UNTIL_STATEMENT, lookahead)
     match_(Token.Kind.UNTIL)
+    n.addChild(untilCondition())
+    n.addChild(untilBody())
+    return n
+
+  // In C++26 the condition can be an expression or a declaration. For now, we
+  // will only support expressions, and use the rule as a passthrough.
+
+  // We can handle transformation to a 'while' statement here by inserting an
+  // AST node that complements the expression. However, the parser should not
+  // concern itself with the details of the target language. The lack of an
+  // 'until' statement is a concern of the target language, so we will leave it
+  // up to a separate transformation or generation phase to make that change.
+
+  def untilCondition (): AstNode =
     match_(Token.Kind.L_PARENTHESIS)
-    // Not sure if this is always an expression or something else that is
-    // usually an expression.
-    n.addChild(expression())
+    val n = expression(root=true)
     match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def untilBody (): AstNode =
+    var n: AstNode = null
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
+      n = statement()
     else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
       n.addChild(statement())
     return n
 
   def whileStatement (): AstNode =
     val n = AstNode(AstNode.Kind.WHILE_STATEMENT, lookahead)
     match_(Token.Kind.WHILE)
+    n.addChild(whileCondition())
+    n.addChild(whileBody())
+    return n
+
+  // In C++26 the condition can be an expression or a declaration. For now, we
+  // will only support expressions, and use the rule as a passthrough.
+
+  def whileCondition (): AstNode =
     match_(Token.Kind.L_PARENTHESIS)
-    // Not sure if this is always an expression or something else that is
-    // usually an expression.
-    n.addChild(expression())
+    val n = expression(root=true)
     match_(Token.Kind.R_PARENTHESIS)
+    return n
+
+  def whileBody (): AstNode =
+    var n: AstNode = null
     if lookahead.kind == Token.Kind.L_BRACE then
-      n.addChild(compoundStatement())
+      n = statement()
     else
+      // Insert fabricated compound statement
+      n = AstNode(AstNode.Kind.COMPOUND_STATEMENT)
       n.addChild(statement())
     return n
 
   // EXPRESSIONS
 
-  // Do we need an expression root AST node?
+  // The root of every expression sub-tree has an explicit 'expression' AST
+  // node, where the final computed type and other synthesized attributes can be
+  // stored to aid in such things as type-checking.
 
-  def expressionRoot (): AstNode =
-    println("EXPRESSION_ROOT")
-    val n = AstNode(AstNode.Kind.EXPRESSION_ROOT)
-    n.addChild(expression())
-    return n
+  def expression (root: Boolean = false): AstNode =
+    if root then
+      val n = AstNode(AstNode.Kind.EXPRESSION)
+      n.addChild(assignmentExpression())
+      return n
+    else
+      return assignmentExpression()
 
-  def expression (): AstNode =
-    val n = assignmentExpression()
-    return n
-
-  // Note: It is inefficient to define first sets inside of each method because
-  // these methods may be called over and over again, resulting in repeated
-  // creation of first sets, which all contain constant information. However, it
-  // is convenient to define them like so. We can optimize this later.
+  // We may wish to add a 'walrus' operator (:=), which can be used inside a
+  // conditional statement to indicate that the developer truly intends to have
+  // and assignment rather than an equality check.
 
   def assignmentExpression (): AstNode =
     var n = logicalOrExpression()
-    val firstSet = Set(
-      Token.Kind.EQUAL,
-      Token.Kind.ASTERISK_EQUAL,
-      Token.Kind.SLASH_EQUAL,
-      Token.Kind.PERCENT_EQUAL,
-      Token.Kind.PLUS_EQUAL,
-      Token.Kind.MINUS_EQUAL,
-      Token.Kind.LESS_LESS_EQUAL,
-      Token.Kind.GREATER_GREATER_EQUAL,
-      Token.Kind.AMPERSAND_EQUAL,
-      Token.Kind.CARET_EQUAL,
-      Token.Kind.BAR_EQUAL
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.EQUAL                 ||
+      lookahead.kind == Token.Kind.ASTERISK_EQUAL        ||
+      lookahead.kind == Token.Kind.SLASH_EQUAL           ||
+      lookahead.kind == Token.Kind.PERCENT_EQUAL         ||
+      lookahead.kind == Token.Kind.PLUS_EQUAL            ||
+      lookahead.kind == Token.Kind.MINUS_EQUAL           ||
+      lookahead.kind == Token.Kind.LESS_LESS_EQUAL       ||
+      lookahead.kind == Token.Kind.GREATER_GREATER_EQUAL ||
+      lookahead.kind == Token.Kind.AMPERSAND_EQUAL       ||
+      lookahead.kind == Token.Kind.CARET_EQUAL           ||
+      lookahead.kind == Token.Kind.BAR_EQUAL
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -895,11 +1014,10 @@ class Parser {
 
   def equalityExpression (): AstNode =
     var n = relationalExpression()
-    val firstSet = Set(
-      Token.Kind.EQUAL_EQUAL,
-      Token.Kind.EXCLAMATION_EQUAL
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.EQUAL_EQUAL ||
+      lookahead.kind == Token.Kind.EXCLAMATION_EQUAL
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -909,13 +1027,12 @@ class Parser {
 
   def relationalExpression (): AstNode =
     var n = shiftExpression()
-    val firstSet = Set(
-      Token.Kind.GREATER,
-      Token.Kind.LESS,
-      Token.Kind.GREATER_EQUAL,
-      Token.Kind.LESS_EQUAL
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.GREATER       ||
+      lookahead.kind == Token.Kind.LESS          ||
+      lookahead.kind == Token.Kind.GREATER_EQUAL ||
+      lookahead.kind == Token.Kind.LESS_EQUAL
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -925,11 +1042,10 @@ class Parser {
 
   def shiftExpression (): AstNode =
     var n = additiveExpression()
-    val firstSet = Set(
-      Token.Kind.GREATER_GREATER,
-      Token.Kind.LESS_LESS
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.GREATER_GREATER ||
+      lookahead.kind == Token.Kind.LESS_LESS
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -939,11 +1055,10 @@ class Parser {
 
   def additiveExpression (): AstNode =
     var n = multiplicativeExpression()
-    val firstSet = Set(
-      Token.Kind.PLUS,
-      Token.Kind.MINUS
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.PLUS ||
+      lookahead.kind == Token.Kind.MINUS
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -953,12 +1068,11 @@ class Parser {
 
   def multiplicativeExpression (): AstNode =
     var n = unaryExpression()
-    val firstSet = Set(
-      Token.Kind.ASTERISK,
-      Token.Kind.SLASH,
-      Token.Kind.PERCENT
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.ASTERISK ||
+      lookahead.kind == Token.Kind.SLASH    ||
+      lookahead.kind == Token.Kind.PERCENT
+    do
       var p = n
       n = AstNode(AstNode.Kind.BINARY_EXPRESSION, lookahead)
       n.addChild(p)
@@ -970,14 +1084,13 @@ class Parser {
 
   def unaryExpression (): AstNode =
     var n: AstNode = null
-    // TODO: Need to add tilde
-    val firstSet = Set(
-      Token.Kind.ASTERISK,
-      Token.Kind.MINUS,
-      Token.Kind.PLUS,
-      Token.Kind.EXCLAMATION
-    )
-    if firstSet.contains(lookahead.kind) then
+    if
+      lookahead.kind == Token.Kind.ASTERISK    ||
+      lookahead.kind == Token.Kind.MINUS       ||
+      lookahead.kind == Token.Kind.PLUS        ||
+      lookahead.kind == Token.Kind.EXCLAMATION ||
+      lookahead.kind == Token.Kind.TILDE
+    then
       n = AstNode(AstNode.Kind.UNARY_EXPRESSION, lookahead)
       match_(lookahead.kind)
       n.addChild(unaryExpression())
@@ -996,13 +1109,12 @@ class Parser {
 
   def postfixExpression (): AstNode =
     var node = primaryExpression()
-    val firstSet = Set(
-      Token.Kind.MINUS_GREATER,
-      Token.Kind.PERIOD,
-      Token.Kind.L_PARENTHESIS,
-      Token.Kind.L_BRACKET
-    )
-    while firstSet.contains(lookahead.kind) do
+    while
+      lookahead.kind == Token.Kind.MINUS_GREATER ||
+      lookahead.kind == Token.Kind.PERIOD        ||
+      lookahead.kind == Token.Kind.L_PARENTHESIS ||
+      lookahead.kind == Token.Kind.L_BRACKET
+    do
       lookahead.kind match
         case Token.Kind.MINUS_GREATER =>
           node = dereferencingMemberAccess(node)
@@ -1298,7 +1410,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.ARRAY_TYPE, lookahead)
     match_(Token.Kind.L_BRACKET)
     if lookahead.kind != Token.Kind.R_BRACKET then
-      n.addChild(expressionRoot())
+      n.addChild(expression(root=true))
     match_(Token.Kind.R_BRACKET)
     return n
 
@@ -1344,6 +1456,7 @@ class Parser {
   def templateArguments (): AstNode =
     val n = AstNode(AstNode.Kind.TEMPLATE_ARGUMENTS, lookahead)
     match_(Token.Kind.L_BRACKET)
+    // There must be at least one template argument
     n.addChild(templateArgument())
     while lookahead.kind == Token.Kind.COMMA do
       match_(Token.Kind.COMMA)
@@ -1358,6 +1471,8 @@ class Parser {
   // We might need to just use direct type here, or a special variant of direct
   // type. If we use direct type, but only some types are supported, then we
   // need to handle that with semantic analysis.
+
+  // Todo: Do we need void here?
 
   def templateArgument (): AstNode =
     var n: AstNode = null

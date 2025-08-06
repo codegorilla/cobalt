@@ -1,3 +1,3 @@
-binaryExpression (leftExpr, op, rightExpr) ::= <<
-(<leftExpr> <op> <rightExpr>)
+binaryExpression (leftExpr, operation, rightExpr) ::= <<
+(<leftExpr> <operation> <rightExpr>)
 >>
