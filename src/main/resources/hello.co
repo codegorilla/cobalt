@@ -37,7 +37,15 @@ static const def myfun (x: *int, y: float) -> int {
 
 private final class Token {
 
+  var x: int = 0;
+  var y: int = 1;
+
+  def init (x: int) {
+    // Do something
+  }
+
 }
+
 
 //class Token {
 

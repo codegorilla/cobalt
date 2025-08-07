@@ -248,10 +248,10 @@ class Parser {
 
   // CLASS DECLARATION
 
-  def classDeclaration (modifiers: AstNode): AstNode =
+  def classDeclaration (classModifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION, lookahead)
     match_(Token.Kind.CLASS)
-    n.addChild(modifiers)
+    n.addChild(classModifiers)
     n.addChild(className())
     n.addChild(classBody())
     return n
@@ -279,12 +279,21 @@ class Parser {
     match_(Token.Kind.R_BRACE)
     return n
 
+  // Do we need separate rules for methods and fields? Syntactically, they seem
+  // to parse the same as non-member routines and variables, but semantically,
+  // they have different modifiers and possibly scoping rules. However, those
+  // should be discernable during any semantic analysis phases without requiring
+  // different AST node types.
+
+  // Note: One exception for methods is that we might have qualifiers after the
+  // parameter list (e.g. const, &, &&) that don't exist for regular routines.
+
   def classMember (): AstNode =
     val p = modifiers()
     val n = lookahead.kind match
       case Token.Kind.DEF => methodDeclaration(p)
-      // case Token.Kind.VAL => fieldDeclaration(p)
-      // case Token.Kind.VAR => fieldDeclaration(p)
+      case Token.Kind.VAL => variableDeclaration(p)
+      case Token.Kind.VAR => variableDeclaration(p)
       case _ => 
           print("error: This can only happen if there is a parser error.")
           null

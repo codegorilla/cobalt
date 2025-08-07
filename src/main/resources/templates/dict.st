@@ -1,3 +1,0 @@
-dict (x) ::= <<
-<x> helloworld
->>

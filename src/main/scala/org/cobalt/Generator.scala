@@ -65,11 +65,14 @@ class Generator {
 
   // CLASS DECLARATION
 
+  // Todo: Add inheritance
+
   def classDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/classDeclaration")
     st.add("classModifiers1", classModifiers1(current.getChild(0)))
     st.add("classModifiers2", classModifiers2(current.getChild(0)))
     st.add("className", className(current.getChild(1)))
+    st.add("classBody", classBody(current.getChild(2)))
     return st
 
   // C++ does not actually have an 'abstract' modifier for classes themselves.
@@ -97,6 +100,35 @@ class Generator {
   def className (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/className")
     st.add("name", current.getToken().lexeme)
+    return st
+
+  // Is every declaration available within compilation unit or module also
+  // available inside of a class body? Many are, but I don't think all are. This
+  // will be resolved in the future with further development and research. For
+  // now, we know that variables and routines can appear within a class body.
+  // Most certainly, other classes and enums should be possible as well.
+
+  def classBody (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classBody")
+    for child <- current.getChildren() do
+      st.add("memberDeclaration", memberDeclaration(child))
+    return st
+
+  // Need to handle the fact that constructors do not have a return type (not
+  // even auto or void).
+
+  def memberDeclaration (current: AstNode): ST =
+    val kind = current.getKind()
+    val st = kind match
+      case AstNode.Kind.CLASS_DECLARATION =>
+        classDeclaration(current)
+      case AstNode.Kind.METHOD_DECLARATION =>
+        routineDeclaration(current)
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
+      case _ =>
+        println("No match in generator/memberDeclaration.")
+        null
     return st
 
   // ROUTINE DECLARATION
