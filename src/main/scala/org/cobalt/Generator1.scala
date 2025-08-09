@@ -8,9 +8,10 @@ import scala.collection.mutable.Stack
 
 import org.stringtemplate.v4.*
 
-// The code generator converts the AST into the target language.
+// The code generator converts the AST into the target language. Pass 1 handles
+// mostly interface concerns.
 
-class Generator {
+class Generator1 {
 
   var input: AstNode = null
 
@@ -49,6 +50,15 @@ class Generator {
       st.add("item", declaration(child))
     return st
 
+  // For class declarations, for their member routine declarations, we need to
+  // translate to both a member function declaration and a member function
+  // definition. This is why there are two separate passes.
+
+  // Note: We may need a somewhat more sophisticated approach for nested classes
+  // because they can be nested arbitrarily deep and routine definitions must be
+  // "lifted" to the outside (but then qualified) in order to avoid them being
+  // treated as implicitly inline.
+
   def declaration (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
@@ -65,10 +75,17 @@ class Generator {
 
   // CLASS DECLARATION
 
-  // Todo: Add inheritance
-
   def classDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/classDeclaration")
+    st.add("classDeclaration1", classDeclaration1(current))
+    return st
+
+  // Class Declaration - Pass 1
+
+  // Todo: Add inheritance
+
+  def classDeclaration1 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classDeclaration1")
     st.add("classModifiers1", classModifiers1(current.getChild(0)))
     st.add("classModifiers2", classModifiers2(current.getChild(0)))
     st.add("className", className(current.getChild(1)))
@@ -115,20 +132,49 @@ class Generator {
     return st
 
   // Need to handle the fact that constructors do not have a return type (not
-  // even auto or void).
+  // even auto or void). This can be handled by marking it as a constructor
+  // during semantic analysis, or based on its name. Ideally, the code
+  // generation phase just performs a straightforward translation and doesn't
+  // have too much logic to decide such factors. Thus, I like the idea of
+  // marking it during semantic analysis.
 
   def memberDeclaration (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
       case AstNode.Kind.CLASS_DECLARATION =>
-        classDeclaration(current)
+        classDeclaration1(current)
       case AstNode.Kind.METHOD_DECLARATION =>
-        routineDeclaration(current)
+        memberRoutineDeclaration(current)
       case AstNode.Kind.VARIABLE_DECLARATION =>
         variableDeclaration(current)
       case _ =>
         println("No match in generator/memberDeclaration.")
         null
+    return st
+
+  // Class Declaration - Pass 2
+
+  def classDeclaration2 (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classDeclaration2")
+    st.add("classModifiers1", classModifiers1(current.getChild(0)))
+    st.add("classModifiers2", classModifiers2(current.getChild(0)))
+    st.add("className", className(current.getChild(1)))
+    st.add("classBody", classBody(current.getChild(2)))
+    return st
+
+  // MEMBER ROUTINE DECLARATION
+
+  def memberRoutineDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionDeclaration")
+    st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
+    st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
+    st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
+    st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
+    st.add("functionName", routineName(current.getChild(1)))
+    st.add("functionParameters", routineParameters(current.getChild(2)))
+    st.add("functionReturnType", routineReturnType(current.getChild(3)))
+    // Only needed for inline member routines
+    // st.add("functionBody", routineBody(current.getChild(4)))
     return st
 
   // ROUTINE DECLARATION
@@ -153,7 +199,7 @@ class Generator {
     st.add("functionName", routineName(current.getChild(1)))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))
-    st.add("functionBody", routineBody(current.getChild(4)))
+    //st.add("functionBody", routineBody(current.getChild(4)))
     return st
 
   def routineModifiers1 (current: AstNode): ST =
@@ -250,6 +296,11 @@ class Generator {
   // Since cobalt supports type inference, we probably need to use the computed
   // type expression rather than the AST nodes since some variable declarations
   // will not have AST nodes for the type specifier.
+
+  // We need to know if something is a global variable or local variable or
+  // member variable because this affects how it is translated. If it is global
+  // then it might be placed in an interface file or implementation file,
+  // depending on whether or not it is exported.
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
@@ -549,6 +600,7 @@ class Generator {
     val type_ = kind match
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
+      case Token.Kind.FLOAT64 => "float64"
       case Token.Kind.VOID => "void"
     st.add("name", type_)
     stack.push(st)

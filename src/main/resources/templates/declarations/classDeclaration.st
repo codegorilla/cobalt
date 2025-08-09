@@ -1,10 +1,4 @@
-classDeclaration (
-  classModifiers1,
-  classModifiers2,
-  className,
-  classBody
-) ::= <%
-<if(classModifiers1.classModifier)><classModifiers1> <endif>class <className><\ >
-<if(classModifiers2.classModifier)><classModifiers2> <endif>
-<classBody>
-%>
+classDeclaration (classDeclaration1, classDeclaration2) ::= <<
+<classDeclaration1>
+<classDeclaration2>
+>>

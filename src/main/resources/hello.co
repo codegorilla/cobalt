@@ -19,12 +19,6 @@ static const def myfun (x: *int, y: float) -> int {
   until (1 < 10)
     break;
 
-  while (1 < 10) {
-    1 + 2;
-    break;
-    return 10;
-  }
-
   if (1 < 10) {
     1 + 2;
     break;
@@ -41,7 +35,15 @@ private final class Token {
   var y: int = 1;
 
   def init (x: int) {
-    // Do something
+    while (1 < 10) {
+      1 + 2;
+      break;
+      return 10;
+    }
+  }
+
+  def add (t: *float[1]) -> float64 {
+    2 + 2;
   }
 
 }
