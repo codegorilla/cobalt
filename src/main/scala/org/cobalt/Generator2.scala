@@ -2,6 +2,7 @@ package org.cobalt
 
 import scala.collection.mutable.Stack
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 // If something goes wrong, and this is underlined in red, check that there are
 // a bunch of libraries in metals. If not, use metals doctor. Might need to
@@ -40,6 +41,9 @@ class Generator2 {
   // Used to pass string templates up and down during tree traversal
   val stack = Stack[ST]()
 
+  // We use a separate name stack because it is a lot cleaner
+  val nameStack = Stack[ST]()
+
   def setInput (input: AstNode) =
     this.input = input
 
@@ -47,15 +51,13 @@ class Generator2 {
     val st = translationUnit(input)
     return st
 
-  def translationUnit (current: AstNode): ST =
-    var st = group.getInstanceOf("translationUnit")
-    for child <- current.getChildren() do
-      st.add("item", declaration(child))
-    return st
+  // TRANSLATION UNIT
 
-  // For class declarations, for their member routine declarations, we need to
-  // translate to both a member function declaration and a member function
-  // definition. This is why there are two separate passes.
+  def translationUnit (current: AstNode): ST =
+    var st = group.getInstanceOf("moduleImplementationUnit")
+    for child <- current.getChildren() do
+      st.add("definition", declaration(child))
+    return st
 
   // Note: We may need a somewhat more sophisticated approach for nested classes
   // because they can be nested arbitrarily deep and routine definitions must be
@@ -79,10 +81,9 @@ class Generator2 {
   // CLASS DECLARATION
 
   def classDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/classDeclaration2")
-    // Not sure if we'll use this or not as prefix, just keep it around for now
-    val name = className(current.getChild(1))
-    st.add("classBody", classBody(current.getChild(2)))
+    nameStack.push(className(current.getChild(1)))
+    val st = classBody(current.getChild(2))
+    nameStack.pop()
     return st
 
   def className (current: AstNode): ST =
@@ -90,17 +91,13 @@ class Generator2 {
     st.add("name", current.getToken().lexeme)
     return st
 
-  // Should we create artificial C++ string template constructs such as "Method
-  // aggregation" to contain a group of methods that need to be passed back up?
-  // Or should we just uses raw data structures or a stack for that?
-
-  def classBody (current: AstNode): ListBuffer[ST] =
-    val group = ListBuffer[ST]()
+  def classBody (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/memberFunctionDefinitions")
     for child <- current.getChildren() do
       val kind = child.getKind()
       if kind == AstNode.Kind.METHOD_DECLARATION then
-        group += memberDeclaration(child)
-    return group
+        st.add("memberFunctionDefinition", memberDeclaration(child))
+    return st
 
   // Need to handle the fact that constructors do not have a return type (not
   // even auto or void). This can be handled by marking it as a constructor
@@ -109,9 +106,11 @@ class Generator2 {
   // have too much logic to decide such factors. Thus, I like the idea of
   // marking it during semantic analysis.
 
+  // Might be able to skip this if it is just a passthrough.
+
   def memberDeclaration (current: AstNode): ST =
     val kind = current.getKind()
-    val st = kind match
+    var st = kind match
       // case AstNode.Kind.CLASS_DECLARATION =>
       //   classDeclaration1(current)
       case AstNode.Kind.METHOD_DECLARATION =>
@@ -123,16 +122,27 @@ class Generator2 {
 
   // MEMBER ROUTINE DECLARATION
 
+  // Function definitions supposedly only use const, &, and && qualifiers since
+  // they are part of the function's type signature. Needs to be confirmed.
+
+  // Maybe switch to memberFunctionDefinition.
+
   def memberRoutineDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionDefinition")
-    st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
-    st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
+    val st = group.getInstanceOf("declarations/memberFunctionDefinition")
     st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
-    st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
-    st.add("functionName", routineName(current.getChild(1)))
+    st.add("functionName", routineNameQualified(current))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))
     st.add("functionBody", routineBody(current.getChild(4)))
+    return st
+
+  // Qualified name, e.g. "auto X::Y::Z () ..."
+
+  def routineNameQualified (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionNameQualified")
+    for i <- 0 until nameStack.length do
+      st.add("name", nameStack(i))
+    st.add("name", routineName(current.getChild(1)))
     return st
 
   // ROUTINE DECLARATION
@@ -148,12 +158,15 @@ class Generator2 {
   // Having separate modifier processing functions probably isn't the most
   // sophisticated way to handle this, but its super simple to understand.
 
+  // The only modifiers that work on non-member routines are 'public' (which
+  // translates to 'export'), 'inline', and 'constexpr'.
+
   def routineDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionDefinition")
     st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
-    st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
+    // st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
     st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
-    st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
+    // st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
     st.add("functionName", routineName(current.getChild(1)))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))

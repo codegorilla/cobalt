@@ -42,7 +42,7 @@ private final class Token {
     }
   }
 
-  def add (t: *float[1]) -> float64 {
+  virtual def add (t: *float[1]) -> float64 {
     2 + 2;
   }
 

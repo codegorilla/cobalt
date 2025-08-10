@@ -4,6 +4,5 @@ classDeclaration2 (
   className,
   classBody
 ) ::= <%
-<className>::
 <classBody>
 %>
