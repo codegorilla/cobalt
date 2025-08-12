@@ -129,7 +129,7 @@ class Generator2 {
 
   def memberRoutineDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/memberFunctionDefinition")
-    st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
+    st.add("cvQualifiers", routineModifiers3(current.getChild(0)))
     st.add("functionName", routineNameQualified(current))
     st.add("functionParameters", routineParameters(current.getChild(2)))
     st.add("functionReturnType", routineReturnType(current.getChild(3)))
@@ -165,7 +165,7 @@ class Generator2 {
     val st = group.getInstanceOf("declarations/functionDefinition")
     st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
     // st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
-    st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
+    //st.add("cvQualifiers", routineModifiers3(current.getChild(0)))
     // st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
     st.add("functionName", routineName(current.getChild(1)))
     st.add("functionParameters", routineParameters(current.getChild(2)))
@@ -189,12 +189,22 @@ class Generator2 {
         st.add("functionModifier", "virtual")
     return st
 
+  // def isConst (current: AstNode): Boolean =
+  //   var found = false
+  //   for child <- current.getChildren() do
+  //     val kind = child.getKind()
+  //     if kind == AstNode.Kind.CONST_MODIFIER then
+  //       found = true
+  //   return found
+
   def routineModifiers3 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionModifiers3")
+    val st = group.getInstanceOf("declarations/cvQualifiers")
     for child <- current.getChildren() do
       val kind = child.getKind()
       if kind == AstNode.Kind.CONST_MODIFIER then
-        st.add("functionModifier", "const")
+        st.add("cvQualifier", "const")
+      if kind == AstNode.Kind.VOLATILE_MODIFIER then
+        st.add("cvQualifier", "volatile")
     return st
 
   def routineModifiers4 (current: AstNode): ST =

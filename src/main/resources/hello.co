@@ -3,11 +3,11 @@
 
 //var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
 
-static var alpha: *(*int)[1] = (1.5 + 2)/4;
+var alpha: *(*int)[1] = (1.5 + 2)/4;
 
 var beta: Token[int, float] = 5;
 
-static const def myfun (x: *int, y: float) -> int {
+def myfun (x: *int, y: float) -> int {
   // Do something
   break;
   continue;
@@ -29,7 +29,7 @@ static const def myfun (x: *int, y: float) -> int {
 
 }
 
-private final class Token {
+private class Token {
 
   var x: int = 0;
   var y: int = 1;
@@ -42,7 +42,7 @@ private final class Token {
     }
   }
 
-  virtual def add (t: *float[1]) -> float64 {
+  def add (t: *float[1]) -> float64 {
     2 + 2;
   }
 

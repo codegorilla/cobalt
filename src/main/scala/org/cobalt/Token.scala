@@ -56,6 +56,7 @@ object Token {
         case VAL
         case VAR
         case VIRTUAL
+        case VOLATILE
         case WHILE
 
         // Basic types

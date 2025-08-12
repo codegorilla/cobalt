@@ -85,6 +85,10 @@ class Parser {
   // Not every AST node has a corresponding token. Case in point is
   // translationUnit.
 
+  // A cobalt translation unit is a directory of source files. We might rename
+  // this to 'moduleUnit' later if it turns out that a translationUnit maps 1:1
+  // to a module.
+
   def translationUnit (): AstNode =
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
@@ -100,20 +104,41 @@ class Parser {
 
   def declaration (): AstNode =
     var n: AstNode = null
+    val spec = accessSpecifier()
     if lookahead.kind == Token.Kind.TEMPLATE then
-      n = templateDeclaration()
+      n = templateDeclaration(spec)
     else
-      val p = modifiers()
+      val mods = modifiers()
       n = lookahead.kind match
-        case Token.Kind.CLASS => classDeclaration(p)
-        case Token.Kind.ENUM  => enumerationDeclaration(p)
-        case Token.Kind.DEF   => routineDeclaration(p)
-        case Token.Kind.VAL   => variableDeclaration(p)
-        case Token.Kind.VAR   => variableDeclaration(p)
+        case Token.Kind.CLASS => classDeclaration(spec, mods)
+        case Token.Kind.ENUM  => enumerationDeclaration(spec, mods)
+        case Token.Kind.DEF   => routineDeclaration(spec, mods)
+        case Token.Kind.VAL   => variableDeclaration(spec, mods)
+        case Token.Kind.VAR   => variableDeclaration(spec, mods)
         case _ =>
           // We REALLY need to start some real error handling...
           println(s"Found something else! ${lookahead.kind}")
           null
+    return n
+
+  def accessSpecifier (): AstNode =
+    val n = AstNode(AstNode.Kind.ACCESS_SPECIFIER)
+    if lookahead.kind == Token.Kind.PRIVATE then
+      n.addChild(privateSpecifier())
+    else if lookahead.kind == Token.Kind.PUBLIC then
+      n.addChild(publicSpecifier())
+    return n
+
+  def privateSpecifier (): AstNode =
+    println("HERE PRI")
+    val n = AstNode(AstNode.Kind.PRIVATE_SPECIFIER, lookahead)
+    match_(Token.Kind.PRIVATE)
+    return n
+
+  def publicSpecifier (): AstNode =
+    println("HERE PUB")
+    val n = AstNode(AstNode.Kind.PUBLIC_SPECIFIER, lookahead)
+    match_(Token.Kind.PUBLIC)
     return n
 
   // According to Parr, there is no need to have an AstNode kind -- you can just
@@ -137,10 +162,9 @@ class Parser {
       lookahead.kind == Token.Kind.CONST    ||
       lookahead.kind == Token.Kind.FINAL    ||
       lookahead.kind == Token.Kind.OVERRIDE ||
-      lookahead.kind == Token.Kind.PRIVATE  ||
-      lookahead.kind == Token.Kind.PUBLIC   ||
       lookahead.kind == Token.Kind.STATIC   ||
-      lookahead.kind == Token.Kind.VIRTUAL
+      lookahead.kind == Token.Kind.VIRTUAL  ||
+      lookahead.kind == Token.Kind.VOLATILE
     do
       println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
       Thread.sleep(SLEEP_TIME)
@@ -149,10 +173,9 @@ class Parser {
         case Token.Kind.CONST    => constModifier()
         case Token.Kind.FINAL    => finalModifier()
         case Token.Kind.OVERRIDE => overrideModifier()
-        case Token.Kind.PRIVATE  => privateModifier()
-        case Token.Kind.PUBLIC   => publicModifier()
         case Token.Kind.STATIC   => staticModifier()
         case Token.Kind.VIRTUAL  => virtualModifier()
+        case Token.Kind.VOLATILE => volatileModifier()
         case _ =>
           throw new Exception("Parser error: impossible case reached.")
       n.addChild(modifier)
@@ -191,16 +214,6 @@ class Parser {
     match_(Token.Kind.OVERRIDE)
     return n
 
-  def privateModifier (): AstNode =
-    val n = AstNode(AstNode.Kind.PRIVATE_MODIFIER, lookahead)
-    match_(Token.Kind.PRIVATE)
-    return n
-
-  def publicModifier (): AstNode =
-    val n = AstNode(AstNode.Kind.PUBLIC_MODIFIER, lookahead)
-    match_(Token.Kind.PUBLIC)
-    return n
-
   def staticModifier (): AstNode =
     val n = AstNode(AstNode.Kind.STATIC_MODIFIER, lookahead)
     match_(Token.Kind.STATIC)
@@ -211,16 +224,22 @@ class Parser {
     match_(Token.Kind.VIRTUAL)
     return n
 
+  def volatileModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.VOLATILE_MODIFIER, lookahead)
+    match_(Token.Kind.VOLATILE)
+    return n
+
   // TEMPLATE DECLARATION
 
-  def templateDeclaration (): AstNode =
+  def templateDeclaration (accessSpecifier: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.TEMPLATE_DECLARATION, lookahead)
     match_(Token.Kind.TEMPLATE)
+    n.addChild(accessSpecifier)
     n.addChild(templateParameters())
-    val p = modifiers()
+    val mods = modifiers()
     val q = lookahead.kind match
-      case Token.Kind.CLASS => classDeclaration(p)
-      case Token.Kind.DEF   => routineDeclaration(p)
+      case Token.Kind.CLASS => classDeclaration(null, mods)
+      case Token.Kind.DEF   => routineDeclaration(null, mods)
       case _ =>
         println(s"Found something else in template declaration! ${lookahead.kind}")
         null
@@ -248,10 +267,11 @@ class Parser {
 
   // CLASS DECLARATION
 
-  def classDeclaration (classModifiers: AstNode): AstNode =
+  def classDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION, lookahead)
     match_(Token.Kind.CLASS)
-    n.addChild(classModifiers)
+    n.addChild(accessSpecifier)
+    n.addChild(modifiers)
     n.addChild(className())
     n.addChild(classBody())
     return n
@@ -289,11 +309,12 @@ class Parser {
   // parameter list (e.g. const, &, &&) that don't exist for regular routines.
 
   def classMember (): AstNode =
-    val p = modifiers()
+    val spec = accessSpecifier()
+    val mods = modifiers()
     val n = lookahead.kind match
-      case Token.Kind.DEF => methodDeclaration(p)
-      case Token.Kind.VAL => variableDeclaration(p)
-      case Token.Kind.VAR => variableDeclaration(p)
+      case Token.Kind.DEF => methodDeclaration(spec, mods)
+      case Token.Kind.VAL => variableDeclaration(spec, mods)
+      case Token.Kind.VAR => variableDeclaration(spec, mods)
       case _ => 
           print("error: This can only happen if there is a parser error.")
           null
@@ -309,9 +330,10 @@ class Parser {
   // the method parameters may be in the same exact scope as the routine body
   // (or top-most block of the routine).
 
-  def methodDeclaration (modifiers: AstNode): AstNode =
+  def methodDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.METHOD_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(methodName())
     n.addChild(methodParameters())
@@ -372,7 +394,7 @@ class Parser {
 
   // ENUMERATION DECLARATION
 
-  def enumerationDeclaration (modifiers: AstNode): AstNode =
+  def enumerationDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION, lookahead)
     match_(Token.Kind.ENUM)
     // Should be name()?
@@ -405,9 +427,10 @@ class Parser {
   // the routine parameters may be in the same exact scope as the routine body
   // (or top-most block of the routine).
 
-  def routineDeclaration (modifiers: AstNode): AstNode =
+  def routineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION)
     match_(Token.Kind.DEF)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(routineName())
     n.addChild(routineParameters())
@@ -481,7 +504,7 @@ class Parser {
 
   // VARIABLE DECLARATION
 
-  def variableDeclaration (modifiers: AstNode): AstNode =
+  def variableDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
     if lookahead.kind == Token.Kind.VAL then
       // Keyword 'val' is equivalent to 'final var'
@@ -494,6 +517,7 @@ class Parser {
       modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
     else
       match_(Token.Kind.VAR)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(variableName())
     n.addChild(typeSpecifier())
@@ -677,10 +701,10 @@ class Parser {
 
   def declarationStatement (): AstNode =
     var n: AstNode = null
-    var p = modifiers()
+    var mods = modifiers()
     val kind = lookahead.kind
     if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
-      n = variableDeclaration(p)
+      n = variableDeclaration(null, mods)
     return n
 
   // The do statement is flexible and can either be a "do while" or a "do until"

@@ -58,6 +58,7 @@ class Lexer {
     "val" -> Token.Kind.VAL,
     "var" -> Token.Kind.VAR,
     "virtual" -> Token.Kind.VIRTUAL,
+    "volatile" -> Token.Kind.VOLATILE,
     "while" -> Token.Kind.WHILE,
 
     "int" -> Token.Kind.INT,

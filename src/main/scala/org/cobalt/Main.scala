@@ -33,6 +33,12 @@ import java.io.IOException
   parser.setInput(tokens)
   val root = parser.process()
 
+  val analyzer = Analyzer()
+  analyzer.setInput(root)
+  analyzer.process()
+
+  System.exit(0)
+
   val generator1 = Generator1()
   generator1.setInput(root)
   // Todo: The output should be text

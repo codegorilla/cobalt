@@ -19,8 +19,12 @@ class AstNode (
   var children = ListBuffer[AstNode]()
   val attributes = Map[String, Any]()
 
+
   def addChild (node: AstNode) =
     children += node
+
+  def getAttribute (name: String): Any =
+    return attributes.get(name)
 
   def getChild (index: Int): AstNode =
     return children(index)
@@ -67,6 +71,12 @@ object AstNode:
     // Declarations
     case NAME
 
+    // Access specifiers
+    case ACCESS_SPECIFIER
+    case PRIVATE_SPECIFIER
+    case PROTECTED_SPECIFIER
+    case PUBLIC_SPECIFIER
+
     // Modifiers
     case ABSTRACT_MODIFIER
     case CONST_MODIFIER
@@ -77,6 +87,7 @@ object AstNode:
     case PUBLIC_MODIFIER
     case STATIC_MODIFIER
     case VIRTUAL_MODIFIER
+    case VOLATILE_MODIFIER
 
     // Class declaration
     case CLASS_DECLARATION
