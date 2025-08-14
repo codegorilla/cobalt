@@ -126,6 +126,9 @@ object AstNode:
 
     case IDENTIFIER
 
+    // SPECIAL
+    case EMPTY
+
     // Statements
     case BREAK_STATEMENT
     case COMPOUND_STATEMENT

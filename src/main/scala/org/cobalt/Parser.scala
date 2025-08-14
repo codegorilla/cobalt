@@ -121,25 +121,41 @@ class Parser {
           null
     return n
 
-  def accessSpecifier (): AstNode =
+  // Callers can explicitly request an empty access specifier. This is useful
+  // for template declarations, where the access specifier is on the template
+  // declaration itself rather than the templated entity. In this case, the
+  // templated entity's AST node will still have an access specifier node, but
+  // it will not have any children. This will be interpreted later to mean that
+  // there is no access specifier. I prefer to handle it this way instead of not
+  // having an access specifier node at all because it avoids having to create
+  // specialized grammar rules for each case. However, I may change this later
+  // if the alternative proves better.
+
+  // Update: Just use the token as the discriminator. A missing token means that
+  // the access specifier was not specified. Also might need to add protected as
+  // another option.
+
+  def accessSpecifier (empty: Boolean = false): AstNode =
     val n = AstNode(AstNode.Kind.ACCESS_SPECIFIER)
-    if lookahead.kind == Token.Kind.PRIVATE then
-      n.addChild(privateSpecifier())
-    else if lookahead.kind == Token.Kind.PUBLIC then
-      n.addChild(publicSpecifier())
+    if
+      lookahead.kind == Token.Kind.PRIVATE ||
+      lookahead.kind == Token.Kind.PUBLIC
+    then
+      n.setToken(lookahead)
+      match_(lookahead.kind)
     return n
 
-  def privateSpecifier (): AstNode =
-    println("HERE PRI")
-    val n = AstNode(AstNode.Kind.PRIVATE_SPECIFIER, lookahead)
-    match_(Token.Kind.PRIVATE)
-    return n
+  // def privateSpecifier (): AstNode =
+  //   println("HERE PRI")
+  //   val n = AstNode(AstNode.Kind.PRIVATE_SPECIFIER, lookahead)
+  //   match_(Token.Kind.PRIVATE)
+  //   return n
 
-  def publicSpecifier (): AstNode =
-    println("HERE PUB")
-    val n = AstNode(AstNode.Kind.PUBLIC_SPECIFIER, lookahead)
-    match_(Token.Kind.PUBLIC)
-    return n
+  // def publicSpecifier (): AstNode =
+  //   println("HERE PUB")
+  //   val n = AstNode(AstNode.Kind.PUBLIC_SPECIFIER, lookahead)
+  //   match_(Token.Kind.PUBLIC)
+  //   return n
 
   // According to Parr, there is no need to have an AstNode kind -- you can just
   // use the token to determine what kind of node it is. This works only for
@@ -231,15 +247,15 @@ class Parser {
 
   // TEMPLATE DECLARATION
 
-  def templateDeclaration (accessSpecifier: AstNode): AstNode =
+  def templateDeclaration (accessSpecifier : AstNode): AstNode =
     val n = AstNode(AstNode.Kind.TEMPLATE_DECLARATION, lookahead)
     match_(Token.Kind.TEMPLATE)
     n.addChild(accessSpecifier)
     n.addChild(templateParameters())
-    val mods = modifiers()
+    val p = modifiers()
     val q = lookahead.kind match
-      case Token.Kind.CLASS => classDeclaration(null, mods)
-      case Token.Kind.DEF   => routineDeclaration(null, mods)
+      case Token.Kind.CLASS => classDeclaration(empty(), p)
+      case Token.Kind.DEF   => routineDeclaration(empty(), p)
       case _ =>
         println(s"Found something else in template declaration! ${lookahead.kind}")
         null
@@ -564,6 +580,15 @@ class Parser {
     val n = AstNode(AstNode.Kind.NAME)
     n.setToken(lookahead)
     match_(Token.Kind.IDENTIFIER)
+    return n
+
+  // EMPTY
+
+  // This node is useful as a placeholder so that we have known, fixed child
+  // node counts for certain cases of nodes that have heterogeneous children.
+
+  def empty (): AstNode =
+    val n = AstNode(AstNode.Kind.EMPTY)
     return n
 
   // STATEMENTS

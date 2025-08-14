@@ -304,17 +304,27 @@ class Generator1 {
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
-    st.add("variableModifiers", variableModifiers(current.getChild(0)))
-    variableName(current.getChild(1))
-    typeSpecifier(current.getChild(2))
+    st.add("variableAccessSpecifier", variableAccessSpecifier(current))
+    st.add("variableModifiers", variableModifiers(current.getChild(1)))
+    variableName(current.getChild(2))
+    typeSpecifier(current.getChild(3))
     // Get translated type specifier and declarator from stack. The type
     // specifier should be something basic like 'int'.
     st.add("typeSpecifier", stack.pop())
     st.add("declarator", stack.pop())
-    val initST = initializer(current.getChild(3))
+    val initST = initializer(current.getChild(4))
     if initST != null then
       st.add("initializer", initST)
     return st
+
+  // Export is only used at top level
+
+  def variableAccessSpecifier (current: AstNode): String =
+    val pub = current.getAttribute("public")
+    val x = pub match
+      case Some(true) => "export"
+      case None => ""
+    return x
 
   def variableModifiers (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableModifiers")

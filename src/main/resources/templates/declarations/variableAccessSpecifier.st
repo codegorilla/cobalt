@@ -1,0 +1,3 @@
+variableAccessSpecifier (variableAccessSpecifier) ::= <<
+<variableModifier; separator=" ">
+>>

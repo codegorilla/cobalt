@@ -37,12 +37,16 @@ import java.io.IOException
   analyzer.setInput(root)
   analyzer.process()
 
-  System.exit(0)
-
   val generator1 = Generator1()
   generator1.setInput(root)
   // Todo: The output should be text
   val template1 = generator1.process()
+
+  val code1 = template1.render()
+  println("---")
+  println(code1)
+
+  System.exit(0)
 
   val generator2 = Generator2()
   generator2.setInput(root)
@@ -52,9 +56,9 @@ import java.io.IOException
   // Eventually we need a renderer pass to assemble all of the generated code
   // snippets into the final output.
 
-  val code1 = template1.render()
-  println("---")
-  println(code1)
+  // val code1 = template1.render()
+  // println("---")
+  // println(code1)
 
   val code2 = template2.render()
   println("---")
