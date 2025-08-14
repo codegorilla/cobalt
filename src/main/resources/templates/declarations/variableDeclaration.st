@@ -3,6 +3,9 @@ variableDeclaration (
   variableModifiers,
   typeSpecifier,
   declarator,
-  initializer) ::= <<
-<variableAccessSpecifier><\ ><if(variableModifiers.variableModifier)><variableModifiers> <endif><typeSpecifier> <declarator> = <initializer>;
->>
+  initializer
+) ::= <%
+<if(variableAccessSpecifier)><variableAccessSpecifier> <endif>
+<if(variableModifiers.variableModifier)><variableModifiers> <endif>
+<typeSpecifier> <declarator> = <initializer>;
+%>

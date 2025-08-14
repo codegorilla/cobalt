@@ -304,7 +304,7 @@ class Generator1 {
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
-    st.add("variableAccessSpecifier", variableAccessSpecifier(current))
+    st.add("variableAccessSpecifier", variableAccessSpecifier(current.getChild(0)))
     st.add("variableModifiers", variableModifiers(current.getChild(1)))
     variableName(current.getChild(2))
     typeSpecifier(current.getChild(3))
@@ -317,14 +317,21 @@ class Generator1 {
       st.add("initializer", initST)
     return st
 
-  // Export is only used at top level
-
   def variableAccessSpecifier (current: AstNode): String =
-    val pub = current.getAttribute("public")
-    val x = pub match
-      case Some(true) => "export"
-      case None => ""
-    return x
+    var s: String = null
+    val token = current.getToken()
+    if token == null then
+      // Variables are private by default
+      s = null
+    else
+      s = token.kind match
+      // Export is only used at module level
+      case Token.Kind.PUBLIC  => "export"
+      case Token.Kind.PRIVATE => null
+      case _ =>
+        println("Invalid access specifier on variable!")
+        null
+    return s
 
   def variableModifiers (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableModifiers")
