@@ -1,12 +1,12 @@
 // Modifiers in C++ are placed in various locations throughout the function
-// declaration. We need to handle this properly.
-
+// declaration:
 // functionModifiers1: constexpr
 // functionModifiers2: noexcept (not yet implemented)
 
 functionDeclaration (
   functionAccessSpecifier,
   functionModifiers1,
+  functionModifiers2,
   functionName,
   functionParameters,
   functionReturnType

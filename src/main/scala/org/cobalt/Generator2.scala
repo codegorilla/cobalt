@@ -95,7 +95,7 @@ class Generator2 {
     val st = group.getInstanceOf("declarations/memberFunctionDefinitions")
     for child <- current.getChildren() do
       val kind = child.getKind()
-      if kind == AstNode.Kind.METHOD_DECLARATION then
+      if kind == AstNode.Kind.MEMBER_ROUTINE_DECLARATION then
         st.add("memberFunctionDefinition", memberDeclaration(child))
     return st
 
@@ -113,7 +113,7 @@ class Generator2 {
     var st = kind match
       // case AstNode.Kind.CLASS_DECLARATION =>
       //   classDeclaration1(current)
-      case AstNode.Kind.METHOD_DECLARATION =>
+      case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
         memberRoutineDeclaration(current)
       case _ =>
         println("No match in generator2/memberDeclaration.")

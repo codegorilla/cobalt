@@ -3,11 +3,11 @@
 
 //var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
 
-public static const var alpha: *(*int)[1] = (1.5 + 2)/4;
+public const var alpha: *(*int)[1] = (1.5 + 2)/4;
 
 var beta: Token[int, float] = 5;
 
-private constexpr def myfun (x: *int, y: float) -> int {
+def myfun (x: *int, y: float) -> int {
   // Do something
   break;
   continue;
@@ -29,18 +29,20 @@ private constexpr def myfun (x: *int, y: float) -> int {
 
 }
 
-// class Token {
+final class Token {
 
-//   var x: int = 0;
-//   var y: int = 1;
+  var x: int = 0;
+  var y: int = 1;
 
-//   def init (x: int) {
-//     while (1 < 10) {
-//       1 + 2;
-//       break;
-//       return 10;
-//     }
-//   }
+  def init (x: int) {
+    while (1 < 10) {
+      1 + 2;
+      break;
+      return 10;
+    }
+  }
+
+}
 
 //   private override def add (t: *float[1]) -> float64 {
 //     2 + 2;

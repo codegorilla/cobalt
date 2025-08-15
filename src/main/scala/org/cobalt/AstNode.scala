@@ -99,12 +99,12 @@ object AstNode:
     case ENUMERATION_BODY
     case ENUMERATION_CONSTANT_DECLARATION
 
-    // Method declaration
-    case METHOD_BODY
-    case METHOD_DECLARATION
-    case METHOD_PARAMETER
-    case METHOD_PARAMETERS
-    case METHOD_RESULT
+    // Member routine declaration
+    case MEMBER_ROUTINE_BODY
+    case MEMBER_ROUTINE_DECLARATION
+    case MEMBER_ROUTINE_PARAMETER
+    case MEMBER_ROUTINE_PARAMETERS
+    case MEMBER_ROUTINE_RESULT
 
     // Routine declaration
     case ROUTINE_BODY

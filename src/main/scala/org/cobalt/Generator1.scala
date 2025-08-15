@@ -80,55 +80,56 @@ class Generator1 {
 
   // CLASS DECLARATION
 
-  def classDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/classDeclaration")
-    st.add("classDeclaration1", classDeclaration1(current))
-    return st
-
-  // Class Declaration - Pass 1
-
   // Todo: Add inheritance
 
-  def classDeclaration1 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/classDeclaration1")
-    st.add("classModifiers1", classModifiers1(current.getChild(0)))
-    st.add("classModifiers2", classModifiers2(current.getChild(0)))
-    st.add("className", className(current.getChild(1)))
-    st.add("classBody", classBody(current.getChild(2)))
+  def classDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classDeclaration")
+    st.add("classAccessSpecifier", classAccessSpecifier(current.getChild(0)))
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val classModifiers = LinkedList(this.classModifiers(current.getChild(1)).asJava)
+    st.add("classModifiers", classModifiers)
+    st.add("className", className(current.getChild(2)))
+    st.add("classBody", classBody(current.getChild(3)))
     return st
+
+  def classAccessSpecifier (current: AstNode): String =
+    var s: String = null
+    val token = current.getToken()
+    if token == null then
+      // Classes are public by default
+      s = "export"
+    else
+      s = token.kind match
+      // Export is only used at module level
+      case Token.Kind.PUBLIC  => "export"
+      case Token.Kind.PRIVATE => null
+      case _ =>
+        println("Invalid access specifier on class!")
+        null
+    return s
 
   // C++ does not actually have an 'abstract' modifier for classes themselves.
   // Any class with at least one pure virtual function is considered an abstract
   // class.
 
-  def classModifiers1 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/classModifiers1")
-    for child <- current.getChildren() do
-      val kind = child.getKind()
-      if kind == AstNode.Kind.PRIVATE_MODIFIER then
-        st.add("classModifier", "")
-      else if kind == AstNode.Kind.PUBLIC_MODIFIER then
-        st.add("classModifier", "export")
-    return st
-
-  def classModifiers2 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/classModifiers2")
+  def classModifiers (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
     for child <- current.getChildren() do
       val kind = child.getKind()
       if kind == AstNode.Kind.FINAL_MODIFIER then
-        st.add("classModifier", "final")
-    return st
+        s += classModifier(child)
+    return s
 
-  def className (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/className")
-    st.add("name", current.getToken().lexeme)
-    return st
+  val classModifierMap = Map (
+    "final" -> "final"
+  )
 
-  // Is every declaration available within compilation unit or module also
-  // available inside of a class body? Many are, but I don't think all are. This
-  // will be resolved in the future with further development and research. For
-  // now, we know that variables and routines can appear within a class body.
-  // Most certainly, other classes and enums should be possible as well.
+  def classModifier (current: AstNode): String =
+    return classModifierMap(current.getToken().lexeme)
+
+  def className (current: AstNode): String =
+    return current.getToken().lexeme
 
   def classBody (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/classBody")
@@ -143,12 +144,14 @@ class Generator1 {
   // have too much logic to decide such factors. Thus, I like the idea of
   // marking it during semantic analysis.
 
+  // To do: What other members are allowed inside classes?
+
   def memberDeclaration (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
       case AstNode.Kind.CLASS_DECLARATION =>
-        classDeclaration1(current)
-      case AstNode.Kind.METHOD_DECLARATION =>
+        classDeclaration(current)
+      case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
         memberRoutineDeclaration(current)
       case AstNode.Kind.VARIABLE_DECLARATION =>
         variableDeclaration(current)
@@ -157,27 +160,17 @@ class Generator1 {
         null
     return st
 
-  // Class Declaration - Pass 2
-
-  def classDeclaration2 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/classDeclaration2")
-    st.add("classModifiers1", classModifiers1(current.getChild(0)))
-    st.add("classModifiers2", classModifiers2(current.getChild(0)))
-    st.add("className", className(current.getChild(1)))
-    st.add("classBody", classBody(current.getChild(2)))
-    return st
-
   // MEMBER ROUTINE DECLARATION
 
   def memberRoutineDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionDeclaration")
-    st.add("functionModifiers1", memberRoutineModifiers1(current.getChild(0)))
-    st.add("functionModifiers2", memberRoutineModifiers2(current.getChild(0)))
-    st.add("functionModifiers3", memberRoutineModifiers3(current.getChild(0)))
-    st.add("functionModifiers4", memberRoutineModifiers4(current.getChild(0)))
-    st.add("functionName", routineName(current.getChild(1)))
-    st.add("functionParameters", routineParameters(current.getChild(2)))
-    st.add("functionReturnType", routineReturnType(current.getChild(3)))
+    val st = group.getInstanceOf("declarations/memberFunctionDeclaration")
+    st.add("memberFunctionModifiers1", memberRoutineModifiers1(current.getChild(0)))
+    st.add("memberFunctionModifiers2", memberRoutineModifiers2(current.getChild(0)))
+    st.add("memberFunctionModifiers3", memberRoutineModifiers3(current.getChild(0)))
+    st.add("memberFunctionModifiers4", memberRoutineModifiers4(current.getChild(0)))
+    st.add("memberFunctionName", routineName(current.getChild(1)))
+    st.add("memberFunctionParameters", routineParameters(current.getChild(2)))
+    st.add("memberFunctionReturnType", routineReturnType(current.getChild(3)))
     // Only needed for inline member routines
     // st.add("functionBody", routineBody(current.getChild(4)))
     return st
@@ -232,8 +225,8 @@ class Generator1 {
     "const" -> "const",
     "constexpr" -> "constexpr",
     "final" -> "final",
-    "static" -> "static",
     "override" -> "override",
+    "static" -> "static",
     "virtual" -> "virtual"
   )
 
@@ -256,7 +249,6 @@ class Generator1 {
     st.add("functionName", routineName(current.getChild(2)))
     st.add("functionParameters", routineParameters(current.getChild(3)))
     st.add("functionReturnType", routineReturnType(current.getChild(4)))
-    //st.add("functionBody", routineBody(current.getChild(5)))
     return st
 
   def routineAccessSpecifier (current: AstNode): String =
@@ -274,8 +266,6 @@ class Generator1 {
         println("Invalid access specifier on routine!")
         null
     return s
-
-  // These modifiers go before the 'auto' keyword.
 
   // Note: We don't use 'static' or 'virtual' modifiers on non-member routines.
   // Still need to research 'friend' modifier.
@@ -329,11 +319,6 @@ class Generator1 {
       typeRoot(current.getChild(0))
       st.add("typeSpecifier", stack.pop())
       st.add("declarator", stack.pop())
-    return st
-
-  def routineBody (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionBody")
-    st.add("compoundStatement", compoundStatement(current.getChild(0)))
     return st
 
   // VARIABLE DECLARATION

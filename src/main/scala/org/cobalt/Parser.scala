@@ -323,7 +323,7 @@ class Parser {
     val spec = accessSpecifier()
     val mods = modifiers()
     val n = lookahead.kind match
-      case Token.Kind.DEF => methodDeclaration(spec, mods)
+      case Token.Kind.DEF => memberRoutineDeclaration(spec, mods)
       case Token.Kind.VAL => variableDeclaration(spec, mods)
       case Token.Kind.VAR => variableDeclaration(spec, mods)
       case _ => 
@@ -331,22 +331,22 @@ class Parser {
           null
     return n
 
-  // METHOD DECLARATION
+  // MEMBER ROUTINE DECLARATION
 
   // Note: The C++ specification calls these "member functions" rather than
-  // "methods". We may decide to call them "member routines" in keeping with C++
+  // "methods", so we will call them "member routines" in keeping with C++
   // tradition.
 
   // Todo: We need to push another scope onto the scope stack. Keep in mind that
   // the method parameters may be in the same exact scope as the routine body
   // (or top-most block of the routine).
 
-  def methodDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_DECLARATION, lookahead)
+  def memberRoutineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
     n.addChild(accessSpecifier)
     n.addChild(modifiers)
-    n.addChild(methodName())
+    n.addChild(memberRoutineName())
     n.addChild(methodParameters())
     n.addChild(methodResult())
     n.addChild(methodBody())
@@ -355,7 +355,7 @@ class Parser {
   // Todo: Should symbols point to AST node, and/or vice versa? This might come
   // in handy later on, but wait until its needed before adding the code.
 
-  def methodName (): AstNode =
+  def memberRoutineName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
     val s = Symbol(Symbol.Kind.METHOD, n.getToken().lexeme)
@@ -366,7 +366,7 @@ class Parser {
   // parameter rules.
 
   def methodParameters (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_PARAMETERS)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_PARAMETERS)
     match_(Token.Kind.L_PARENTHESIS)
     if lookahead.kind == Token.Kind.IDENTIFIER then
       n.addChild(methodParameter())
@@ -379,14 +379,14 @@ class Parser {
   // Shoud name() be parameterName()?
 
   def methodParameter (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_PARAMETER)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_PARAMETER)
     n.addChild(name())
     match_(Token.Kind.COLON)
     n.addChild(typeRoot())
     return n
 
   def methodResult (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_RESULT)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_RESULT)
     if lookahead.kind == Token.Kind.MINUS_GREATER then
       match_(Token.Kind.MINUS_GREATER)
       n.addChild(typeRoot())
@@ -396,7 +396,7 @@ class Parser {
   // method.
 
   def methodBody (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_BODY)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_BODY)
     if lookahead.kind == Token.Kind.SEMICOLON then
       match_(Token.Kind.SEMICOLON)
     else

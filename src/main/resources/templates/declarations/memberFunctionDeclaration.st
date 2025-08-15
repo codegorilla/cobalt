@@ -1,26 +1,30 @@
-// Modifiers in C++ are placed in various locations throughout the function
-// declaration. We need to handle this properly.
+// Modifiers in C++ are placed in various locations throughout the member
+// function declaration:
+// memberFunctionModifiers1: constexpr, static, virtual
+// memberFunctionModifiers2: const, volatile (not yet implemented)
+// memberFunctionModifiers3: &, && (not yet implemented)
+// memberFunctionModifiers4: noexcept, final, override (not yet implemented)
 
-// functionModifiers1: static, virtual
-// functionModifiers2: const, volatile
-// functionModifiers3: final, override, noexcept?
+// To do: Member function access specifiers use group heading syntax.
 
-// Access modifiers (e.g. public, private, and protected) need to be handled
-// separately (perhaps in an AST transformation phase) because the methods need
-// to be aggregated into separate categories when rendered. These modifiers do
-// not appear individually on each method.
-
-// Another way to handle access modifiers is to aggregate them under the proper
-// section using templates during the code generation phase. This would be done
-// similarly to how we have multiple function modifiers functions (see below)
-// that each choose their own subset of what to render.
+// Note: memberFunctionModifiers2 are also called cv-qualifiers and
+// memberFunctionModifiers3 are also called ref-qualifiers.
 
 memberFunctionDeclaration (
-  functionModifiers1,
-  functionName,
-  functionParameters,
-  functionReturnType) ::= <%
-<if(functionModifiers1.functionModifier)><functionModifiers1> <endif>auto<\ >
-<if(functionModifiers2.functionModifier)><functionModifiers2> <endif><functionName> <functionParameters><\ >
-<if(functionModifiers3.functionModifier)><functionModifiers3> <endif><functionReturnType>;
+  memberFunctionAccessSpecifier,
+  memberFunctionModifiers1,
+  memberFunctionModifiers2,
+  memberFunctionModifiers3,
+  memberFunctionModifiers4,
+  memberFunctionName,
+  memberFunctionParameters,
+  memberFunctionReturnType
+) ::= <%
+<if(memberFunctionAccessSpecifier)><memberFunctionAccessSpecifier> <endif>
+<if(memberFunctionModifiers1)><memberFunctionModifiers1; separator=" "> <endif>
+auto <memberFunctionName> <memberFunctionParameters><\ >
+<if(memberFunctionModifiers2)><memberFunctionModifiers2; separator=" "> <endif>
+<if(memberFunctionModifiers3)><memberFunctionModifiers3; separator=" "> <endif>
+<memberFunctionReturnType>
+<if(memberFunctionModifiers4)><memberFunctionModifiers4; separator=" "> <endif>;
 %>

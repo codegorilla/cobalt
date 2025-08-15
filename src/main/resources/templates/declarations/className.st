@@ -1,3 +1,0 @@
-className (name) ::= <<
-<name>
->>
