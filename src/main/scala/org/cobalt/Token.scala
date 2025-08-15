@@ -13,6 +13,7 @@ object Token {
         case CATCH
         case CLASS
         case CONST
+        case CONSTEXPR
         case CONTINUE
         case DEF
         case DEFAULT

@@ -6,6 +6,6 @@ variableDeclaration (
   initializer
 ) ::= <%
 <if(variableAccessSpecifier)><variableAccessSpecifier> <endif>
-<if(variableModifiers.variableModifier)><variableModifiers> <endif>
+<if(variableModifiers)><variableModifiers; separator=" "> <endif>
 <typeSpecifier> <declarator> = <initializer>;
 %>

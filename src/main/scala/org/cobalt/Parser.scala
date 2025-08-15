@@ -145,18 +145,6 @@ class Parser {
       match_(lookahead.kind)
     return n
 
-  // def privateSpecifier (): AstNode =
-  //   println("HERE PRI")
-  //   val n = AstNode(AstNode.Kind.PRIVATE_SPECIFIER, lookahead)
-  //   match_(Token.Kind.PRIVATE)
-  //   return n
-
-  // def publicSpecifier (): AstNode =
-  //   println("HERE PUB")
-  //   val n = AstNode(AstNode.Kind.PUBLIC_SPECIFIER, lookahead)
-  //   match_(Token.Kind.PUBLIC)
-  //   return n
-
   // According to Parr, there is no need to have an AstNode kind -- you can just
   // use the token to determine what kind of node it is. This works only for
   // Simple cases. Sometimes, there is no corresponding token. So for that
@@ -174,24 +162,26 @@ class Parser {
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
     while
-      lookahead.kind == Token.Kind.ABSTRACT ||
-      lookahead.kind == Token.Kind.CONST    ||
-      lookahead.kind == Token.Kind.FINAL    ||
-      lookahead.kind == Token.Kind.OVERRIDE ||
-      lookahead.kind == Token.Kind.STATIC   ||
-      lookahead.kind == Token.Kind.VIRTUAL  ||
+      lookahead.kind == Token.Kind.ABSTRACT  ||
+      lookahead.kind == Token.Kind.CONST     ||
+      lookahead.kind == Token.Kind.CONSTEXPR ||
+      lookahead.kind == Token.Kind.FINAL     ||
+      lookahead.kind == Token.Kind.OVERRIDE  ||
+      lookahead.kind == Token.Kind.STATIC    ||
+      lookahead.kind == Token.Kind.VIRTUAL   ||
       lookahead.kind == Token.Kind.VOLATILE
     do
       println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
       Thread.sleep(SLEEP_TIME)
       val modifier = lookahead.kind match
-        case Token.Kind.ABSTRACT => abstractModifier()
-        case Token.Kind.CONST    => constModifier()
-        case Token.Kind.FINAL    => finalModifier()
-        case Token.Kind.OVERRIDE => overrideModifier()
-        case Token.Kind.STATIC   => staticModifier()
-        case Token.Kind.VIRTUAL  => virtualModifier()
-        case Token.Kind.VOLATILE => volatileModifier()
+        case Token.Kind.ABSTRACT  => abstractModifier()
+        case Token.Kind.CONST     => constModifier()
+        case Token.Kind.CONSTEXPR => constexprModifier()
+        case Token.Kind.FINAL     => finalModifier()
+        case Token.Kind.OVERRIDE  => overrideModifier()
+        case Token.Kind.STATIC    => staticModifier()
+        case Token.Kind.VIRTUAL   => virtualModifier()
+        case Token.Kind.VOLATILE  => volatileModifier()
         case _ =>
           throw new Exception("Parser error: impossible case reached.")
       n.addChild(modifier)
@@ -218,6 +208,11 @@ class Parser {
   def constModifier (): AstNode =
     val n = AstNode(AstNode.Kind.CONST_MODIFIER, lookahead)
     match_(Token.Kind.CONST)
+    return n
+
+  def constexprModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.CONSTEXPR_MODIFIER, lookahead)
+    match_(Token.Kind.CONSTEXPR)
     return n
 
   def finalModifier (): AstNode =
@@ -444,7 +439,7 @@ class Parser {
   // (or top-most block of the routine).
 
   def routineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION)
+    val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
     n.addChild(accessSpecifier)
     n.addChild(modifiers)

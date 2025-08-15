@@ -80,6 +80,7 @@ object AstNode:
     // Modifiers
     case ABSTRACT_MODIFIER
     case CONST_MODIFIER
+    case CONSTEXPR_MODIFIER
     case FINAL_MODIFIER
     case MODIFIERS
     case OVERRIDE_MODIFIER

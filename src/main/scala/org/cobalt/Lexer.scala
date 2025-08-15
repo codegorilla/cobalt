@@ -20,6 +20,7 @@ class Lexer {
     "catch" -> Token.Kind.CATCH,
     "class" -> Token.Kind.CLASS,
     "const" -> Token.Kind.CONST,
+    "constexpr" -> Token.Kind.CONSTEXPR,
     "continue" -> Token.Kind.CONTINUE,
     "def" -> Token.Kind.DEF,
     "default" -> Token.Kind.DEFAULT,
