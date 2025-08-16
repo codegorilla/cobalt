@@ -1,5 +1,6 @@
-classBody (memberDeclaration) ::=  <<
+classBody (publicMemberDeclarations, privateMemberDeclarations) ::=  <<
 {
-  <memberDeclaration; separator="\n">
+  <publicMemberDeclarations>
+  <privateMemberDeclarations>
 }
 >>

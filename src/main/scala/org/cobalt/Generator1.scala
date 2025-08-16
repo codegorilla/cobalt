@@ -131,10 +131,34 @@ class Generator1 {
   def className (current: AstNode): String =
     return current.getToken().lexeme
 
+  // Todo: Research protected member declarations and add as necessary
+
   def classBody (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/classBody")
+    st.add("privateMemberDeclarations", privateMemberDeclarations(current))
+    st.add("publicMemberDeclarations", publicMemberDeclarations(current))
+    return st
+
+  def privateMemberDeclarations (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/privateMemberDeclarations")
     for child <- current.getChildren() do
-      st.add("memberDeclaration", memberDeclaration(child))
+      // Assume all member declarations have an access specifier. If this is not
+      // the case, then we can refactor later.
+      val accessSpecifier = child.getChild(0)
+      val token = accessSpecifier.getToken()
+      if token.kind == Token.Kind.PRIVATE then
+        st.add("memberDeclaration", memberDeclaration(child))
+    return st
+
+  def publicMemberDeclarations (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/publicMemberDeclarations")
+    for child <- current.getChildren() do
+      // Assume all member declarations have an access specifier. If this is not
+      // the case, then we can refactor later.
+      val accessSpecifier = child.getChild(0)
+      val token = accessSpecifier.getToken()
+      if token.kind == Token.Kind.PUBLIC then
+        st.add("memberDeclaration", memberDeclaration(child))
     return st
 
   // Need to handle the fact that constructors do not have a return type (not
@@ -163,29 +187,36 @@ class Generator1 {
   // MEMBER ROUTINE DECLARATION
 
   def memberRoutineDeclaration (current: AstNode): ST =
+    // val st = publicMemberRoutineDeclarations(current)
     val st = group.getInstanceOf("declarations/memberFunctionDeclaration")
-    st.add("memberFunctionModifiers1", memberRoutineModifiers1(current.getChild(0)))
-    st.add("memberFunctionModifiers2", memberRoutineModifiers2(current.getChild(0)))
-    st.add("memberFunctionModifiers3", memberRoutineModifiers3(current.getChild(0)))
-    st.add("memberFunctionModifiers4", memberRoutineModifiers4(current.getChild(0)))
-    st.add("memberFunctionName", routineName(current.getChild(1)))
-    st.add("memberFunctionParameters", routineParameters(current.getChild(2)))
-    st.add("memberFunctionReturnType", routineReturnType(current.getChild(3)))
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val memberRoutineModifiers1 = LinkedList(this.memberRoutineModifiers1(current.getChild(1)).asJava)
+    st.add("memberFunctionModifiers1", memberRoutineModifiers1)
+    val memberRoutineModifiers2 = LinkedList(this.memberRoutineModifiers2(current.getChild(1)).asJava)
+    st.add("memberFunctionModifiers2", memberRoutineModifiers2)
+    // val memberRoutineModifiers3 = LinkedList(this.memberRoutineModifiers3(current.getChild(1)).asJava)
+    // st.add("memberFunctionModifiers3", memberRoutineModifiers3)
+    // val memberRoutineModifiers4 = LinkedList(this.memberRoutineModifiers4(current.getChild(1)).asJava)
+    // st.add("memberFunctionModifiers4", memberRoutineModifiers4)
+    st.add("memberFunctionName", memberRoutineName(current.getChild(2)))
+    st.add("memberFunctionParameters", routineParameters(current.getChild(3)))
+    st.add("memberFunctionReturnType", routineReturnType(current.getChild(4)))
     // Only needed for inline member routines
     // st.add("functionBody", routineBody(current.getChild(4)))
     return st
 
   // These modifiers go before the 'auto' keyword.
 
-  // Note: We don't use 'static' or 'virtual' modifiers on non-member routines.
-  // Still need to research 'friend' modifier.
-
   def memberRoutineModifiers1 (current: AstNode): ListBuffer[String] =
     var s = ListBuffer[String]()
     for child <- current.getChildren() do
       val kind = child.getKind()
-      if kind == AstNode.Kind.CONSTEXPR_MODIFIER then
-        s += routineModifier(child)
+      if
+        kind == AstNode.Kind.CONSTEXPR_MODIFIER ||
+        kind == AstNode.Kind.STATIC_MODIFIER
+      then
+        s += memberRoutineModifier(child)
     return s
 
   // These modifiers would normally become CV qualifiers and go after the
@@ -232,6 +263,9 @@ class Generator1 {
 
   def memberRoutineModifier (current: AstNode): String =
     return memberRoutineModifierMap(current.getToken().lexeme)
+
+  def memberRoutineName (current: AstNode): String =
+    return current.getToken().lexeme
 
   // ROUTINE DECLARATION
 
