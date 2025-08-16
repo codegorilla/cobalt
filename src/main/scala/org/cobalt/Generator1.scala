@@ -131,7 +131,7 @@ class Generator1 {
   def className (current: AstNode): String =
     return current.getToken().lexeme
 
-  // Todo: Research protected member declarations and add as necessary
+  // Todo: Research and add protected member declarations as necessary
 
   def classBody (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/classBody")
@@ -139,27 +139,47 @@ class Generator1 {
     st.add("publicMemberDeclarations", publicMemberDeclarations(current))
     return st
 
+    // We assume all member declarations have an access specifier. If this is
+    // not the case, then we can refactor later. UPDATE: NOT THE CASE.
+
   def privateMemberDeclarations (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/privateMemberDeclarations")
     for child <- current.getChildren() do
-      // Assume all member declarations have an access specifier. If this is not
-      // the case, then we can refactor later.
-      val accessSpecifier = child.getChild(0)
-      val token = accessSpecifier.getToken()
-      if token.kind == Token.Kind.PRIVATE then
-        st.add("memberDeclaration", memberDeclaration(child))
+      val kind = child.getKind()
+      kind match
+        case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token != null && token.kind == Token.Kind.PRIVATE then
+            st.add("memberDeclaration", memberDeclaration(child))
+        case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token == null || token.kind == Token.Kind.PRIVATE then
+            st.add("memberDeclaration", memberDeclaration(child))
     return st
 
   def publicMemberDeclarations (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/publicMemberDeclarations")
     for child <- current.getChildren() do
-      // Assume all member declarations have an access specifier. If this is not
-      // the case, then we can refactor later.
-      val accessSpecifier = child.getChild(0)
-      val token = accessSpecifier.getToken()
-      if token.kind == Token.Kind.PUBLIC then
-        st.add("memberDeclaration", memberDeclaration(child))
+      val kind = child.getKind()
+      kind match
+        case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token == null || token.kind == Token.Kind.PUBLIC then
+            st.add("memberDeclaration", memberDeclaration(child))
+        case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token != null && token.kind == Token.Kind.PUBLIC then
+            st.add("memberDeclaration", memberDeclaration(child))
     return st
+
+      // val accessSpecifier = child.getChild(0)
+      // val token = accessSpecifier.getToken()
+      // if token.kind == Token.Kind.PUBLIC then
+      //   st.add("memberDeclaration", memberDeclaration(child))
 
   // Need to handle the fact that constructors do not have a return type (not
   // even auto or void). This can be handled by marking it as a constructor
@@ -177,8 +197,8 @@ class Generator1 {
         classDeclaration(current)
       case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
         memberRoutineDeclaration(current)
-      case AstNode.Kind.VARIABLE_DECLARATION =>
-        variableDeclaration(current)
+      case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
+        memberVariableDeclaration(current)
       case _ =>
         println("No match in generator/memberDeclaration.")
         null
@@ -266,6 +286,28 @@ class Generator1 {
 
   def memberRoutineName (current: AstNode): String =
     return current.getToken().lexeme
+
+  // MEMBER VARIABLE DECLARATION
+
+  // To do: Fix access specifier - should not export.
+
+  def memberVariableDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/variableDeclaration")
+    st.add("variableAccessSpecifier", variableAccessSpecifier(current.getChild(0)))
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val variableModifiers = LinkedList(this.variableModifiers(current.getChild(1)).asJava)
+    st.add("variableModifiers", variableModifiers)
+    variableName(current.getChild(2))
+    typeSpecifier(current.getChild(3))
+    // Get translated type specifier and declarator from stack. The type
+    // specifier should be something basic like 'int'.
+    st.add("typeSpecifier", stack.pop())
+    st.add("declarator", stack.pop())
+    val initST = initializer(current.getChild(4))
+    if initST != null then
+      st.add("initializer", initST)
+    return st
 
   // ROUTINE DECLARATION
 
@@ -365,7 +407,6 @@ class Generator1 {
   // member variable because this affects how it is translated. If it is global
   // then it might be placed in an interface file or implementation file,
   // depending on whether or not it is exported.
-
 
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")

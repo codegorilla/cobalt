@@ -31,10 +31,11 @@ def myfun (x: *int, y: float) -> int {
 
 final class Token {
 
-  // var x: int = 0;
-  // var y: int = 1;
+  public var x: int = 0;
+  private var y: int = 1;
+  var z: int = 2;
 
-  public static def init (x: int) {
+  public def init (x: int) {
     while (1 < 10) {
       1 + 2;
       break;

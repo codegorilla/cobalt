@@ -119,6 +119,9 @@ object AstNode:
     case TEMPLATE_PARAMETERS
     case TEMPLATE_PARAMETER
 
+    // Member variable declaration
+    case MEMBER_VARIABLE_DECLARATION
+
     // Variable declaration
     case LOCAL_VARIABLE_DECLARATION
     case VARIABLE_DECLARATION

@@ -310,22 +310,28 @@ class Parser {
     match_(Token.Kind.R_BRACE)
     return n
 
-  // Do we need separate rules for methods and fields? Syntactically, they seem
-  // to parse the same as non-member routines and variables, but semantically,
-  // they have different modifiers and possibly scoping rules. However, those
-  // should be discernable during any semantic analysis phases without requiring
-  // different AST node types.
+  // Do we need separate rules for member routine and variable declarations?
+  // Syntactically, they are very close to their non-member counterparts, but
+  // there are important differences, especially in routine declarations. In
+  // particular, member routines have cv-qualifiers and ref-qualifiers, which
+  // non-member routines do not have. Depending on placement of these, there
+  // may or may not be syntactic differences. Even so, we could just parse both
+  // situations using the same rules and handle this during semantic analysis,
+  // but for now we will create separate rules. We might as well have separate
+  // rules for variable declarations as well just to be consistent.
 
-  // Note: One exception for methods is that we might have qualifiers after the
-  // parameter list (e.g. const, &, &&) that don't exist for regular routines.
+  // To do: I am not sure yet, but differences in scoping might also require
+  // them to have separate rules. (Normally this wouldn't be the case for a
+  // language that only starts building scopes during semantic analysis, after
+  // parsing has already been completed.)
 
   def classMember (): AstNode =
     val spec = accessSpecifier()
     val mods = modifiers()
     val n = lookahead.kind match
       case Token.Kind.DEF => memberRoutineDeclaration(spec, mods)
-      case Token.Kind.VAL => variableDeclaration(spec, mods)
-      case Token.Kind.VAR => variableDeclaration(spec, mods)
+      case Token.Kind.VAL => memberVariableDeclaration(spec, mods)
+      case Token.Kind.VAR => memberVariableDeclaration(spec, mods)
       case _ => 
           print("error: This can only happen if there is a parser error.")
           null
@@ -401,6 +407,29 @@ class Parser {
       match_(Token.Kind.SEMICOLON)
     else
       n.addChild(compoundStatement())
+    return n
+
+  // VARIABLE DECLARATION
+
+  def memberVariableDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.MEMBER_VARIABLE_DECLARATION, lookahead)
+    if lookahead.kind == Token.Kind.VAL then
+      // Keyword 'val' is equivalent to 'final var'
+      match_(Token.Kind.VAL)
+      // This final modifier won't have a token since it is an implied modifier
+      // that doesn't actually appear in the source code.
+      // Update: We might not want to add an implicit modifier like this.
+      // Instead, when it comes time to set attributes, we can set one base on
+      // the token (val or var).
+      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
+    else
+      match_(Token.Kind.VAR)
+    n.addChild(accessSpecifier)
+    n.addChild(modifiers)
+    n.addChild(variableName())
+    n.addChild(typeSpecifier())
+    n.addChild(initializer())
+    match_(Token.Kind.SEMICOLON)
     return n
 
   // ENUMERATION DECLARATION
