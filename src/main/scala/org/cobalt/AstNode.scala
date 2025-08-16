@@ -84,11 +84,12 @@ object AstNode:
     case FINAL_MODIFIER
     case MODIFIERS
     case OVERRIDE_MODIFIER
-    case PRIVATE_MODIFIER
-    case PUBLIC_MODIFIER
     case STATIC_MODIFIER
     case VIRTUAL_MODIFIER
     case VOLATILE_MODIFIER
+
+    // Member class declaration
+    case MEMBER_CLASS_DECLARATION
 
     // Class declaration
     case CLASS_DECLARATION

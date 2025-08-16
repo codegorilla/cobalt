@@ -139,24 +139,34 @@ class Generator1 {
     st.add("publicMemberDeclarations", publicMemberDeclarations(current))
     return st
 
-    // We assume all member declarations have an access specifier. If this is
-    // not the case, then we can refactor later. UPDATE: NOT THE CASE.
+  // We assume all member declarations have an access specifier, whether
+  // explicit or implicit. If this is not true, we can refactor later.
+
+  // What other members are allowed inside classes besides variables,
+  // routines, and other classes?
+
+  // To do: Handle member (i.e. nested) class declarations
 
   def privateMemberDeclarations (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/privateMemberDeclarations")
     for child <- current.getChildren() do
       val kind = child.getKind()
       kind match
+        case AstNode.Kind.MEMBER_CLASS_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token != null && token.kind == Token.Kind.PRIVATE then
+            st.add("memberDeclaration", classDeclaration(child))
         case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
           val accessSpecifier = child.getChild(0)
           val token = accessSpecifier.getToken()
           if token != null && token.kind == Token.Kind.PRIVATE then
-            st.add("memberDeclaration", memberDeclaration(child))
+            st.add("memberDeclaration", memberRoutineDeclaration(child))
         case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
           val accessSpecifier = child.getChild(0)
           val token = accessSpecifier.getToken()
           if token == null || token.kind == Token.Kind.PRIVATE then
-            st.add("memberDeclaration", memberDeclaration(child))
+            st.add("memberDeclaration", memberVariableDeclaration(child))
     return st
 
   def publicMemberDeclarations (current: AstNode): ST =
@@ -164,22 +174,24 @@ class Generator1 {
     for child <- current.getChildren() do
       val kind = child.getKind()
       kind match
+        case AstNode.Kind.MEMBER_CLASS_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token == null || token.kind == Token.Kind.PUBLIC then
+            st.add("memberDeclaration", classDeclaration(child))
         case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
           val accessSpecifier = child.getChild(0)
           val token = accessSpecifier.getToken()
           if token == null || token.kind == Token.Kind.PUBLIC then
-            st.add("memberDeclaration", memberDeclaration(child))
+            st.add("memberDeclaration", memberRoutineDeclaration(child))
         case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
           val accessSpecifier = child.getChild(0)
           val token = accessSpecifier.getToken()
           if token != null && token.kind == Token.Kind.PUBLIC then
-            st.add("memberDeclaration", memberDeclaration(child))
+            st.add("memberDeclaration", memberVariableDeclaration(child))
     return st
 
-      // val accessSpecifier = child.getChild(0)
-      // val token = accessSpecifier.getToken()
-      // if token.kind == Token.Kind.PUBLIC then
-      //   st.add("memberDeclaration", memberDeclaration(child))
+  // MEMBER ROUTINE DECLARATION
 
   // Need to handle the fact that constructors do not have a return type (not
   // even auto or void). This can be handled by marking it as a constructor
@@ -187,24 +199,6 @@ class Generator1 {
   // generation phase just performs a straightforward translation and doesn't
   // have too much logic to decide such factors. Thus, I like the idea of
   // marking it during semantic analysis.
-
-  // To do: What other members are allowed inside classes?
-
-  def memberDeclaration (current: AstNode): ST =
-    val kind = current.getKind()
-    val st = kind match
-      case AstNode.Kind.CLASS_DECLARATION =>
-        classDeclaration(current)
-      case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
-        memberRoutineDeclaration(current)
-      case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
-        memberVariableDeclaration(current)
-      case _ =>
-        println("No match in generator/memberDeclaration.")
-        null
-    return st
-
-  // MEMBER ROUTINE DECLARATION
 
   def memberRoutineDeclaration (current: AstNode): ST =
     // val st = publicMemberRoutineDeclarations(current)
@@ -289,11 +283,8 @@ class Generator1 {
 
   // MEMBER VARIABLE DECLARATION
 
-  // To do: Fix access specifier - should not export.
-
   def memberVariableDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/variableDeclaration")
-    st.add("variableAccessSpecifier", variableAccessSpecifier(current.getChild(0)))
+    val st = group.getInstanceOf("declarations/memberVariableDeclaration")
     // StringTemplate can only work with Java collections for aggregates so we
     // need to convert Scala ListBuffer to Java LinkedList.
     val variableModifiers = LinkedList(this.variableModifiers(current.getChild(1)).asJava)

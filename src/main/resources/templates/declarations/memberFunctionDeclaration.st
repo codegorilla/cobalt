@@ -5,13 +5,10 @@
 // memberFunctionModifiers3: &, && (not yet implemented)
 // memberFunctionModifiers4: noexcept, final, override (not yet implemented)
 
-// To do: Member function access specifiers use group heading syntax.
-
 // Note: memberFunctionModifiers2 are also called cv-qualifiers and
 // memberFunctionModifiers3 are also called ref-qualifiers.
 
 memberFunctionDeclaration (
-  memberFunctionAccessSpecifier,
   memberFunctionModifiers1,
   memberFunctionModifiers2,
   memberFunctionModifiers3,
@@ -20,7 +17,6 @@ memberFunctionDeclaration (
   memberFunctionParameters,
   memberFunctionReturnType
 ) ::= <%
-<if(memberFunctionAccessSpecifier)><memberFunctionAccessSpecifier> <endif>
 <if(memberFunctionModifiers1)><memberFunctionModifiers1; separator=" "> <endif>
 auto <memberFunctionName> <memberFunctionParameters><\ >
 <if(memberFunctionModifiers2)><memberFunctionModifiers2; separator=" "> <endif>

@@ -47,8 +47,8 @@ class Pass20 (val input: AstNode) {
       node.getKind() match
         case AstNode.Kind.CONST_MODIFIER   => current.setAttribute("const", true)
         case AstNode.Kind.FINAL_MODIFIER   => current.setAttribute("final", true)
-        case AstNode.Kind.PRIVATE_MODIFIER => current.setAttribute("private", true)
-        case AstNode.Kind.PUBLIC_MODIFIER  => current.setAttribute("public", true)
+        // case AstNode.Kind.PRIVATE_MODIFIER => current.setAttribute("private", true)
+        // case AstNode.Kind.PUBLIC_MODIFIER  => current.setAttribute("public", true)
         case _ => println(s"error: invalid modifier on global variable ${current.getToken()}")
 
   // Valid modifers for local variables:
@@ -83,8 +83,8 @@ class Pass20 (val input: AstNode) {
       node.getKind() match
         case AstNode.Kind.CONST_MODIFIER   => current.setAttribute("const", true)
         case AstNode.Kind.FINAL_MODIFIER   => current.setAttribute("final", true)
-        case AstNode.Kind.PRIVATE_MODIFIER => current.setAttribute("private", true)
-        case AstNode.Kind.PUBLIC_MODIFIER  => current.setAttribute("public", true)
+        // case AstNode.Kind.PRIVATE_MODIFIER => current.setAttribute("private", true)
+        // case AstNode.Kind.PUBLIC_MODIFIER  => current.setAttribute("public", true)
         case _ => println(s"error: invalid modifier on function ${current.getToken()}")
     functionBody(current.getChild(5))
 
