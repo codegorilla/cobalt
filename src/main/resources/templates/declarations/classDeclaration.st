@@ -1,5 +1,3 @@
-//<if(baseClause)>: public <baseClause; separator=", "> <endif>
-
 classDeclaration (
   classAccessSpecifier,
   classModifiers,
