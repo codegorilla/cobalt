@@ -22,20 +22,20 @@ import symbol.Scope
 
 class Parser {
 
-  val SLEEP_TIME = 10
+  private val SLEEP_TIME = 10
 
-  var input: List[Token] = null
-  var position = 0
-  var lookahead: Token = null
+  private var input: List[Token] = null
+  private var position = 0
+  private var lookahead: Token = null
 
   // Used to pass nodes up and down during tree traversal
-  val stack = Stack[AstNode]()
+  private val stack = Stack[AstNode]()
 
   // Used for symbol table operations. Cobalt requires a symbol table during
   // parsing in order to disambiguate a few grammar rules. We cannot wait until
   // the semantic analysis phase to begin constructing symbol tables.
-  val builtinScope = Scope(Scope.Kind.BUILT_IN)
-  var currentScope = builtinScope
+  private val builtinScope = Scope(Scope.Kind.BUILT_IN)
+  private var currentScope = builtinScope
 
   // Todo: we may also need a 'null_t' type, for which there is exactly one
   // value, which is 'null'. This is to match the C++ 'nullptr_t' type and its
@@ -85,9 +85,15 @@ class Parser {
   // Not every AST node has a corresponding token. Case in point is
   // translationUnit.
 
-  // A cobalt translation unit is a directory of source files. We might rename
-  // this to 'moduleUnit' later if it turns out that a translationUnit maps 1:1
-  // to a module.
+  // A cobalt module unit is a directory of source files. Goal is to be able to
+  // parse each source file separately, forming an AST for each. These ASTs will
+  // then be combined in memory to form the complete AST for the module. Thus,
+  // all files in the directory form a translation unit, even though they are
+  // parsed individually. I believe this is very similar to how go handles its
+  // "packages", which are the equivalent of cobalt "modules". For now, in C++
+  // tradition, we will call each source file a translation unit, but in truth,
+  // it is the combination of all source files in the directory that form the
+  // translation unit.
 
   def translationUnit (): AstNode =
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
@@ -1493,6 +1499,8 @@ class Parser {
       // at all, then assume it is a class and treat it as such. If it is
       // defined as a class template, then a left bracket following denotes
       // class template parameters.
+
+      // Todo: Hard-coded "Token here". This needs to be fixed.
       currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
       val symbol = currentScope.resolve(lookahead.lexeme)
       if symbol == null then
