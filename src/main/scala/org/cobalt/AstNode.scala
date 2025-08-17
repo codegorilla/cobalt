@@ -94,6 +94,9 @@ object AstNode:
     // Class declaration
     case CLASS_DECLARATION
     case CLASS_BODY
+    case BASE_CLASS
+    case BASE_CLASSES
+    case BASE_CLAUSE
 
     // Eumeration declaration
     case ENUMERATION_DECLARATION

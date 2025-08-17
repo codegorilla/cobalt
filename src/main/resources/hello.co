@@ -30,6 +30,8 @@ def myfun (x: *int, y: float) -> int {
 }
 
 final class Token {
+  
+  //extends Object, Widget {
 
   public var x: int = 0;
   private var y: int = 1;

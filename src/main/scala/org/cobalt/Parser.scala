@@ -284,6 +284,7 @@ class Parser {
     n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(className())
+    n.addChild(baseClause())
     n.addChild(classBody())
     return n
 
@@ -296,6 +297,31 @@ class Parser {
     match_(Token.Kind.IDENTIFIER)
     val s = Symbol(Symbol.Kind.CLASS, n.getToken().lexeme)
     currentScope.define(s)
+    return n
+
+  def baseClause (): AstNode =
+    val n = AstNode(AstNode.Kind.BASE_CLAUSE)
+    if lookahead.kind == Token.Kind.EXTENDS then
+      n.setToken(lookahead)
+      match_(Token.Kind.EXTENDS)
+      n.addChild(baseClasses())
+    return n
+
+  // For now, we only support public (i.e. "is-a") inheritance. Private (i.e.
+  // "is-implemented-in-terms-of") inheritance is NOT supported. Most use cases
+  // of private inheritance are better met by composition instead.
+
+  def baseClasses (): AstNode =
+    val n = AstNode(AstNode.Kind.BASE_CLASSES)
+    n.addChild(baseClass())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(baseClass())
+    return n
+
+  def baseClass (): AstNode =
+    val n = AstNode(AstNode.Kind.BASE_CLASS, lookahead)
+    match_(Token.Kind.IDENTIFIER)
     return n
 
   // The token here is simply the curly brace '{'. Do we need to track this?

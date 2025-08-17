@@ -80,8 +80,6 @@ class Generator1 {
 
   // CLASS DECLARATION
 
-  // Todo: Add inheritance
-
   def classDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/classDeclaration")
     st.add("classAccessSpecifier", classAccessSpecifier(current.getChild(0)))
@@ -90,7 +88,8 @@ class Generator1 {
     val classModifiers = LinkedList(this.classModifiers(current.getChild(1)).asJava)
     st.add("classModifiers", classModifiers)
     st.add("className", className(current.getChild(2)))
-    st.add("classBody", classBody(current.getChild(3)))
+    st.add("baseClause", baseClause(current.getChild(3)))
+    st.add("classBody", classBody(current.getChild(4)))
     return st
 
   def classAccessSpecifier (current: AstNode): String =
@@ -129,6 +128,24 @@ class Generator1 {
     return classModifierMap(current.getToken().lexeme)
 
   def className (current: AstNode): String =
+    return current.getToken().lexeme
+
+  // Todo: Placeholder, needs finishing. Passthrough?
+
+  def baseClause (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/baseClause")
+    if current.hasChildren() then
+      val baseClasses = LinkedList(this.baseClasses(current.getChild(0)).asJava)
+      st.add("baseClasses", baseClasses)
+    return st
+
+  def baseClasses (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
+    for child <- current.getChildren() do
+      s += baseClass(child)
+    return s
+
+  def baseClass (current: AstNode): String =
     return current.getToken().lexeme
 
   // Todo: Research and add protected member declarations as necessary
