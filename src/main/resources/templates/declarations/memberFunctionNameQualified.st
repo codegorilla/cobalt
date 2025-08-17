@@ -1,0 +1,3 @@
+functionNameQualified (name) ::= <<
+<name; separator="::">
+>>

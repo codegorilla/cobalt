@@ -20,6 +20,7 @@ class Lexer {
     "catch" -> Token.Kind.CATCH,
     "class" -> Token.Kind.CLASS,
     "const" -> Token.Kind.CONST,
+    "constexpr" -> Token.Kind.CONSTEXPR,
     "continue" -> Token.Kind.CONTINUE,
     "def" -> Token.Kind.DEF,
     "default" -> Token.Kind.DEFAULT,
@@ -58,6 +59,7 @@ class Lexer {
     "val" -> Token.Kind.VAL,
     "var" -> Token.Kind.VAR,
     "virtual" -> Token.Kind.VIRTUAL,
+    "volatile" -> Token.Kind.VOLATILE,
     "while" -> Token.Kind.WHILE,
 
     "int" -> Token.Kind.INT,

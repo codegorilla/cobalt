@@ -13,6 +13,7 @@ object Token {
         case CATCH
         case CLASS
         case CONST
+        case CONSTEXPR
         case CONTINUE
         case DEF
         case DEFAULT
@@ -56,6 +57,7 @@ object Token {
         case VAL
         case VAR
         case VIRTUAL
+        case VOLATILE
         case WHILE
 
         // Basic types

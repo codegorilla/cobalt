@@ -1,3 +1,0 @@
-variableModifiers (variableModifier) ::= <<
-<variableModifier; separator=" ">
->>

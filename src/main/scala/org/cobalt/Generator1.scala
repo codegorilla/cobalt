@@ -1,6 +1,11 @@
 package org.cobalt
 
+import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
+
+import java.util.LinkedList
+
+import scala.jdk.CollectionConverters._
 
 // If something goes wrong, and this is underlined in red, check that there are
 // a bunch of libraries in metals. If not, use metals doctor. Might need to
@@ -8,9 +13,10 @@ import scala.collection.mutable.Stack
 
 import org.stringtemplate.v4.*
 
-// The code generator converts the AST into the target language.
+// The code generator converts the AST into the target language. Pass 1 handles
+// mostly interface concerns.
 
-class Generator {
+class Generator1 {
 
   var input: AstNode = null
 
@@ -49,57 +55,217 @@ class Generator {
       st.add("item", declaration(child))
     return st
 
+  // For class declarations, for their member routine declarations, we need to
+  // translate to both a member function declaration and a member function
+  // definition. This is why there are two separate passes.
+
+  // Note: We may need a somewhat more sophisticated approach for nested classes
+  // because they can be nested arbitrarily deep and routine definitions must be
+  // "lifted" to the outside (but then qualified) in order to avoid them being
+  // treated as implicitly inline.
+
   def declaration (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
-      case AstNode.Kind.VARIABLE_DECLARATION =>
-        variableDeclaration(current)
+      case AstNode.Kind.CLASS_DECLARATION =>
+        classDeclaration(current)
       case AstNode.Kind.ROUTINE_DECLARATION =>
         routineDeclaration(current)
+      case AstNode.Kind.VARIABLE_DECLARATION =>
+        variableDeclaration(current)
+      case _ =>
+        println("No match in generator/declaration.")
+        null
     return st
 
-  // ROUTINE DECLARATION
+  // CLASS DECLARATION
 
-  // C++ function modifiers are seemingly very inconsistent. Some go at the
-  // front, some go in the middle, and some go at the back; depending on what
-  // the modifier in question is.
-
-  // A good way to handle this might be to get all of the modifiers into a list.
-  // Then for each element of the list, figure out if it goes at the front,
-  // middle, or back.
-
-  // Having separate modifier processing functions probably isn't the most
-  // sophisticated way to handle this, but its super simple to understand.
-
-  def routineDeclaration (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionDeclaration")
-    st.add("functionModifiers1", routineModifiers1(current.getChild(0)))
-    st.add("functionModifiers2", routineModifiers2(current.getChild(0)))
-    st.add("functionModifiers3", routineModifiers3(current.getChild(0)))
-    st.add("functionModifiers4", routineModifiers4(current.getChild(0)))
-    st.add("functionName", routineName(current.getChild(1)))
-    st.add("functionParameters", routineParameters(current.getChild(2)))
-    st.add("functionReturnType", routineReturnType(current.getChild(3)))
-    st.add("functionBody", routineBody(current.getChild(4)))
+  def classDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classDeclaration")
+    st.add("classAccessSpecifier", classAccessSpecifier(current.getChild(0)))
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val classModifiers = LinkedList(this.classModifiers(current.getChild(1)).asJava)
+    st.add("classModifiers", classModifiers)
+    st.add("className", className(current.getChild(2)))
+    st.add("baseClause", baseClause(current.getChild(3)))
+    st.add("classBody", classBody(current.getChild(4)))
     return st
 
-  def routineModifiers1 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionModifiers1")
+  def classAccessSpecifier (current: AstNode): String =
+    var s: String = null
+    val token = current.getToken()
+    if token == null then
+      // Classes are public by default
+      s = "export"
+    else
+      s = token.kind match
+      // Export is only used at module level
+      case Token.Kind.PUBLIC  => "export"
+      case Token.Kind.PRIVATE => null
+      case _ =>
+        println("Invalid access specifier on class!")
+        null
+    return s
+
+  // C++ does not actually have an 'abstract' modifier for classes themselves.
+  // Any class with at least one pure virtual function is considered an abstract
+  // class.
+
+  def classModifiers (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
     for child <- current.getChildren() do
       val kind = child.getKind()
-      if kind == AstNode.Kind.STATIC_MODIFIER then
-        st.add("functionModifier", "static")
+      if kind == AstNode.Kind.FINAL_MODIFIER then
+        s += classModifier(child)
+    return s
+
+  val classModifierMap = Map (
+    "final" -> "final"
+  )
+
+  def classModifier (current: AstNode): String =
+    return classModifierMap(current.getToken().lexeme)
+
+  def className (current: AstNode): String =
+    return current.getToken().lexeme
+
+  // Todo: Placeholder, needs finishing. Passthrough?
+
+  def baseClause (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/baseClause")
+    if current.hasChildren() then
+      val baseClasses = LinkedList(this.baseClasses(current.getChild(0)).asJava)
+      st.add("baseClasses", baseClasses)
     return st
 
-  def routineModifiers2 (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionModifiers2")
+  def baseClasses (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
+    for child <- current.getChildren() do
+      s += baseClass(child)
+    return s
+
+  def baseClass (current: AstNode): String =
+    return current.getToken().lexeme
+
+  // Todo: Research and add protected member declarations as necessary
+
+  def classBody (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/classBody")
+    st.add("privateMemberDeclarations", privateMemberDeclarations(current))
+    st.add("publicMemberDeclarations", publicMemberDeclarations(current))
+    return st
+
+  // We assume all member declarations have an access specifier, whether
+  // explicit or implicit. If this is not true, we can refactor later.
+
+  // What other members are allowed inside classes besides variables,
+  // routines, and other classes?
+
+  // To do: Handle member (i.e. nested) class declarations
+
+  def privateMemberDeclarations (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/privateMemberDeclarations")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      kind match
+        case AstNode.Kind.MEMBER_CLASS_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token != null && token.kind == Token.Kind.PRIVATE then
+            st.add("memberDeclaration", classDeclaration(child))
+        case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token != null && token.kind == Token.Kind.PRIVATE then
+            st.add("memberDeclaration", memberRoutineDeclaration(child))
+        case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token == null || token.kind == Token.Kind.PRIVATE then
+            st.add("memberDeclaration", memberVariableDeclaration(child))
+    return st
+
+  def publicMemberDeclarations (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/publicMemberDeclarations")
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      kind match
+        case AstNode.Kind.MEMBER_CLASS_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token == null || token.kind == Token.Kind.PUBLIC then
+            st.add("memberDeclaration", classDeclaration(child))
+        case AstNode.Kind.MEMBER_ROUTINE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token == null || token.kind == Token.Kind.PUBLIC then
+            st.add("memberDeclaration", memberRoutineDeclaration(child))
+        case AstNode.Kind.MEMBER_VARIABLE_DECLARATION =>
+          val accessSpecifier = child.getChild(0)
+          val token = accessSpecifier.getToken()
+          if token != null && token.kind == Token.Kind.PUBLIC then
+            st.add("memberDeclaration", memberVariableDeclaration(child))
+    return st
+
+  // MEMBER ROUTINE DECLARATION
+
+  // Need to handle the fact that constructors do not have a return type (not
+  // even auto or void). This can be handled by marking it as a constructor
+  // during semantic analysis, or based on its name. Ideally, the code
+  // generation phase just performs a straightforward translation and doesn't
+  // have too much logic to decide such factors. Thus, I like the idea of
+  // marking it during semantic analysis.
+
+  def memberRoutineDeclaration (current: AstNode): ST =
+    // val st = publicMemberRoutineDeclarations(current)
+    val st = group.getInstanceOf("declarations/memberFunctionDeclaration")
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val memberRoutineModifiers1 = LinkedList(this.memberRoutineModifiers1(current.getChild(1)).asJava)
+    st.add("memberFunctionModifiers1", memberRoutineModifiers1)
+    val memberRoutineModifiers2 = LinkedList(this.memberRoutineModifiers2(current.getChild(1)).asJava)
+    st.add("memberFunctionModifiers2", memberRoutineModifiers2)
+    // val memberRoutineModifiers3 = LinkedList(this.memberRoutineModifiers3(current.getChild(1)).asJava)
+    // st.add("memberFunctionModifiers3", memberRoutineModifiers3)
+    // val memberRoutineModifiers4 = LinkedList(this.memberRoutineModifiers4(current.getChild(1)).asJava)
+    // st.add("memberFunctionModifiers4", memberRoutineModifiers4)
+    st.add("memberFunctionName", memberRoutineName(current.getChild(2)))
+    st.add("memberFunctionParameters", routineParameters(current.getChild(3)))
+    st.add("memberFunctionReturnType", routineReturnType(current.getChild(4)))
+    // Only needed for inline member routines
+    // st.add("functionBody", routineBody(current.getChild(4)))
+    return st
+
+  // These modifiers go before the 'auto' keyword.
+
+  def memberRoutineModifiers1 (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if
+        kind == AstNode.Kind.CONSTEXPR_MODIFIER ||
+        kind == AstNode.Kind.STATIC_MODIFIER
+      then
+        s += memberRoutineModifier(child)
+    return s
+
+  // These modifiers would normally become CV qualifiers and go after the
+  // parameters list. They include 'const' and 'volatile'. But these don't exist
+  // on non-member routines.
+
+  // Following that, there are ref qualifiers, which go after the CV qualifiers.
+  // Again, these don't apply to non-member routines.
+
+  def memberRoutineModifiers2 (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
     for child <- current.getChildren() do
       val kind = child.getKind()
       if kind == AstNode.Kind.VIRTUAL_MODIFIER then
-        st.add("functionModifier", "virtual")
-    return st
+        s += routineModifier(child)
+    return s
 
-  def routineModifiers3 (current: AstNode): ST =
+  def memberRoutineModifiers3 (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionModifiers3")
     for child <- current.getChildren() do
       val kind = child.getKind()
@@ -107,7 +273,7 @@ class Generator {
         st.add("functionModifier", "const")
     return st
 
-  def routineModifiers4 (current: AstNode): ST =
+  def memberRoutineModifiers4 (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionModifiers4")
     for child <- current.getChildren() do
       val kind = child.getKind()
@@ -117,22 +283,94 @@ class Generator {
         st.add("functionModifier", "override")
     return st
 
-  val routineModifierMap = Map (
-    "constexpr" -> "constexpr",
+  val memberRoutineModifierMap = Map (
     "const" -> "const",
+    "constexpr" -> "constexpr",
     "final" -> "final",
-    "static" -> "static",
     "override" -> "override",
+    "static" -> "static",
     "virtual" -> "virtual"
+  )
+
+  def memberRoutineModifier (current: AstNode): String =
+    return memberRoutineModifierMap(current.getToken().lexeme)
+
+  def memberRoutineName (current: AstNode): String =
+    return current.getToken().lexeme
+
+  // MEMBER VARIABLE DECLARATION
+
+  def memberVariableDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/memberVariableDeclaration")
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val variableModifiers = LinkedList(this.variableModifiers(current.getChild(1)).asJava)
+    st.add("variableModifiers", variableModifiers)
+    variableName(current.getChild(2))
+    typeSpecifier(current.getChild(3))
+    // Get translated type specifier and declarator from stack. The type
+    // specifier should be something basic like 'int'.
+    st.add("typeSpecifier", stack.pop())
+    st.add("declarator", stack.pop())
+    val initST = initializer(current.getChild(4))
+    if initST != null then
+      st.add("initializer", initST)
+    return st
+
+  // ROUTINE DECLARATION
+
+  // C++ function modifiers are seemingly very inconsistent. Some go at the
+  // front, some go in the middle, and some go at the back; depending on what
+  // the modifier in question is.
+
+  def routineDeclaration (current: AstNode): ST =
+    val st = group.getInstanceOf("declarations/functionDeclaration")
+    st.add("functionAccessSpecifier", routineAccessSpecifier(current.getChild(0)))
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val routineModifiers1 = LinkedList(this.routineModifiers1(current.getChild(1)).asJava)
+    st.add("functionModifiers1", routineModifiers1)
+    st.add("functionName", routineName(current.getChild(2)))
+    st.add("functionParameters", routineParameters(current.getChild(3)))
+    st.add("functionReturnType", routineReturnType(current.getChild(4)))
+    return st
+
+  def routineAccessSpecifier (current: AstNode): String =
+    var s: String = null
+    val token = current.getToken()
+    if token == null then
+      // Routines are public by default
+      s = "export"
+    else
+      s = token.kind match
+      // Export is only used at module level
+      case Token.Kind.PUBLIC  => "export"
+      case Token.Kind.PRIVATE => null
+      case _ =>
+        println("Invalid access specifier on routine!")
+        null
+    return s
+
+  // Note: We don't use 'static' or 'virtual' modifiers on non-member routines.
+  // Still need to research 'friend' modifier.
+
+  def routineModifiers1 (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
+    for child <- current.getChildren() do
+      val kind = child.getKind()
+      if kind == AstNode.Kind.CONSTEXPR_MODIFIER then
+        s += routineModifier(child)
+    return s
+
+  val routineModifierMap = Map (
+    "constexpr" -> "constexpr"
   )
 
   def routineModifier (current: AstNode): String =
     return routineModifierMap(current.getToken().lexeme)
 
-  def routineName (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionName")
-    st.add("name", current.getToken().lexeme)
-    return st
+  def routineName (current: AstNode): String =
+    return current.getToken().lexeme
 
   def routineParameters (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/functionParameters")
@@ -167,36 +405,56 @@ class Generator {
       st.add("declarator", stack.pop())
     return st
 
-  def routineBody (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/functionBody")
-    st.add("compoundStatement", compoundStatement(current.getChild(0)))
-    return st
-
   // VARIABLE DECLARATION
 
   // Since cobalt supports type inference, we probably need to use the computed
   // type expression rather than the AST nodes since some variable declarations
   // will not have AST nodes for the type specifier.
 
+  // We need to know if something is a global variable or local variable or
+  // member variable because this affects how it is translated. If it is global
+  // then it might be placed in an interface file or implementation file,
+  // depending on whether or not it is exported.
+
   def variableDeclaration (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
-    st.add("variableModifiers", variableModifiers(current.getChild(0)))
-    variableName(current.getChild(1))
-    typeSpecifier(current.getChild(2))
+    st.add("variableAccessSpecifier", variableAccessSpecifier(current.getChild(0)))
+    // StringTemplate can only work with Java collections for aggregates so we
+    // need to convert Scala ListBuffer to Java LinkedList.
+    val variableModifiers = LinkedList(this.variableModifiers(current.getChild(1)).asJava)
+    st.add("variableModifiers", variableModifiers)
+    variableName(current.getChild(2))
+    typeSpecifier(current.getChild(3))
     // Get translated type specifier and declarator from stack. The type
     // specifier should be something basic like 'int'.
     st.add("typeSpecifier", stack.pop())
     st.add("declarator", stack.pop())
-    val initST = initializer(current.getChild(3))
+    val initST = initializer(current.getChild(4))
     if initST != null then
       st.add("initializer", initST)
     return st
 
-  def variableModifiers (current: AstNode): ST =
-    val st = group.getInstanceOf("declarations/variableModifiers")
+  def variableAccessSpecifier (current: AstNode): String =
+    var s: String = null
+    val token = current.getToken()
+    if token == null then
+      // Variables are private by default
+      s = null
+    else
+      s = token.kind match
+      // Export is only used at module level
+      case Token.Kind.PUBLIC  => "export"
+      case Token.Kind.PRIVATE => null
+      case _ =>
+        println("Invalid access specifier on variable!")
+        null
+    return s
+
+  def variableModifiers (current: AstNode): ListBuffer[String] =
+    var s = ListBuffer[String]()
     for child <- current.getChildren() do
-      st.add("variableModifier", variableModifier(child))
-    return st
+      s += variableModifier(child)
+    return s
 
   // We might use 'public' and 'private' in cobalt to decide whether variables
   // should be exported or not from C++ modules. But they could mean something
@@ -211,8 +469,8 @@ class Generator {
   // better control over output handling.
 
   val variableModifierMap = Map (
-    "constexpr" -> "constexpr",
     "const" -> "const",
+    "constexpr" -> "constexpr",
     "static" -> "static"
   )
 
@@ -476,6 +734,7 @@ class Generator {
     val type_ = kind match
       case Token.Kind.INT => "int"
       case Token.Kind.FLOAT => "float"
+      case Token.Kind.FLOAT64 => "float64"
       case Token.Kind.VOID => "void"
     st.add("name", type_)
     stack.push(st)

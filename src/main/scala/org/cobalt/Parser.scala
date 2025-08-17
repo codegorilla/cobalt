@@ -22,20 +22,20 @@ import symbol.Scope
 
 class Parser {
 
-  val SLEEP_TIME = 10
+  private val SLEEP_TIME = 10
 
-  var input: List[Token] = null
-  var position = 0
-  var lookahead: Token = null
+  private var input: List[Token] = null
+  private var position = 0
+  private var lookahead: Token = null
 
   // Used to pass nodes up and down during tree traversal
-  val stack = Stack[AstNode]()
+  private val stack = Stack[AstNode]()
 
   // Used for symbol table operations. Cobalt requires a symbol table during
   // parsing in order to disambiguate a few grammar rules. We cannot wait until
   // the semantic analysis phase to begin constructing symbol tables.
-  val builtinScope = Scope(Scope.Kind.BUILT_IN)
-  var currentScope = builtinScope
+  private val builtinScope = Scope(Scope.Kind.BUILT_IN)
+  private var currentScope = builtinScope
 
   // Todo: we may also need a 'null_t' type, for which there is exactly one
   // value, which is 'null'. This is to match the C++ 'nullptr_t' type and its
@@ -85,6 +85,16 @@ class Parser {
   // Not every AST node has a corresponding token. Case in point is
   // translationUnit.
 
+  // A cobalt module unit is a directory of source files. Goal is to be able to
+  // parse each source file separately, forming an AST for each. These ASTs will
+  // then be combined in memory to form the complete AST for the module. Thus,
+  // all files in the directory form a translation unit, even though they are
+  // parsed individually. I believe this is very similar to how go handles its
+  // "packages", which are the equivalent of cobalt "modules". For now, in C++
+  // tradition, we will call each source file a translation unit, but in truth,
+  // it is the combination of all source files in the directory that form the
+  // translation unit.
+
   def translationUnit (): AstNode =
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     while lookahead.kind != Token.Kind.EOF do
@@ -100,20 +110,45 @@ class Parser {
 
   def declaration (): AstNode =
     var n: AstNode = null
+    val spec = accessSpecifier()
     if lookahead.kind == Token.Kind.TEMPLATE then
-      n = templateDeclaration()
+      n = templateDeclaration(spec)
     else
-      val p = modifiers()
+      val mods = modifiers()
       n = lookahead.kind match
-        case Token.Kind.CLASS => classDeclaration(p)
-        case Token.Kind.ENUM  => enumerationDeclaration(p)
-        case Token.Kind.DEF   => routineDeclaration(p)
-        case Token.Kind.VAL   => variableDeclaration(p)
-        case Token.Kind.VAR   => variableDeclaration(p)
+        case Token.Kind.CLASS => classDeclaration(spec, mods)
+        case Token.Kind.ENUM  => enumerationDeclaration(spec, mods)
+        case Token.Kind.DEF   => routineDeclaration(spec, mods)
+        case Token.Kind.VAL   => variableDeclaration(spec, mods)
+        case Token.Kind.VAR   => variableDeclaration(spec, mods)
         case _ =>
           // We REALLY need to start some real error handling...
           println(s"Found something else! ${lookahead.kind}")
           null
+    return n
+
+  // Callers can explicitly request an empty access specifier. This is useful
+  // for template declarations, where the access specifier is on the template
+  // declaration itself rather than the templated entity. In this case, the
+  // templated entity's AST node will still have an access specifier node, but
+  // it will not have any children. This will be interpreted later to mean that
+  // there is no access specifier. I prefer to handle it this way instead of not
+  // having an access specifier node at all because it avoids having to create
+  // specialized grammar rules for each case. However, I may change this later
+  // if the alternative proves better.
+
+  // Update: Just use the token as the discriminator. A missing token means that
+  // the access specifier was not specified. Also might need to add protected as
+  // another option.
+
+  def accessSpecifier (empty: Boolean = false): AstNode =
+    val n = AstNode(AstNode.Kind.ACCESS_SPECIFIER)
+    if
+      lookahead.kind == Token.Kind.PRIVATE ||
+      lookahead.kind == Token.Kind.PUBLIC
+    then
+      n.setToken(lookahead)
+      match_(lookahead.kind)
     return n
 
   // According to Parr, there is no need to have an AstNode kind -- you can just
@@ -133,22 +168,26 @@ class Parser {
   def modifiers (): AstNode =
     val n = AstNode(AstNode.Kind.MODIFIERS)
     while
-      lookahead.kind == Token.Kind.CONST    ||
-      lookahead.kind == Token.Kind.FINAL    ||
-      lookahead.kind == Token.Kind.OVERRIDE ||
-      lookahead.kind == Token.Kind.PRIVATE  ||
-      lookahead.kind == Token.Kind.PUBLIC   ||
-      lookahead.kind == Token.Kind.STATIC   ||
-      lookahead.kind == Token.Kind.VIRTUAL
+      lookahead.kind == Token.Kind.ABSTRACT  ||
+      lookahead.kind == Token.Kind.CONST     ||
+      lookahead.kind == Token.Kind.CONSTEXPR ||
+      lookahead.kind == Token.Kind.FINAL     ||
+      lookahead.kind == Token.Kind.OVERRIDE  ||
+      lookahead.kind == Token.Kind.STATIC    ||
+      lookahead.kind == Token.Kind.VIRTUAL   ||
+      lookahead.kind == Token.Kind.VOLATILE
     do
+      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
+      Thread.sleep(SLEEP_TIME)
       val modifier = lookahead.kind match
-        case Token.Kind.CONST    => constModifier()
-        case Token.Kind.FINAL    => finalModifier()
-        case Token.Kind.OVERRIDE => overrideModifier()
-        case Token.Kind.PRIVATE  => privateModifier()
-        case Token.Kind.PUBLIC   => publicModifier()
-        case Token.Kind.STATIC   => staticModifier()
-        case Token.Kind.VIRTUAL  => virtualModifier()
+        case Token.Kind.ABSTRACT  => abstractModifier()
+        case Token.Kind.CONST     => constModifier()
+        case Token.Kind.CONSTEXPR => constexprModifier()
+        case Token.Kind.FINAL     => finalModifier()
+        case Token.Kind.OVERRIDE  => overrideModifier()
+        case Token.Kind.STATIC    => staticModifier()
+        case Token.Kind.VIRTUAL   => virtualModifier()
+        case Token.Kind.VOLATILE  => volatileModifier()
         case _ =>
           throw new Exception("Parser error: impossible case reached.")
       n.addChild(modifier)
@@ -167,9 +206,19 @@ class Parser {
   // natural aversion to 'constexpr' for some reason... it's a bit obtuse for my
   // taste.
 
+  def abstractModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.ABSTRACT_MODIFIER, lookahead)
+    match_(Token.Kind.ABSTRACT)
+    return n
+
   def constModifier (): AstNode =
     val n = AstNode(AstNode.Kind.CONST_MODIFIER, lookahead)
     match_(Token.Kind.CONST)
+    return n
+
+  def constexprModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.CONSTEXPR_MODIFIER, lookahead)
+    match_(Token.Kind.CONSTEXPR)
     return n
 
   def finalModifier (): AstNode =
@@ -182,16 +231,6 @@ class Parser {
     match_(Token.Kind.OVERRIDE)
     return n
 
-  def privateModifier (): AstNode =
-    val n = AstNode(AstNode.Kind.PRIVATE_MODIFIER, lookahead)
-    match_(Token.Kind.PRIVATE)
-    return n
-
-  def publicModifier (): AstNode =
-    val n = AstNode(AstNode.Kind.PUBLIC_MODIFIER, lookahead)
-    match_(Token.Kind.PUBLIC)
-    return n
-
   def staticModifier (): AstNode =
     val n = AstNode(AstNode.Kind.STATIC_MODIFIER, lookahead)
     match_(Token.Kind.STATIC)
@@ -202,16 +241,22 @@ class Parser {
     match_(Token.Kind.VIRTUAL)
     return n
 
+  def volatileModifier (): AstNode =
+    val n = AstNode(AstNode.Kind.VOLATILE_MODIFIER, lookahead)
+    match_(Token.Kind.VOLATILE)
+    return n
+
   // TEMPLATE DECLARATION
 
-  def templateDeclaration (): AstNode =
+  def templateDeclaration (accessSpecifier : AstNode): AstNode =
     val n = AstNode(AstNode.Kind.TEMPLATE_DECLARATION, lookahead)
     match_(Token.Kind.TEMPLATE)
+    n.addChild(accessSpecifier)
     n.addChild(templateParameters())
     val p = modifiers()
     val q = lookahead.kind match
-      case Token.Kind.CLASS => classDeclaration(p)
-      case Token.Kind.DEF   => routineDeclaration(p)
+      case Token.Kind.CLASS => classDeclaration(empty(), p)
+      case Token.Kind.DEF   => routineDeclaration(empty(), p)
       case _ =>
         println(s"Found something else in template declaration! ${lookahead.kind}")
         null
@@ -239,11 +284,13 @@ class Parser {
 
   // CLASS DECLARATION
 
-  def classDeclaration (modifiers: AstNode): AstNode =
+  def classDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.CLASS_DECLARATION, lookahead)
     match_(Token.Kind.CLASS)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(className())
+    n.addChild(baseClause())
     n.addChild(classBody())
     return n
 
@@ -258,6 +305,31 @@ class Parser {
     currentScope.define(s)
     return n
 
+  def baseClause (): AstNode =
+    val n = AstNode(AstNode.Kind.BASE_CLAUSE)
+    if lookahead.kind == Token.Kind.EXTENDS then
+      n.setToken(lookahead)
+      match_(Token.Kind.EXTENDS)
+      n.addChild(baseClasses())
+    return n
+
+  // For now, we only support public (i.e. "is-a") inheritance. Private (i.e.
+  // "is-implemented-in-terms-of") inheritance is NOT supported. Most use cases
+  // of private inheritance are better met by composition instead.
+
+  def baseClasses (): AstNode =
+    val n = AstNode(AstNode.Kind.BASE_CLASSES)
+    n.addChild(baseClass())
+    while lookahead.kind == Token.Kind.COMMA do
+      match_(Token.Kind.COMMA)
+      n.addChild(baseClass())
+    return n
+
+  def baseClass (): AstNode =
+    val n = AstNode(AstNode.Kind.BASE_CLASS, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    return n
+
   // The token here is simply the curly brace '{'. Do we need to track this?
   // It will depend on whether or not this sort of thing helps with error
   // reporting and debugging.
@@ -270,32 +342,49 @@ class Parser {
     match_(Token.Kind.R_BRACE)
     return n
 
+  // Do we need separate rules for member routine and variable declarations?
+  // Syntactically, they are very close to their non-member counterparts, but
+  // there are important differences, especially in routine declarations. In
+  // particular, member routines have cv-qualifiers and ref-qualifiers, which
+  // non-member routines do not have. Depending on placement of these, there
+  // may or may not be syntactic differences. Even so, we could just parse both
+  // situations using the same rules and handle this during semantic analysis,
+  // but for now we will create separate rules. We might as well have separate
+  // rules for variable declarations as well just to be consistent.
+
+  // To do: I am not sure yet, but differences in scoping might also require
+  // them to have separate rules. (Normally this wouldn't be the case for a
+  // language that only starts building scopes during semantic analysis, after
+  // parsing has already been completed.)
+
   def classMember (): AstNode =
-    val p = modifiers()
+    val spec = accessSpecifier()
+    val mods = modifiers()
     val n = lookahead.kind match
-      case Token.Kind.DEF => methodDeclaration(p)
-      // case Token.Kind.VAL => fieldDeclaration(p)
-      // case Token.Kind.VAR => fieldDeclaration(p)
+      case Token.Kind.DEF => memberRoutineDeclaration(spec, mods)
+      case Token.Kind.VAL => memberVariableDeclaration(spec, mods)
+      case Token.Kind.VAR => memberVariableDeclaration(spec, mods)
       case _ => 
           print("error: This can only happen if there is a parser error.")
           null
     return n
 
-  // METHOD DECLARATION
+  // MEMBER ROUTINE DECLARATION
 
   // Note: The C++ specification calls these "member functions" rather than
-  // "methods". We may decide to call them "member routines" in keeping with C++
+  // "methods", so we will call them "member routines" in keeping with C++
   // tradition.
 
   // Todo: We need to push another scope onto the scope stack. Keep in mind that
   // the method parameters may be in the same exact scope as the routine body
   // (or top-most block of the routine).
 
-  def methodDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_DECLARATION, lookahead)
+  def memberRoutineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
-    n.addChild(methodName())
+    n.addChild(memberRoutineName())
     n.addChild(methodParameters())
     n.addChild(methodResult())
     n.addChild(methodBody())
@@ -304,7 +393,7 @@ class Parser {
   // Todo: Should symbols point to AST node, and/or vice versa? This might come
   // in handy later on, but wait until its needed before adding the code.
 
-  def methodName (): AstNode =
+  def memberRoutineName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
     val s = Symbol(Symbol.Kind.METHOD, n.getToken().lexeme)
@@ -315,7 +404,7 @@ class Parser {
   // parameter rules.
 
   def methodParameters (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_PARAMETERS)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_PARAMETERS)
     match_(Token.Kind.L_PARENTHESIS)
     if lookahead.kind == Token.Kind.IDENTIFIER then
       n.addChild(methodParameter())
@@ -328,14 +417,14 @@ class Parser {
   // Shoud name() be parameterName()?
 
   def methodParameter (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_PARAMETER)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_PARAMETER)
     n.addChild(name())
     match_(Token.Kind.COLON)
     n.addChild(typeRoot())
     return n
 
   def methodResult (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_RESULT)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_RESULT)
     if lookahead.kind == Token.Kind.MINUS_GREATER then
       match_(Token.Kind.MINUS_GREATER)
       n.addChild(typeRoot())
@@ -345,16 +434,39 @@ class Parser {
   // method.
 
   def methodBody (): AstNode =
-    val n = AstNode(AstNode.Kind.METHOD_BODY)
+    val n = AstNode(AstNode.Kind.MEMBER_ROUTINE_BODY)
     if lookahead.kind == Token.Kind.SEMICOLON then
       match_(Token.Kind.SEMICOLON)
     else
       n.addChild(compoundStatement())
     return n
 
+  // VARIABLE DECLARATION
+
+  def memberVariableDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.MEMBER_VARIABLE_DECLARATION, lookahead)
+    if lookahead.kind == Token.Kind.VAL then
+      // Keyword 'val' is equivalent to 'final var'
+      match_(Token.Kind.VAL)
+      // This final modifier won't have a token since it is an implied modifier
+      // that doesn't actually appear in the source code.
+      // Update: We might not want to add an implicit modifier like this.
+      // Instead, when it comes time to set attributes, we can set one base on
+      // the token (val or var).
+      modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
+    else
+      match_(Token.Kind.VAR)
+    n.addChild(accessSpecifier)
+    n.addChild(modifiers)
+    n.addChild(variableName())
+    n.addChild(typeSpecifier())
+    n.addChild(initializer())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
   // ENUMERATION DECLARATION
 
-  def enumerationDeclaration (modifiers: AstNode): AstNode =
+  def enumerationDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ENUMERATION_DECLARATION, lookahead)
     match_(Token.Kind.ENUM)
     // Should be name()?
@@ -387,9 +499,10 @@ class Parser {
   // the routine parameters may be in the same exact scope as the routine body
   // (or top-most block of the routine).
 
-  def routineDeclaration (modifiers: AstNode): AstNode =
-    val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION)
+  def routineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
+    val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION, lookahead)
     match_(Token.Kind.DEF)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(routineName())
     n.addChild(routineParameters())
@@ -463,7 +576,7 @@ class Parser {
 
   // VARIABLE DECLARATION
 
-  def variableDeclaration (modifiers: AstNode): AstNode =
+  def variableDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.VARIABLE_DECLARATION, lookahead)
     if lookahead.kind == Token.Kind.VAL then
       // Keyword 'val' is equivalent to 'final var'
@@ -476,6 +589,7 @@ class Parser {
       modifiers.addChild(AstNode(AstNode.Kind.FINAL_MODIFIER))
     else
       match_(Token.Kind.VAR)
+    n.addChild(accessSpecifier)
     n.addChild(modifiers)
     n.addChild(variableName())
     n.addChild(typeSpecifier())
@@ -522,6 +636,15 @@ class Parser {
     val n = AstNode(AstNode.Kind.NAME)
     n.setToken(lookahead)
     match_(Token.Kind.IDENTIFIER)
+    return n
+
+  // EMPTY
+
+  // This node is useful as a placeholder so that we have known, fixed child
+  // node counts for certain cases of nodes that have heterogeneous children.
+
+  def empty (): AstNode =
+    val n = AstNode(AstNode.Kind.EMPTY)
     return n
 
   // STATEMENTS
@@ -659,10 +782,10 @@ class Parser {
 
   def declarationStatement (): AstNode =
     var n: AstNode = null
-    var p = modifiers()
+    var mods = modifiers()
     val kind = lookahead.kind
     if kind == Token.Kind.VAL || kind == Token.Kind.VAR then
-      n = variableDeclaration(p)
+      n = variableDeclaration(null, mods)
     return n
 
   // The do statement is flexible and can either be a "do while" or a "do until"
@@ -1376,6 +1499,8 @@ class Parser {
       // at all, then assume it is a class and treat it as such. If it is
       // defined as a class template, then a left bracket following denotes
       // class template parameters.
+
+      // Todo: Hard-coded "Token here". This needs to be fixed.
       currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
       val symbol = currentScope.resolve(lookahead.lexeme)
       if symbol == null then

@@ -19,8 +19,12 @@ class AstNode (
   var children = ListBuffer[AstNode]()
   val attributes = Map[String, Any]()
 
+
   def addChild (node: AstNode) =
     children += node
+
+  def getAttribute (name: String): Any =
+    return attributes.get(name)
 
   def getChild (index: Int): AstNode =
     return children(index)
@@ -67,31 +71,44 @@ object AstNode:
     // Declarations
     case NAME
 
+    // Access specifiers
+    case ACCESS_SPECIFIER
+    case PRIVATE_SPECIFIER
+    case PROTECTED_SPECIFIER
+    case PUBLIC_SPECIFIER
+
     // Modifiers
+    case ABSTRACT_MODIFIER
     case CONST_MODIFIER
+    case CONSTEXPR_MODIFIER
     case FINAL_MODIFIER
     case MODIFIERS
     case OVERRIDE_MODIFIER
-    case PRIVATE_MODIFIER
-    case PUBLIC_MODIFIER
     case STATIC_MODIFIER
     case VIRTUAL_MODIFIER
+    case VOLATILE_MODIFIER
+
+    // Member class declaration
+    case MEMBER_CLASS_DECLARATION
 
     // Class declaration
     case CLASS_DECLARATION
     case CLASS_BODY
+    case BASE_CLASS
+    case BASE_CLASSES
+    case BASE_CLAUSE
 
     // Eumeration declaration
     case ENUMERATION_DECLARATION
     case ENUMERATION_BODY
     case ENUMERATION_CONSTANT_DECLARATION
 
-    // Method declaration
-    case METHOD_BODY
-    case METHOD_DECLARATION
-    case METHOD_PARAMETER
-    case METHOD_PARAMETERS
-    case METHOD_RESULT
+    // Member routine declaration
+    case MEMBER_ROUTINE_BODY
+    case MEMBER_ROUTINE_DECLARATION
+    case MEMBER_ROUTINE_PARAMETER
+    case MEMBER_ROUTINE_PARAMETERS
+    case MEMBER_ROUTINE_RESULT
 
     // Routine declaration
     case ROUTINE_BODY
@@ -106,6 +123,9 @@ object AstNode:
     case TEMPLATE_PARAMETERS
     case TEMPLATE_PARAMETER
 
+    // Member variable declaration
+    case MEMBER_VARIABLE_DECLARATION
+
     // Variable declaration
     case LOCAL_VARIABLE_DECLARATION
     case VARIABLE_DECLARATION
@@ -113,6 +133,9 @@ object AstNode:
     case INITIALIZER
 
     case IDENTIFIER
+
+    // SPECIAL
+    case EMPTY
 
     // Statements
     case BREAK_STATEMENT
