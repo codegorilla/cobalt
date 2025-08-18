@@ -1,7 +1,8 @@
+import math;
 
-//public static val x: int;
-
-//var alpha: *(*int)[1] = 1.5 + 2/4 - 10;
+def main () {
+  // Do something
+}
 
 public const var alpha: *(*int)[1] = (1.5 + 2)/4;
 

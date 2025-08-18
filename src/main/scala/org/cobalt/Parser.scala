@@ -106,25 +106,48 @@ class Parser {
 
   // DECLARATIONS
 
-  // Template must come first before any modifiers.
+  // For now, template must come first before any modifiers. However, it is
+  // possible that even templates may have modifiers. For example, templates may
+  // use 'extern' in C++. So this needs to be researched.
 
   def declaration (): AstNode =
     var n: AstNode = null
-    val spec = accessSpecifier()
-    if lookahead.kind == Token.Kind.TEMPLATE then
-      n = templateDeclaration(spec)
+    if lookahead.kind == Token.Kind.IMPORT then
+      n = importDeclaration()
     else
-      val mods = modifiers()
-      n = lookahead.kind match
-        case Token.Kind.CLASS => classDeclaration(spec, mods)
-        case Token.Kind.ENUM  => enumerationDeclaration(spec, mods)
-        case Token.Kind.DEF   => routineDeclaration(spec, mods)
-        case Token.Kind.VAL   => variableDeclaration(spec, mods)
-        case Token.Kind.VAR   => variableDeclaration(spec, mods)
-        case _ =>
-          // We REALLY need to start some real error handling...
-          println(s"Found something else! ${lookahead.kind}")
-          null
+      val spec = accessSpecifier()
+      if lookahead.kind == Token.Kind.TEMPLATE then
+        n = templateDeclaration(spec)
+      else
+        val mods = modifiers()
+        n = lookahead.kind match
+          case Token.Kind.CLASS => classDeclaration(spec, mods)
+          case Token.Kind.ENUM  => enumerationDeclaration(spec, mods)
+          case Token.Kind.DEF   => routineDeclaration(spec, mods)
+          case Token.Kind.VAL   => variableDeclaration(spec, mods)
+          case Token.Kind.VAR   => variableDeclaration(spec, mods)
+          case _ =>
+            // We REALLY need to start some real error handling...
+            println(s"Found something else! ${lookahead.kind}")
+            null
+    return n
+
+  // Import declarations may only occur at global scope
+
+  def importDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.IMPORT_DECLARATION, lookahead)
+    match_(Token.Kind.IMPORT)
+    n.addChild(importName())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def importName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.MODULE, n.getToken().lexeme)
+    // Do we need to define the name in the symbol table? I think so, because it
+    // is referenced as a namespace.
+    currentScope.define(s)
     return n
 
   // Callers can explicitly request an empty access specifier. This is useful

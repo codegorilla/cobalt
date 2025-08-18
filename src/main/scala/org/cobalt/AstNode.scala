@@ -88,6 +88,9 @@ object AstNode:
     case VIRTUAL_MODIFIER
     case VOLATILE_MODIFIER
 
+    // Import declaration
+    case IMPORT_DECLARATION
+
     // Member class declaration
     case MEMBER_CLASS_DECLARATION
 

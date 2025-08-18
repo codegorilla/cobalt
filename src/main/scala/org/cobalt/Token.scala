@@ -31,7 +31,10 @@ object Token {
         case FUN
         case GOTO
         case IF
+        case INCLUDE
         case IN
+        case IMPORT
+        case MODULE
         case NAMESPACE
         case NEW
         case NIL
@@ -52,13 +55,16 @@ object Token {
         case TRY
         case TYPEALIAS
         case UNION
+        case USE
         case UNTIL
         case USING
         case VAL
         case VAR
         case VIRTUAL
         case VOLATILE
+        case WHEN
         case WHILE
+        case WITH
 
         // Basic types
         case BOOL
