@@ -79,32 +79,29 @@ class Parser {
 
   def process (): AstNode =
     definePrimitiveTypes()
-    val node = translationUnit()
+    val node = declarations()
     return node
 
-  // Not every AST node has a corresponding token. Case in point is
-  // translationUnit.
+  // Not every AST node has a corresponding token. Case in point is the
+  // top-level declarations node.
 
   // A cobalt module unit is a directory of source files. Goal is to be able to
   // parse each source file separately, forming an AST for each. These ASTs will
   // then be combined in memory to form the complete AST for the module. Thus,
   // all files in the directory form a translation unit, even though they are
   // parsed individually. I believe this is very similar to how go handles its
-  // "packages", which are the equivalent of cobalt "modules". For now, in C++
-  // tradition, we will call each source file a translation unit, but in truth,
-  // it is the combination of all source files in the directory that form the
-  // translation unit.
+  // "packages", which are the equivalent of cobalt "modules".
 
-  def translationUnit (): AstNode =
-    val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
+  // DECLARATIONS
+
+  def declarations (): AstNode =
+    val n = AstNode(AstNode.Kind.DECLARATIONS)
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
-      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
+      println(s"Sleeping for ${SLEEP_TIME} seconds in declarations...")
       Thread.sleep(SLEEP_TIME)
       n.addChild(declaration())
     return n
-
-  // DECLARATIONS
 
   // For now, template must come first before any modifiers. However, it is
   // possible that even templates may have modifiers. For example, templates may
@@ -200,7 +197,7 @@ class Parser {
       lookahead.kind == Token.Kind.VIRTUAL   ||
       lookahead.kind == Token.Kind.VOLATILE
     do
-      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
+      println(s"Sleeping for ${SLEEP_TIME} seconds in modifiers...")
       Thread.sleep(SLEEP_TIME)
       val modifier = lookahead.kind match
         case Token.Kind.ABSTRACT  => abstractModifier()

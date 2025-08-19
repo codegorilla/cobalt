@@ -69,6 +69,7 @@ object AstNode:
     case TRANSLATION_UNIT
 
     // Declarations
+    case DECLARATIONS
     case NAME
 
     // Access specifiers

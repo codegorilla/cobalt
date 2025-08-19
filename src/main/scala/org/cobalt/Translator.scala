@@ -1,9 +1,5 @@
 package org.cobalt
 
-import java.nio.file.Paths
-import java.nio.file.Files
-import java.io.IOException
-
 // The translator is responsible for carrying out a complete end-to-end
 // translation of a cobalt module to a C++ module.
 
@@ -13,28 +9,12 @@ import java.io.IOException
 
 class Translator {
 
-  private val lexer = Lexer()
-  private val parser = Parser()
-
   def process () =
-    // Get program directory
-    val programDir = this.getClass().getClassLoader().getResource("program")
 
-    // For now just hard-code the path
-    val path = Paths.get(programDir.getPath() + "/hello.co")
-    var content: String = null
-    try
-      content = Files.readString(path)
-      println(content)
-    catch
-      case e: IOException => e.printStackTrace()
-
-    lexer.setInput(content)
-    val tokens = lexer.process()
-    println(tokens)
-
-    parser.setInput(tokens)
-    val root = parser.process()
+    // Each source file in the module directory needs to be processed to form
+    // an AST. These ASTs are then all combined to form a single AST.
+    val moduleLoader = ModuleLoader()
+    val root = moduleLoader.process()
 
     val generator1 = Generator1()
     generator1.setInput(root)
