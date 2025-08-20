@@ -40,6 +40,7 @@ class Lexer {
     "include" -> Token.Kind.INCLUDE,
     "in" -> Token.Kind.IN,
     "import" -> Token.Kind.IMPORT,
+    "module" -> Token.Kind.MODULE,
     "nil" -> Token.Kind.NIL,
     "null" -> Token.Kind.NULL,
     "or" -> Token.Kind.OR,

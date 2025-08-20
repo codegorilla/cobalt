@@ -92,6 +92,9 @@ object AstNode:
     // Import declaration
     case IMPORT_DECLARATION
 
+    // Module declaration
+    case MODULE_DECLARATION
+
     // Member class declaration
     case MEMBER_CLASS_DECLARATION
 

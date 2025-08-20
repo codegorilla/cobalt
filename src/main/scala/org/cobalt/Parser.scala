@@ -94,13 +94,39 @@ class Parser {
 
   // DECLARATIONS
 
+  // Todo: If the module declaration doesn't exist, then we can probably
+  // continue parsing and semantic analysis, but should not perform any code
+  // generation.
+
   def declarations (): AstNode =
     val n = AstNode(AstNode.Kind.DECLARATIONS)
+    if lookahead.kind == Token.Kind.MODULE then
+      n.addChild(moduleDeclaration())
+    else
+      println("error: missing module declaration.")
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
       println(s"Sleeping for ${SLEEP_TIME} seconds in declarations...")
       Thread.sleep(SLEEP_TIME)
       n.addChild(declaration())
+    return n
+
+  // The module declaration doesn't serve much purpose after parsing, so we
+  // probably don't need an AST node for it. But we can create the AST node for
+  // now and just ignore it during semantic analysis and code generation stages.
+
+  def moduleDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.MODULE_DECLARATION, lookahead)
+    match_(Token.Kind.MODULE)
+    n.addChild(moduleName())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def moduleName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    // There should not be any need to define this in the symbol table. Any
+    // ambiguous unqualified names are assumed to be from this module.
     return n
 
   // For now, template must come first before any modifiers. However, it is
