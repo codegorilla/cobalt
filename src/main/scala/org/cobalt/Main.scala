@@ -1,13 +1,5 @@
 package org.cobalt
 
-import scala.collection.mutable.Map
-import scala.collection.JavaConverters._
-
-import java.util.LinkedList
-import java.nio.file.Paths
-import java.nio.file.Files
-import java.io.IOException
-
 @main def hello () =
 
   // Many CLI parsers use annotations or other DSL techniques that make them

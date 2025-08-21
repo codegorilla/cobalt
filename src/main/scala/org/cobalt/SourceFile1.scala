@@ -8,9 +8,14 @@ import java.io.IOException
 // The unit loader is responsible for loading, tokenizing, and parsing a single
 // source file (a.k.a. module implementation unit, MIU, or just unit).
 
-class UnitLoader (filepath: Path) {
+class SourceFile1 (filepath: Path) {
 
-  def process (): AstNode =
+  private var root: AstNode = null
+
+  def getRoot (): AstNode =
+    return root
+
+  def load () =
     var content: String = null
     try
       content = Files.readString(filepath)
@@ -24,7 +29,5 @@ class UnitLoader (filepath: Path) {
 
     val parser = Parser()
     parser.setInput(tokens)
-    val unitRoot = parser.process()
-    return unitRoot
-
+    root = parser.process()
 }

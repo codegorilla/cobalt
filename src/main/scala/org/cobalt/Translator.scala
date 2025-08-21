@@ -13,22 +13,21 @@ class Translator {
 
     // Each source file in the module directory needs to be processed to form
     // an AST. These ASTs are then all combined to form a single AST.
-    val moduleLoader = ModuleLoader()
     // Get the current working directory or 'program' subdirectory in classpath
     // val moduleDir = System.getProperty("user.dir")
     // Get the 'program' subdirectory in classpath
     val moduleDir = this.getClass().getClassLoader().getResource("program").getPath()
-    moduleLoader.setDirectory(moduleDir)
-    val root = moduleLoader.process()
+    val module = new Module(moduleDir)
+    module.load()
 
-    val generator1 = Generator1()
-    generator1.setInput(root)
-    // Todo: The output should be text
-    val template1 = generator1.process()
+    // val generator1 = Generator1()
+    // generator1.setInput(root)
+    // // Todo: The output should be text
+    // val template1 = generator1.process()
 
-    val code1 = template1.render()
-    println("---")
-    println(code1)
+    // val code1 = template1.render()
+    // println("---")
+    // println(code1)
 
 
     // val generator2 = Generator2()
