@@ -67,6 +67,7 @@ object AstNode:
   enum Kind:
     case PLACEHOLDER
     case TRANSLATION_UNIT
+    case MODULE
 
     // Declarations
     case DECLARATIONS

@@ -8,7 +8,6 @@ import java.nio.file.Paths
 import java.nio.file.Files
 import java.io.IOException
 
-
 @main def hello () =
 
   // Many CLI parsers use annotations or other DSL techniques that make them

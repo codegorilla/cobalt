@@ -5,10 +5,10 @@ import java.nio.file.Paths
 import java.nio.file.Files
 import java.io.IOException
 
-// The file loader is responsible for loading, tokenizing, and parsing a single
-// source file.
+// The unit loader is responsible for loading, tokenizing, and parsing a single
+// source file (a.k.a. module implementation unit, MIU, or just unit).
 
-class FileLoader (filepath: Path) {
+class UnitLoader (filepath: Path) {
 
   def process (): AstNode =
     var content: String = null
@@ -24,7 +24,7 @@ class FileLoader (filepath: Path) {
 
     val parser = Parser()
     parser.setInput(tokens)
-    val node = parser.process()
-    return node
+    val unitRoot = parser.process()
+    return unitRoot
 
 }
