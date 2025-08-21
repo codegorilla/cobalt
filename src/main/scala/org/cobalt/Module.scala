@@ -22,16 +22,12 @@ import java.io.IOException
 
 class Module (directory: String) {
 
-  // val sourceFiles = ListBuffer[SourceFile]()
-
-  // def getSourceFiles (): ListBuffer[SourceFile] =
-  //   return sourceFiles
-
   val units = ListBuffer[AstNode]()
 
+  // Load the contents of each file in the module. Each file produces an AST,
+  // which will be kept in a list to be processed later.
+  
   def load () =
-    // Load the contents of each file in the module. Each file produces an AST,
-    // which will be kept in a list to be assembled later.
     val modulePath = Paths.get(directory)
     val filePaths = Files.list(modulePath).iterator().asScala
     for filePath <- filePaths do
@@ -39,26 +35,20 @@ class Module (directory: String) {
       val root = loadUnit(filePath)
       units += root
 
-      // val sourceFile = SourceFile(filePath)
-      // sourceFile.load()
-      // sourceFiles += sourceFile
-
-  def loadUnit (filePath: Path): AstNode =
-    var content: String = null
-    try
-      content = Files.readString(filePath)
-    catch
-      case e: IOException => e.printStackTrace()
-
+  def loadUnit (filename: Path): AstNode =
+    // Read file
+    val reader = Reader()
+    reader.setInput(filename)
+    val content = reader.process()
+    // Tokenize content
     val lexer = Lexer()
     lexer.setInput(content)
     val tokens = lexer.process()
     println(tokens)
-
+    // Parse tokens
     val parser = Parser()
     parser.setInput(tokens)
     val root = parser.process()
     return root
-
 
 }
