@@ -18,16 +18,18 @@ class Translator {
     // Get the 'program' subdirectory in classpath
     val moduleDir = this.getClass().getClassLoader().getResource("program").getPath()
     val module = new Module(moduleDir)
-    module.load()
+    val root = module.load()
 
-    // val generator1 = Generator1()
-    // generator1.setInput(root)
-    // // Todo: The output should be text
-    // val template1 = generator1.process()
+    // val root = module.getUnits()
 
-    // val code1 = template1.render()
-    // println("---")
-    // println(code1)
+    val generator1 = Generator1()
+    generator1.setInput(root)
+    // Todo: The output should be text
+    val template1 = generator1.process()
+
+    val code1 = template1.render()
+    println("---")
+    println(code1)
 
 
     // val generator2 = Generator2()

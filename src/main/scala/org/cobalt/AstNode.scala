@@ -66,6 +66,7 @@ class AstNode (
 object AstNode:
   enum Kind:
     case PLACEHOLDER
+    case MODULE
 
     // Declarations
     case DECLARATIONS
