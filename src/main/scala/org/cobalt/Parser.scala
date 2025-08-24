@@ -155,7 +155,18 @@ class Parser {
             null
     return n
 
-  // Import declarations may only occur at global scope
+  // Import declarations may only exist at global scope. They must appear after
+  // the module declaration and before any other kinds of declarations, (e.g.
+  // variables, routines, classes).
+
+  // Imported module names may have dots in them, representing a module
+  // hierarchy, where each module comprises a subdirectory of source files. It
+  // isn't clear yet that we need to build this name hierarchy into the AST so
+  // for now we will treat it as one blob of text.
+
+  // In C++, dots are also supported in module names, but they have no intrinsic
+  // meaning. However, they may informally represent a module hierarchy, which
+  // aligns with the use in Cobalt.
 
   def importDeclaration (): AstNode =
     val n = AstNode(AstNode.Kind.IMPORT_DECLARATION, lookahead)

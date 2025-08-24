@@ -86,11 +86,23 @@ class Generator1 {
   // "lifted" to the outside (but then qualified) in order to avoid them being
   // treated as implicitly inline.
 
+  // Module and import declarations must appear in specific locations. A module
+  // declaration must appear as the very first declaration in a source file,
+  // followed by any import declarations. All other declarations follow the
+  // import declarations. These requirements are already enforced during
+  // parsing and/or semantic analysis, so they don't necessarily need to be
+  // enforced during code generation.
+
   def declaration (current: AstNode): ST =
     val kind = current.getKind()
     val st = kind match
       case AstNode.Kind.CLASS_DECLARATION =>
         classDeclaration(current)
+      case AstNode.Kind.IMPORT_DECLARATION =>
+        importDeclaration(current)
+      case AstNode.Kind.MODULE_DECLARATION =>
+        // Ignore all module declarations after first occurence
+        null
       case AstNode.Kind.ROUTINE_DECLARATION =>
         routineDeclaration(current)
       case AstNode.Kind.VARIABLE_DECLARATION =>
@@ -338,6 +350,13 @@ class Generator1 {
     if initST != null then
       st.add("initializer", initST)
     return st
+
+  // IMPORT DECLARATION
+
+  // Todo: Imports use fully qualified names.
+
+  def importDeclaration (current: AstNode): ST =
+    null
 
   // ROUTINE DECLARATION
 
