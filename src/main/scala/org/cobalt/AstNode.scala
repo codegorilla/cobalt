@@ -66,7 +66,9 @@ class AstNode (
 object AstNode:
   enum Kind:
     case PLACEHOLDER
-    case MODULE
+
+    // Translation unit
+    case TRANSLATION_UNIT
 
     // Declarations
     case DECLARATIONS

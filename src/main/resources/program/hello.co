@@ -5,3 +5,7 @@ import stdlib;
 def main () {
   // Do something
 }
+
+def setTemp (x: int) -> int {
+  // Do something
+}

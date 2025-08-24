@@ -1,4 +1,7 @@
-translationUnit (item) ::=  <<
+translationUnit (moduleDeclaration, declaration) ::=  <<
+<moduleDeclaration>
+
 import std;
-<item; separator="\n">
+
+<declaration; separator="\n\n">
 >>

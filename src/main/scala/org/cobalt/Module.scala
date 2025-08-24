@@ -25,7 +25,7 @@ class Module (directory: String) {
   // have a ".co" file extension.
 
   def load (): AstNode =
-    val root = AstNode(AstNode.Kind.MODULE)
+    val root = AstNode(AstNode.Kind.TRANSLATION_UNIT)
     val modulePath = Paths.get(directory)
     val filePaths = Files.list(modulePath).iterator().asScala
     for filePath <- filePaths do

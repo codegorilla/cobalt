@@ -49,11 +49,33 @@ class Generator1 {
     val st = translationUnit(input)
     return st
 
+  // We synthesize our own module declaration at the beginning, while ignoring
+  // any module declarations found inside the AST. One way to do this is to
+  // explicitly handle the first module declaration, which should be the first
+  // declaration in the AST, while ignoring all others.
+
   def translationUnit (current: AstNode): ST =
     var st = group.getInstanceOf("translationUnit")
+    st.add("moduleDeclaration", moduleDeclaration(current.getChild(0)))
     for child <- current.getChildren() do
-      st.add("item", declaration(child))
+      st.add("declaration", declaration(child))
     return st
+
+  // C++ does not have a main module and the standard main function cannot be
+  // declared inside of a module. Instead, it is declared in the global scope.
+  // To handle this, the main routine inside of the module will be "hidden"
+  // inside of a namespace and will NOT be the entrypoint of the program. The
+  // cobalt transpiler will create the "real" main function in the global scope,
+  // and this "real" main function will be the actual entrypoint of the program
+  // and will call the main function inside the module.
+
+  def moduleDeclaration (current: AstNode): ST =
+    var st = group.getInstanceOf("declarations/moduleDeclaration")
+    st.add("name", moduleName(current.getChild(0)))
+    return st
+
+  def moduleName (current: AstNode): String =
+    return current.getToken().lexeme
 
   // For class declarations, for their member routine declarations, we need to
   // translate to both a member function declaration and a member function
