@@ -7,18 +7,19 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 
-// The module loader is responsible for identifying all source files in the
-// module and instantiating a file loader to process each one. It then assembles
-// the AST from each file loader into a complete AST for the entire module.
-// Thus, the combination of all source files constitues a "translation unit".
+// The package loader is responsible for identifying all source files in the
+// package and instantiating a file loader to process each one. It then
+// assembles the AST from each file loader into a complete AST for the entire
+// package. Thus, the combination of all source files constitues a
+// "translation unit".
 
 // We need to build a dependency graph. For each unit loaded, the imports needed
-// for that unit need to be added to a list of modules that need to be
+// for that unit need to be added to a list of packages that need to be
 // processed.
 
-class Module (directory: String) {
+class Package (directory: String) {
 
-  // Load the contents of each file in the module. Each file produces an AST,
+  // Load the contents of each file in the package. Each file produces an AST,
   // which will be kept in a list to be processed later.
 
   // Files must be regular files (not directories or symbolic links) and must
@@ -26,8 +27,8 @@ class Module (directory: String) {
 
   def load (): AstNode =
     val root = AstNode(AstNode.Kind.TRANSLATION_UNIT)
-    val modulePath = Paths.get(directory)
-    val filePaths = Files.list(modulePath).iterator().asScala
+    val packagePath = Paths.get(directory)
+    val filePaths = Files.list(packagePath).iterator().asScala
     for filePath <- filePaths do
       if Files.isRegularFile(filePath) && filePath.getFileName.toString.endsWith(".co") then
         println(filePath.getFileName)

@@ -1,6 +1,6 @@
-module main;
+package main;
 
-import math;
+import std;
 
 public const var alpha: *(*int)[1] = (1.5 + 2)/4;
 

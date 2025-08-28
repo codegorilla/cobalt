@@ -1,4 +1,4 @@
-module main;
+package main;
 
 import stdlib;
 

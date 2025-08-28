@@ -17,6 +17,7 @@ object Symbol {
     case METHOD
     case METHOD_TEMPLATE
     case MODULE
+    case PACKAGE
     case PRIMITIVE_TYPE
     case ROUTINE
     case ROUTINE_TEMPLATE

@@ -94,6 +94,9 @@ object AstNode:
     // Import declaration
     case IMPORT_DECLARATION
 
+    // Package declaration
+    case PACKAGE_DECLARATION
+
     // Module declaration
     case MODULE_DECLARATION
 

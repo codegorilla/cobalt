@@ -1,26 +1,26 @@
 package org.cobalt
 
 // The translator is responsible for carrying out a complete end-to-end
-// translation of a cobalt module to a C++ module.
+// translation of a cobalt package to a C++ module.
 
 // Actually, we need to build an AST for each translation unit. These ASTs must
-// then be combined to form the full module AST, which is then transpiled into
+// then be combined to form the full package AST, which is then transpiled into
 // C++.
 
 class Translator {
 
   def process () =
 
-    // Each source file in the module directory needs to be processed to form
+    // Each source file in the package directory needs to be processed to form
     // an AST. These ASTs are then all combined to form a single AST.
     // Get the current working directory or 'program' subdirectory in classpath
-    // val moduleDir = System.getProperty("user.dir")
+    // val packageDir = System.getProperty("user.dir")
     // Get the 'program' subdirectory in classpath
-    val moduleDir = this.getClass().getClassLoader().getResource("program").getPath()
-    val module = new Module(moduleDir)
-    val root = module.load()
+    val packageDir = this.getClass().getClassLoader().getResource("program").getPath()
+    val package1 = new Package(packageDir)
+    val root = package1.load()
 
-    // val root = module.getUnits()
+    // val root = package1.getUnits()
 
     val generator1 = Generator1()
     generator1.setInput(root)

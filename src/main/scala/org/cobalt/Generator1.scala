@@ -49,32 +49,35 @@ class Generator1 {
     val st = translationUnit(input)
     return st
 
-  // We synthesize our own module declaration at the beginning, while ignoring
-  // any module declarations found inside the AST. One way to do this is to
-  // explicitly handle the first module declaration, which should be the first
+  // We synthesize our own package declaration at the beginning, while ignoring
+  // any package declarations found inside the AST. One way to do this is to
+  // explicitly handle the first package declaration, which should be the first
   // declaration in the AST, while ignoring all others.
+
+  // Note that packages are called "modules" in C++. To avoid confusion, we will
+  // still refer to them as packages in their string templates.
 
   def translationUnit (current: AstNode): ST =
     var st = group.getInstanceOf("translationUnit")
-    st.add("moduleDeclaration", moduleDeclaration(current.getChild(0)))
+    st.add("packageDeclaration", packageDeclaration(current.getChild(0)))
     for child <- current.getChildren() do
       st.add("declaration", declaration(child))
     return st
 
-  // C++ does not have a main module and the standard main function cannot be
-  // declared inside of a module. Instead, it is declared in the global scope.
-  // To handle this, the main routine inside of the module will be "hidden"
+  // C++ does not have a main package and the standard main function cannot be
+  // declared inside of a package. Instead, it is declared in the global scope.
+  // To handle this, the main routine inside of the package will be "hidden"
   // inside of a namespace and will NOT be the entrypoint of the program. The
   // cobalt transpiler will create the "real" main function in the global scope,
   // and this "real" main function will be the actual entrypoint of the program
-  // and will call the main function inside the module.
+  // and will call the main function inside the package.
 
-  def moduleDeclaration (current: AstNode): ST =
-    var st = group.getInstanceOf("declarations/moduleDeclaration")
-    st.add("name", moduleName(current.getChild(0)))
+  def packageDeclaration (current: AstNode): ST =
+    var st = group.getInstanceOf("declarations/packageDeclaration")
+    st.add("name", packageName(current.getChild(0)))
     return st
 
-  def moduleName (current: AstNode): String =
+  def packageName (current: AstNode): String =
     return current.getToken().lexeme
 
   // For class declarations, for their member routine declarations, we need to
@@ -86,10 +89,10 @@ class Generator1 {
   // "lifted" to the outside (but then qualified) in order to avoid them being
   // treated as implicitly inline.
 
-  // Module and import declarations must appear in specific locations. A module
-  // declaration must appear as the very first declaration in a source file,
-  // followed by any import declarations. All other declarations follow the
-  // import declarations. These requirements are already enforced during
+  // Package and import declarations must appear in specific locations. A
+  // package declaration must appear as the very first declaration in a source
+  // file, followed by any import declarations. All other declarations follow
+  // the import declarations. These requirements are already enforced during
   // parsing and/or semantic analysis, so they don't necessarily need to be
   // enforced during code generation.
 
@@ -100,8 +103,8 @@ class Generator1 {
         classDeclaration(current)
       case AstNode.Kind.IMPORT_DECLARATION =>
         importDeclaration(current)
-      case AstNode.Kind.MODULE_DECLARATION =>
-        // Ignore all module declarations after first occurence
+      case AstNode.Kind.PACKAGE_DECLARATION =>
+        // Ignore all package declarations after first occurence
         null
       case AstNode.Kind.ROUTINE_DECLARATION =>
         routineDeclaration(current)
@@ -134,7 +137,7 @@ class Generator1 {
       s = "export"
     else
       s = token.kind match
-      // Export is only used at module level
+      // Export is only used at package level
       case Token.Kind.PUBLIC  => "export"
       case Token.Kind.PRIVATE => null
       case _ =>
@@ -354,9 +357,18 @@ class Generator1 {
   // IMPORT DECLARATION
 
   // Todo: Imports use fully qualified names.
+  
+  // Todo: All import declarations need to be collected and moved to the top of
+  // the declaration list during semantic analysis.
 
   def importDeclaration (current: AstNode): ST =
+    println("FOUND AN IMPORT!")
+    importName(current.getChild(0))
     null
+
+  def importName (current: AstNode): String =
+    return current.getToken().lexeme
+
 
   // ROUTINE DECLARATION
 
@@ -384,7 +396,7 @@ class Generator1 {
       s = "export"
     else
       s = token.kind match
-      // Export is only used at module level
+      // Export is only used at package level
       case Token.Kind.PUBLIC  => "export"
       case Token.Kind.PRIVATE => null
       case _ =>
@@ -483,7 +495,7 @@ class Generator1 {
       s = null
     else
       s = token.kind match
-      // Export is only used at module level
+      // Export is only used at package level
       case Token.Kind.PUBLIC  => "export"
       case Token.Kind.PRIVATE => null
       case _ =>

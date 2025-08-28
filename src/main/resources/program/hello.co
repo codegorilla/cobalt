@@ -1,9 +1,10 @@
-module main;
+package main;
 
-import stdlib;
+import std.lib;
 
 def main () {
   // Do something
+  val x = std.lib.Waypoint(10, 20);
 }
 
 def setTemp (x: int) -> int {

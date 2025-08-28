@@ -85,25 +85,24 @@ class Parser {
   // Not every AST node has a corresponding token. Case in point is the
   // top-level declarations node.
 
-  // A cobalt module unit is a directory of source files. Goal is to be able to
-  // parse each source file separately, forming an AST for each. These ASTs will
-  // then be combined in memory to form the complete AST for the module. Thus,
-  // all files in the directory form a translation unit, even though they are
-  // parsed individually. I believe this is very similar to how go handles its
-  // "packages", which are the equivalent of cobalt "modules".
+  // A cobalt package is a directory of source files. The idea is to parse each
+  // source file separately, forming an AST for each. These ASTs will then be
+  // combined in memory to form the complete AST for the package. Thus, all
+  // files in the directory form a translation unit, even though they are parsed
+  // individually. This seems very similar to how go handles its packages.
 
   // DECLARATIONS
 
-  // Todo: If the module declaration doesn't exist, then we can probably
+  // Todo: If the package declaration doesn't exist, then we can probably
   // continue parsing and semantic analysis, but should not perform any code
   // generation.
 
   def declarations (): AstNode =
     val n = AstNode(AstNode.Kind.DECLARATIONS)
-    if lookahead.kind == Token.Kind.MODULE then
-      n.addChild(moduleDeclaration())
+    if lookahead.kind == Token.Kind.PACKAGE then
+      n.addChild(packageDeclaration())
     else
-      println("error: missing module declaration.")
+      println("error: missing package declaration.")
     while lookahead.kind != Token.Kind.EOF do
       // Infinite loop, need to consume
       println(s"Sleeping for ${SLEEP_TIME} seconds in declarations...")
@@ -111,22 +110,22 @@ class Parser {
       n.addChild(declaration())
     return n
 
-  // The module declaration doesn't serve much purpose after parsing, so we
+  // The package declaration doesn't serve much purpose after parsing, so we
   // probably don't need an AST node for it. But we can create the AST node for
   // now and just ignore it during semantic analysis and code generation stages.
 
-  def moduleDeclaration (): AstNode =
-    val n = AstNode(AstNode.Kind.MODULE_DECLARATION, lookahead)
-    match_(Token.Kind.MODULE)
-    n.addChild(moduleName())
+  def packageDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.PACKAGE_DECLARATION, lookahead)
+    match_(Token.Kind.PACKAGE)
+    n.addChild(packageName())
     match_(Token.Kind.SEMICOLON)
     return n
 
-  def moduleName (): AstNode =
+  def packageName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
     // There should not be any need to define this in the symbol table. Any
-    // ambiguous unqualified names are assumed to be from this module.
+    // ambiguous unqualified names are assumed to be from this package.
     return n
 
   // For now, template must come first before any modifiers. However, it is
@@ -156,17 +155,15 @@ class Parser {
     return n
 
   // Import declarations may only exist at global scope. They must appear after
-  // the module declaration and before any other kinds of declarations, (e.g.
-  // variables, routines, classes).
+  // the package declaration and before any other kinds of declarations, (e.g.
+  // variables, routines, classes, modules).
 
-  // Imported module names may have dots in them, representing a module
-  // hierarchy, where each module comprises a subdirectory of source files. It
-  // isn't clear yet that we need to build this name hierarchy into the AST so
-  // for now we will treat it as one blob of text.
+  // Imported package names may have dots in them, representing a package
+  // hierarchy, where each package comprises a subdirectory of source files.
 
-  // In C++, dots are also supported in module names, but they have no intrinsic
-  // meaning. However, they may informally represent a module hierarchy, which
-  // aligns with the use in Cobalt.
+  // In C++, packages are called modules. Dots are supported in their names, but
+  // they have no intrinsic meaning. However, they may informally represent a
+  // hierarchy, which aligns with their use in Cobalt.
 
   def importDeclaration (): AstNode =
     val n = AstNode(AstNode.Kind.IMPORT_DECLARATION, lookahead)
@@ -175,13 +172,19 @@ class Parser {
     match_(Token.Kind.SEMICOLON)
     return n
 
+  // It isn't clear that we need to build the name hierarchy into the AST, but
+  // we'll do so for now. We can reconstruct the dotted name later.
+
   def importName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.MODULE, n.getToken().lexeme)
+    val s = Symbol(Symbol.Kind.PACKAGE, n.getToken().lexeme)
     // Do we need to define the name in the symbol table? I think so, because it
     // is referenced as a namespace.
     currentScope.define(s)
+    if lookahead.kind == Token.Kind.PERIOD then
+      match_(Token.Kind.PERIOD)
+      n.addChild(importName())
     return n
 
   // Callers can explicitly request an empty access specifier. This is useful

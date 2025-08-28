@@ -9,13 +9,13 @@ package org.cobalt
   // can simulate processing of CLI parameters or just do a rudimentary job that
   // is just enough to get by.
 
-  // Simulate "co build .", which says to build the main module and all of its
+  // Simulate "co build .", which says to build the main package and all of its
   // dependencies. It will automatically find all files in the current
   // directory.
 
-  // We want to create a module compiler that can act independently (possibly
-  // in parallel with other module compiler instances) to compile a single
-  // module. Note that the main function exists outside of any module.
+  // We want to create a package compiler that can act independently (possibly
+  // in parallel with other package compiler instances) to compile a single
+  // package. Note that the main function exists outside of any package.
 
   val translator = Translator()
   translator.process()
