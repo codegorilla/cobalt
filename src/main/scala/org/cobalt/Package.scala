@@ -10,8 +10,8 @@ import java.nio.file.Files
 // The package loader is responsible for identifying all source files in the
 // package and instantiating a file loader to process each one. It then
 // assembles the AST from each file loader into a complete AST for the entire
-// package. Thus, the combination of all source files constitues a
-// "translation unit".
+// package. This AST is used to create a package interface unit. Each source
+// file forms a package implementation unit.
 
 // We need to build a dependency graph. For each unit loaded, the imports needed
 // for that unit need to be added to a list of packages that need to be

@@ -2,6 +2,8 @@ package main;
 
 import std;
 
+import cobalt.lang.Math;
+
 public const var alpha: *(*int)[1] = (1.5 + 2)/4;
 
 var beta: Token[int, float] = 5;

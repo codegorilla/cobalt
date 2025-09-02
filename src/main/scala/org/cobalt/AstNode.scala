@@ -93,6 +93,10 @@ object AstNode:
 
     // Import declaration
     case IMPORT_DECLARATION
+    case AS_CLAUSE
+
+    // Use declaration
+    case USE_DECLARATION
 
     // Package declaration
     case PACKAGE_DECLARATION

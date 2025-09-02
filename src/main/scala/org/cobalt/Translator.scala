@@ -20,16 +20,14 @@ class Translator {
     val package1 = new Package(packageDir)
     val root = package1.load()
 
-    // val root = package1.getUnits()
+    // val generator1 = Generator1()
+    // generator1.setInput(root)
+    // // Todo: The output should be text
+    // val template1 = generator1.process()
 
-    val generator1 = Generator1()
-    generator1.setInput(root)
-    // Todo: The output should be text
-    val template1 = generator1.process()
-
-    val code1 = template1.render()
-    println("---")
-    println(code1)
+    // val code1 = template1.render()
+    // println("---")
+    // println(code1)
 
 
     // val generator2 = Generator2()

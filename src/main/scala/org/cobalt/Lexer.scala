@@ -14,6 +14,7 @@ class Lexer {
   val keywordLookup = Map (
     "abstract" -> Token.Kind.ABSTRACT,
     "and" -> Token.Kind.AND,
+    "as" -> Token.Kind.AS,
     "break" -> Token.Kind.BREAK,
     "case" -> Token.Kind.CASE,
     "cast" -> Token.Kind.CAST,

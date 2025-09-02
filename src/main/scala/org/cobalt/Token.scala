@@ -7,6 +7,7 @@ object Token {
         // Keywords
         case ABSTRACT
         case AND
+        case AS
         case BREAK
         case CASE
         case CAST
@@ -55,8 +56,8 @@ object Token {
         case TRY
         case TYPEALIAS
         case UNION
-        case USE
         case UNTIL
+        case USE
         case USING
         case VAL
         case VAR

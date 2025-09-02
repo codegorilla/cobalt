@@ -2,9 +2,14 @@ package main;
 
 import std.lib;
 
+use std.lib.Waypoint;
+use std.lib.Shape;
+
+
 def main () {
   // Do something
   val x = std.lib.Waypoint(10, 20);
+  val y = math.cos(10);
 }
 
 def setTemp (x: int) -> int {

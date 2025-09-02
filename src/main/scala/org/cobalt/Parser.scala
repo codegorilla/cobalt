@@ -22,7 +22,7 @@ import symbol.Scope
 
 class Parser {
 
-  private val SLEEP_TIME = 10
+  private val SLEEP_TIME = 100
 
   private var input: List[Token] = null
   private var position = 0
@@ -87,9 +87,13 @@ class Parser {
 
   // A cobalt package is a directory of source files. The idea is to parse each
   // source file separately, forming an AST for each. These ASTs will then be
-  // combined in memory to form the complete AST for the package. Thus, all
-  // files in the directory form a translation unit, even though they are parsed
-  // individually. This seems very similar to how go handles its packages.
+  // combined in memory to form the complete AST for the package. This seems
+  // somewhat similar to how go handles its packages.
+
+  def translationUnit (): AstNode =
+    val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
+    n.addChild(declarations())
+    return n
 
   // DECLARATIONS
 
@@ -136,6 +140,8 @@ class Parser {
     var n: AstNode = null
     if lookahead.kind == Token.Kind.IMPORT then
       n = importDeclaration()
+    else if lookahead.kind == Token.Kind.USE then
+      n = useDeclaration()
     else
       val spec = accessSpecifier()
       if lookahead.kind == Token.Kind.TEMPLATE then
@@ -169,6 +175,8 @@ class Parser {
     val n = AstNode(AstNode.Kind.IMPORT_DECLARATION, lookahead)
     match_(Token.Kind.IMPORT)
     n.addChild(importName())
+    if lookahead.kind == Token.Kind.AS then
+      n.addChild(asClause())
     match_(Token.Kind.SEMICOLON)
     return n
 
@@ -185,6 +193,40 @@ class Parser {
     if lookahead.kind == Token.Kind.PERIOD then
       match_(Token.Kind.PERIOD)
       n.addChild(importName())
+    return n
+
+  def asClause (): AstNode =
+    val n = AstNode(AstNode.Kind.AS_CLAUSE, lookahead)
+    match_(Token.Kind.AS)
+    n.addChild(asName())
+    return n
+
+  def asName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = Symbol(Symbol.Kind.PACKAGE, n.getToken().lexeme)
+    currentScope.define(s)
+    return n
+
+  def useDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.USE_DECLARATION, lookahead)
+    match_(Token.Kind.USE)
+    n.addChild(useName())
+    return n
+
+  def useName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    // Unclear what the symbol type should be, if any. It actually depends on
+    // the type of the thing that it is referencing.
+    val s = Symbol(Symbol.Kind.PACKAGE, n.getToken().lexeme)
+    // Do we need to define the name in the symbol table? I think so, because it
+    // is referenced as a namespace.
+    currentScope.define(s)
+    if lookahead.kind == Token.Kind.PERIOD then
+      match_(Token.Kind.PERIOD)
+      n.addChild(useName())
+    match_(Token.Kind.SEMICOLON)
     return n
 
   // Callers can explicitly request an empty access specifier. This is useful
