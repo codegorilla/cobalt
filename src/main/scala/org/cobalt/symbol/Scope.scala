@@ -36,5 +36,6 @@ object Scope {
     case CLASS
     case GLOBAL
     case LOCAL
+    case PACKAGE
   }
 }

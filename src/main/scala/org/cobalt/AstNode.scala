@@ -3,6 +3,8 @@ package org.cobalt
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Map
 
+import org.cobalt.symbol.*
+
 // I prefer to use a homogenous AST design. This means that we tag each node
 // with a 'kind' field instead of using separate subclasses. I also prefer that
 // the AST nodes use normalized children. This means that instead of having
@@ -11,14 +13,21 @@ import scala.collection.mutable.Map
 // structure as the language grammar develops over time. For more information,
 // see Parr, Ch. 4.
 
-class AstNode (
-  private var kind: AstNode.Kind,
-  private var token: Token = null
-):
+class AstNode (private var kind: AstNode.Kind, private var token: Token = null):
 
   var children = ListBuffer[AstNode]()
   val attributes = Map[String, Any]()
 
+  // Instead of using attributes, we'll just put a scope object in every AST
+  // node. Later on, we might re-implement the compiler using the visitor
+  // pattern, and at that time, each node will be specialized, so we can put the
+  // scope field into just the kind of nodes that need it.
+  var scope: Scope = null
+
+  // We might also want to put symbols into AST nodes (Parr, 174). Again, when
+  // we re-implement using visitor pattern, we can limit these to just the nodes
+  // that need them.
+  var symbol: Symbol = null
 
   def addChild (node: AstNode) =
     children += node
@@ -47,8 +56,14 @@ class AstNode (
   def setAttribute (name: String, value: Any) =
     attributes += (name -> value)
 
+  def getScope (): Scope =
+    return scope
+
   def getToken (): Token =
     return token
+
+  def setScope (scope: Scope) =
+    this.scope = scope
 
   // Also not sure if we'll ever need to mutate this in place. It depends on
   // whether or not token is always known at time of AstNode creation.

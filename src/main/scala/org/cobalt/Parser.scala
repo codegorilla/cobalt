@@ -45,6 +45,7 @@ class Parser {
   // typealiases for the various fixed size types.
 
   def definePrimitiveTypes () = {}
+    builtinScope.define(PrimitiveTypeSymbol("bool"))
     builtinScope.define(PrimitiveTypeSymbol("int"))
     builtinScope.define(PrimitiveTypeSymbol("int8"))
     builtinScope.define(PrimitiveTypeSymbol("int16"))
@@ -79,6 +80,11 @@ class Parser {
   def process (): AstNode =
     definePrimitiveTypes()
     val node = translationUnit()
+
+    // Inspect builtin scope
+    val s = builtinScope.symbolTable.data
+    println(s)
+
     return node
 
   // Not every AST node has a corresponding token. Case in point is the
@@ -89,8 +95,17 @@ class Parser {
   // combined in memory to form the complete AST for the package. This seems
   // somewhat similar to how go handles its packages.
 
+  // Cobalt doesn't have much in the global scope. Most user-defined symbols
+  // will be in a package scope or below. However, we still need to have a
+  // global scope because there might be things that live outside of a package
+  // such as the "main" (entrypoint) routine.
+
   def translationUnit (): AstNode =
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
+    val scope = Scope(Scope.Kind.GLOBAL)
+    scope.setEnclosingScope(currentScope)
+    currentScope = scope
+    n.setScope(currentScope)
     n.addChild(declarations())
     return n
 
@@ -119,6 +134,10 @@ class Parser {
 
   def packageDeclaration (): AstNode =
     val n = AstNode(AstNode.Kind.PACKAGE_DECLARATION, lookahead)
+    val scope = Scope(Scope.Kind.PACKAGE)
+    scope.setEnclosingScope(currentScope)
+    currentScope = scope
+    n.setScope(currentScope)
     match_(Token.Kind.PACKAGE)
     n.addChild(packageName())
     match_(Token.Kind.SEMICOLON)

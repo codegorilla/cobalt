@@ -2,9 +2,6 @@ package org.cobalt.symbol
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 
-// We may want Symbol to just be an abstract type with no parameters, just like
-// TypeNode.
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "cat")
 abstract class Symbol (name: String) {
 
