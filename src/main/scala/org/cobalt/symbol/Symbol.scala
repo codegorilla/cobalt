@@ -6,9 +6,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 // TypeNode.
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "cat")
-class Symbol (name: String) {
+abstract class Symbol (name: String) {
 
   def getName (): String =
     return name
 
 }
+
+// Don't forget about the following:
+// CLASS_TEMPLATE
+// METHOD
+// METHOD_TEMPLATE
+// MODULE
+// PACKAGE
+// ROUTINE_TEMPLATE

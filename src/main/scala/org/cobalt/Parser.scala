@@ -21,7 +21,7 @@ import org.cobalt.symbol.*
 
 class Parser {
 
-  private val SLEEP_TIME = 200
+  private val SLEEP_TIME = 10
 
   private var input: List[Token] = null
   private var position = 0
