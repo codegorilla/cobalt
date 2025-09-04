@@ -28,6 +28,8 @@ class Scope (private var kind: Scope.Kind) {
     return kind
 }
 
+// Where is package scope? Is it the same as global scope?
+
 object Scope {
   enum Kind {
     case BUILT_IN

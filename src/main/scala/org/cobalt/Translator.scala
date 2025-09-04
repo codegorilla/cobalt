@@ -32,6 +32,9 @@ class Translator {
     val package1 = new Package(packageDir)
     val units = package1.load()
 
+    // Once the package is turned into an AST, we need to populate the symbol
+    // table if it isn't already populated from the parser.
+
     var type1 = PrimitiveTypeNode()
     type1.setKind(PrimitiveTypeNode.Kind.INT)
 

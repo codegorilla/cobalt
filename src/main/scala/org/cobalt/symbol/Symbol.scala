@@ -1,26 +1,14 @@
 package org.cobalt.symbol
 
-class Symbol (kind: Symbol.Kind, name: String) {
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 
-  def getKind (): Symbol.Kind =
-    return kind
+// We may want Symbol to just be an abstract type with no parameters, just like
+// TypeNode.
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "cat")
+class Symbol (name: String) {
 
   def getName (): String =
     return name
 
-}
-
-object Symbol {
-  enum Kind {
-    case CLASS
-    case CLASS_TEMPLATE
-    case METHOD
-    case METHOD_TEMPLATE
-    case MODULE
-    case PACKAGE
-    case PRIMITIVE_TYPE
-    case ROUTINE
-    case ROUTINE_TEMPLATE
-    case VARIABLE
-  }
 }

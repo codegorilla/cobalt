@@ -2,7 +2,7 @@ package org.cobalt.symbol
 
 import org.cobalt.type_.*
 
-class VariableSymbol (name: String) extends Symbol1 (name: String) {
+class VariableSymbol (name: String) extends Symbol (name: String) {
 
   private var type_ : TypeNode = null
 

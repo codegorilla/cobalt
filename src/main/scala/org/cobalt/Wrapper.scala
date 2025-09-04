@@ -9,9 +9,9 @@ import org.cobalt.symbol.*
 
 class Wrapper {
 
-  private var list = LinkedList[Symbol1]()
+  private var list = LinkedList[Symbol]()
 
-  def getList (): LinkedList[Symbol1] =
+  def getList (): LinkedList[Symbol] =
     return list
 
 }

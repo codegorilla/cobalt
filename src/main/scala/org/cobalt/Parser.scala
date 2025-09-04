@@ -3,8 +3,7 @@ package org.cobalt
 import scala.collection.mutable.Queue
 import scala.collection.mutable.Stack
 
-import symbol.Symbol
-import symbol.Scope
+import org.cobalt.symbol.*
 
 // Thie parser needs to create a symbol table so we know if certain
 // productions are classes or not. We also need to be able to follow
@@ -22,7 +21,7 @@ import symbol.Scope
 
 class Parser {
 
-  private val SLEEP_TIME = 10
+  private val SLEEP_TIME = 200
 
   private var input: List[Token] = null
   private var position = 0
@@ -45,16 +44,16 @@ class Parser {
   // Todo: We may decide that 'int', 'short', 'float', etc. should just be
   // typealiases for the various fixed size types.
 
-  def definePrimitiveTypes () =
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int8"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int16"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int32"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int64"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float32"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float64"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "void"))
+  def definePrimitiveTypes () = {}
+    builtinScope.define(PrimitiveTypeSymbol("int"))
+    builtinScope.define(PrimitiveTypeSymbol("int8"))
+    builtinScope.define(PrimitiveTypeSymbol("int16"))
+    builtinScope.define(PrimitiveTypeSymbol("int32"))
+    builtinScope.define(PrimitiveTypeSymbol("int64"))
+    builtinScope.define(PrimitiveTypeSymbol("float"))
+    builtinScope.define(PrimitiveTypeSymbol("float32"))
+    builtinScope.define(PrimitiveTypeSymbol("float64"))
+    builtinScope.define(PrimitiveTypeSymbol("void"))
 
   def setInput (input: List[Token]) =
     this.input = input
@@ -186,7 +185,7 @@ class Parser {
   def importName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.PACKAGE, n.getToken().lexeme)
+    val s = PackageSymbol(n.getToken().lexeme)
     // Do we need to define the name in the symbol table? I think so, because it
     // is referenced as a namespace.
     currentScope.define(s)
@@ -204,7 +203,7 @@ class Parser {
   def asName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.PACKAGE, n.getToken().lexeme)
+    val s = PackageSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -219,7 +218,7 @@ class Parser {
     match_(Token.Kind.IDENTIFIER)
     // Unclear what the symbol type should be, if any. It actually depends on
     // the type of the thing that it is referencing.
-    val s = Symbol(Symbol.Kind.PACKAGE, n.getToken().lexeme)
+    val s = PackageSymbol(n.getToken().lexeme)
     // Do we need to define the name in the symbol table? I think so, because it
     // is referenced as a namespace.
     currentScope.define(s)
@@ -403,7 +402,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.NAME)
     n.setToken(lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.CLASS, n.getToken().lexeme)
+    val s = ClassSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -495,10 +494,13 @@ class Parser {
   // Todo: Should symbols point to AST node, and/or vice versa? This might come
   // in handy later on, but wait until its needed before adding the code.
 
+  // We may need a separate member routine symbol or some way to mark this as
+  // a symbol for a member routine.
+
   def memberRoutineName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.METHOD, n.getToken().lexeme)
+    val s = RoutineSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -618,7 +620,7 @@ class Parser {
   def routineName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.ROUTINE, n.getToken().lexeme)
+    val s = RoutineSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -645,7 +647,7 @@ class Parser {
   def routineParameterName (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER_NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    val s = RoutineParameterSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -705,7 +707,7 @@ class Parser {
   def variableName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    val s = VariableSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -1603,17 +1605,20 @@ class Parser {
       // class template parameters.
 
       // Todo: Hard-coded "Token here". This needs to be fixed.
-      currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
+      // COMMENTED WHEN DOING SCOPES - NEEDS FIX
+      // currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
       val symbol = currentScope.resolve(lookahead.lexeme)
-      if symbol == null then
-        // Nominal types include classes and enums. They do NOT include
-        // primitive types or template types.
-        centerFragment = nominalType()
-      else
-        if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
-          centerFragment = templateType()
-        else
-          centerFragment = nominalType()
+      // COMMENTED WHEN DOING SCOPES - NEEDS FIX
+      // if symbol == null then
+      //   // Nominal types include classes and enums. They do NOT include
+      //   // primitive types or template types.
+      //   centerFragment = nominalType()
+      // else
+      //   if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
+      //     centerFragment = templateType()
+      //   else
+      //     centerFragment = nominalType()
+      centerFragment = nominalType()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       match_(Token.Kind.L_PARENTHESIS)
       directType()
