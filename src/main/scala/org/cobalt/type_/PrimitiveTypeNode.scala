@@ -8,7 +8,6 @@ package org.cobalt.type_
 class PrimitiveTypeNode extends TypeNode {
 
   private var kind: PrimitiveTypeNode.Kind = null
-  var num: Int = 0
 
   def getKind (): PrimitiveTypeNode.Kind =
     return kind
@@ -16,19 +15,16 @@ class PrimitiveTypeNode extends TypeNode {
   def setKind (kind: PrimitiveTypeNode.Kind) =
     this.kind = kind
 
-  def getNum (): Int =
-    return num
-
-  def setNum (num: Int) =
-    this.num = num
-
 }
 
 // Need to double-check if void is considered a primitive type. I believe it is,
 // but is also categorized as an "incomplete type".
 
+// We use java enums for compatibility with Java. This makes JSON serialization
+// with Jackson possible without any additional fanfare.
+
 object PrimitiveTypeNode:
-  enum Kind:
+  enum Kind extends java.lang.Enum[Kind]:
     case BOOL
     case BYTE
     case SHORT

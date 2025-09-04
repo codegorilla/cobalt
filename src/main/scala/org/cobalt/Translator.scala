@@ -10,10 +10,13 @@ package org.cobalt
 import java.io.File
 import java.io.IOException
 
+import java.util.LinkedList
+
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 
+import org.cobalt.symbol.*
 import org.cobalt.type_.*
 
 class Translator {
@@ -29,14 +32,29 @@ class Translator {
     val package1 = new Package(packageDir)
     val units = package1.load()
 
-    var objectMapper = ObjectMapper()
-    var type_ = PrimitiveTypeNode()
-    type_.setKind(PrimitiveTypeNode.Kind.INT)
-    type_.num = 10;
+    var type1 = PrimitiveTypeNode()
+    type1.setKind(PrimitiveTypeNode.Kind.INT)
 
-    var ptype_ = PointerTypeNode()
-    ptype_.setBaseType(type_)
-    objectMapper.writeValue(new File("bmi.json"), ptype_)
+    var ptype = PointerTypeNode()
+    ptype.setBaseType(type1)
+
+    var sym1 = VariableSymbol("temp")
+    sym1.setType(ptype)
+
+    var type2 = PrimitiveTypeNode()
+    type2.setKind(PrimitiveTypeNode.Kind.FLOAT64)
+
+    var sym2 = VariableSymbol("x")
+    sym2.setType(type2)
+
+    var wrapper = Wrapper()
+
+    wrapper.getList().add(sym1)
+    wrapper.getList().add(sym2)
+
+    // Generate binary package interface (BPI) file
+    var objectMapper = ObjectMapper()
+    objectMapper.writeValue(new File("bpi.json"), wrapper)
 
 
     // Units is a list of package implementation units (each of which happens to
