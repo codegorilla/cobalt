@@ -22,7 +22,7 @@ import symbol.Scope
 
 class Parser {
 
-  private val SLEEP_TIME = 100
+  private val SLEEP_TIME = 10
 
   private var input: List[Token] = null
   private var position = 0
@@ -79,7 +79,7 @@ class Parser {
 
   def process (): AstNode =
     definePrimitiveTypes()
-    val node = declarations()
+    val node = translationUnit()
     return node
 
   // Not every AST node has a corresponding token. Case in point is the

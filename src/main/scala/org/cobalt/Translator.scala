@@ -7,6 +7,15 @@ package org.cobalt
 // then be combined to form the full package AST, which is then transpiled into
 // C++.
 
+import java.io.File
+import java.io.IOException
+
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.ObjectMapper
+
+import org.cobalt.type_.*
+
 class Translator {
 
   def process () =
@@ -18,7 +27,27 @@ class Translator {
     // Get the 'program' subdirectory in classpath
     val packageDir = this.getClass().getClassLoader().getResource("program").getPath()
     val package1 = new Package(packageDir)
-    val root = package1.load()
+    val units = package1.load()
+
+    var objectMapper = ObjectMapper()
+    var type_ = PrimitiveTypeNode()
+    type_.setKind(PrimitiveTypeNode.Kind.INT)
+    type_.num = 10;
+
+    var ptype_ = PointerTypeNode()
+    ptype_.setBaseType(type_)
+    objectMapper.writeValue(new File("bmi.json"), ptype_)
+
+
+    // Units is a list of package implementation units (each of which happens to
+    // be a Cobalt translation unit). We need to generate a package interface
+    // unit file from this. The Package interface unit file should contain
+    // everything needed to produce a C++ module interface unit file.
+
+    // Generate package interface unit file
+    // val generator0 = Generator0()
+    // generator0.setInput(units)
+    // generator0.process()
 
     // val generator1 = Generator1()
     // generator1.setInput(root)
