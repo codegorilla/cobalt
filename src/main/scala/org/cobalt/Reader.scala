@@ -1,18 +1,22 @@
 package org.cobalt
 
-import java.io.BufferedReader
-import java.io.FileReader
+import java.nio.file.Path
+import java.nio.file.Files
+import java.io.IOException
 
 class Reader {
   
-  var reader: BufferedReader = null
+  var input: Path = null
 
-  def setInput (filename: String) = {
-    reader = BufferedReader(FileReader(filename))
-  }
+  def setInput (input: Path) =
+    this.input = input
 
-  def process () = {
-    
-  }
+  def process (): String =
+    var content: String = null
+    try
+      content = Files.readString(input)
+    catch
+      case e: IOException => e.printStackTrace()
+    return content
 
 }

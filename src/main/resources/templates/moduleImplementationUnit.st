@@ -2,6 +2,8 @@
 // If not all elements are definitions, we can use element, item, or some other
 // moniker instead.
 
+// Not used?
+
 moduleImplementationUnit (definition) ::=  <<
 module some_module;
 import std;

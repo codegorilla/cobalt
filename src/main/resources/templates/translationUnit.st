@@ -1,4 +1,10 @@
-translationUnit (item) ::=  <<
+translationUnit (packageDeclaration, declaration) ::=  <<
+<packageDeclaration>
+
 import std;
-<item; separator="\n">
+
+namespace <packageDeclaration.name> {<\n>
+  <declaration; separator="\n\n">
+
+}
 >>

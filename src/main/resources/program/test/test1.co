@@ -1,0 +1,163 @@
+
+// Cobalt packages are directories.
+
+
+// PACKAGE DEFINED LIKE...
+
+// File src/cobalt/lang/something.co
+
+package cobalt.lang;
+
+namespace cobalt.lang;
+
+def tan (x: float) -> float { ... }
+
+
+// File src/cobalt/lang/math/Math.co
+
+package cobalt.lang.math;
+
+// override default behavior, which is to add a namespace declaration. This way,
+// it can be in a separate package, but still used as if it was in the same
+// package.
+namespace cobalt.lang;
+
+class Math {
+  // Do something
+}
+
+class Geometry {}
+
+class Spline {}
+
+
+// File src/cobalt/lang/Shape.co
+
+package cobalt.lang.shape;
+
+namespace cobalt.lang.shape;
+
+class Shape {
+  // Do something
+}
+
+class Rectangle {
+  // Do something
+}
+
+// USED LIKE...
+
+package main;
+
+import cobalt.lang;
+import cobalt.lang.math as math;
+
+// translates to:
+
+import cobalt.lang.math;
+namespace math = cobalt.lang.math;
+
+use math.cos;
+use math.sin;
+use math.tan;
+
+// Implicitly imports cobalt.lang?
+use cobalt.lang.Math;
+
+// Implicitly imports cobalt.lang.math?
+use cobalt.lang.math.Polynomial;
+use cobalt.lang.math.Bignum;
+
+
+// Translates to:
+
+import cobalt.lang.math;
+
+using cobalt.lang.math.cos;
+using cobalt.lang.math.sin;
+using cobalt.lang.math.tan;
+
+
+
+
+val t = cobalt.lang.Math.cos(30);
+
+use cobalt.lang.Math;
+
+val t = Math.cos(30);
+
+
+
+
+
+// TRANSLATION TO C++
+
+// Defined like...
+
+export module cobalt.lang;
+
+namespace cobalt.lang {
+  fun tan () { ... };
+}
+
+
+export module cobalt.lang.Math;
+
+namespace cobalt.lang {
+  class Math { ... };
+}
+
+export module cobalt.lang.Shape;
+
+namespace cobalt.lang {
+  class Shape { ... };
+}
+
+// Used like...
+
+export module main;
+
+import cobalt.lang;
+import cobalt.lang.Math;
+import cobalt.lang.Shape;
+
+using cobalt.lang.tan;
+using cobalt.lang.Math;
+using cobalt.lang.Shape;
+
+
+
+
+// The 'import' keyword works on packages. It knows nothing about what is inside
+// of a package.
+
+// Import cobalt.lang package. Everything prefixed by 'cobalt.lang.'
+import cobalt.lang;
+
+// Import all sub-packages below cobalt.lang
+import cobalt.lang.*;
+
+// When the package is imported, the name of the package must be used as a
+// prefix to any entities used:
+
+val t = cobalt.lang.doSomething(10);
+
+// The 'with' keyword works on the things inside packages.
+
+// Bring 'Math' from cobalt.lang into current scope. The "last element" is
+// always interpreted as an entity inside the package at package scope.
+// (Also, I believe this should implicitly import cobalt.lang package.)
+use cobalt.lang.Math;
+
+// Or...
+from cobalt.lang import Math;
+
+val t = Math.cos(30);
+
+
+
+import cobalt.lang;
+
+from cobalt.lang import Math as M;
+
+val t = Math.cos(30);

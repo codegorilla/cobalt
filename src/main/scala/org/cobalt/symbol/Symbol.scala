@@ -1,24 +1,19 @@
 package org.cobalt.symbol
 
-class Symbol (kind: Symbol.Kind, name: String) {
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 
-  def getKind (): Symbol.Kind =
-    return kind
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "cat")
+abstract class Symbol (name: String) {
 
   def getName (): String =
     return name
 
 }
 
-object Symbol {
-  enum Kind {
-    case CLASS
-    case CLASS_TEMPLATE
-    case METHOD
-    case METHOD_TEMPLATE
-    case PRIMITIVE_TYPE
-    case ROUTINE
-    case ROUTINE_TEMPLATE
-    case VARIABLE
-  }
-}
+// Don't forget about the following:
+// CLASS_TEMPLATE
+// METHOD
+// METHOD_TEMPLATE
+// MODULE
+// PACKAGE
+// ROUTINE_TEMPLATE

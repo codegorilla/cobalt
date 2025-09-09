@@ -3,20 +3,25 @@ package org.cobalt
 import scala.collection.mutable.Queue
 import scala.collection.mutable.Stack
 
-import symbol.Symbol
-import symbol.Scope
+import org.cobalt.symbol.*
 
 // Thie parser needs to create a symbol table so we know if certain
-// productions are classes or not. We also need to be able to follow
+// productions are classes, templates, etc. We also need to be able to follow
 // typealiases to their target types.
 
 // We need to be able to tell if X[Y].z() is a template instantiation
 // or an array subscript operation. To do that, we need to know if X
-// is a class or not. If it is a class, then this must be an attempt
+// is a template or not. If it is a template, then this must be an attempt
 // to instantiate a template because types cannot be subscripted --
-// only values can. If it is not a class, then it must be an attempt
+// only values can. If it is not a template, then it must be an attempt
 // to perform a subscript operation. (Similar issue arises with
 // List<int>, so switching to that syntax doesn't help.)
+
+// How to do this? I initially thought it could be done automatically. However,
+// I now think that forward declarations of templates are necessary. Due to
+// nesting, I believe we need to keep a symbol table of some kind during
+// parsing. We can either start the actual symbol table, or we can use a special
+// symbol table that is built just for the parsing phase.
 
 // First pass parser just looks for classes
 
@@ -45,16 +50,17 @@ class Parser {
   // Todo: We may decide that 'int', 'short', 'float', etc. should just be
   // typealiases for the various fixed size types.
 
-  def definePrimitiveTypes () =
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int8"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int16"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int32"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "int64"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float32"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "float64"))
-    builtinScope.define(Symbol(Symbol.Kind.PRIMITIVE_TYPE, "void"))
+  def definePrimitiveTypes () = {}
+    builtinScope.define(PrimitiveTypeSymbol("bool"))
+    builtinScope.define(PrimitiveTypeSymbol("int"))
+    builtinScope.define(PrimitiveTypeSymbol("int8"))
+    builtinScope.define(PrimitiveTypeSymbol("int16"))
+    builtinScope.define(PrimitiveTypeSymbol("int32"))
+    builtinScope.define(PrimitiveTypeSymbol("int64"))
+    builtinScope.define(PrimitiveTypeSymbol("float"))
+    builtinScope.define(PrimitiveTypeSymbol("float32"))
+    builtinScope.define(PrimitiveTypeSymbol("float64"))
+    builtinScope.define(PrimitiveTypeSymbol("void"))
 
   def setInput (input: List[Token]) =
     this.input = input
@@ -80,51 +86,171 @@ class Parser {
   def process (): AstNode =
     definePrimitiveTypes()
     val node = translationUnit()
+
+    // Inspect builtin scope
+    val s = builtinScope.symbolTable.data
+    println(s)
+
     return node
 
-  // Not every AST node has a corresponding token. Case in point is
-  // translationUnit.
+  // Not every AST node has a corresponding token. Case in point is the
+  // top-level declarations node.
 
-  // A cobalt module unit is a directory of source files. Goal is to be able to
-  // parse each source file separately, forming an AST for each. These ASTs will
-  // then be combined in memory to form the complete AST for the module. Thus,
-  // all files in the directory form a translation unit, even though they are
-  // parsed individually. I believe this is very similar to how go handles its
-  // "packages", which are the equivalent of cobalt "modules". For now, in C++
-  // tradition, we will call each source file a translation unit, but in truth,
-  // it is the combination of all source files in the directory that form the
-  // translation unit.
+  // A cobalt package is a directory of source files. The idea is to parse each
+  // source file separately, forming an AST for each. These ASTs will then be
+  // combined in memory to form the complete AST for the package. This seems
+  // somewhat similar to how go handles its packages.
+
+  // Cobalt doesn't have much in the global scope. Most user-defined symbols
+  // will be in a package scope or below. However, we still need to have a
+  // global scope because there might be things that live outside of a package
+  // such as the "main" (entrypoint) routine.
 
   def translationUnit (): AstNode =
     val n = AstNode(AstNode.Kind.TRANSLATION_UNIT)
-    while lookahead.kind != Token.Kind.EOF do
-      // Infinite loop, need to consume
-      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
-      Thread.sleep(SLEEP_TIME)
-      n.addChild(declaration())
+    val scope = Scope(Scope.Kind.GLOBAL)
+    scope.setEnclosingScope(currentScope)
+    currentScope = scope
+    n.setScope(currentScope)
+    n.addChild(declarations())
     return n
 
   // DECLARATIONS
 
-  // Template must come first before any modifiers.
+  // Todo: If the package declaration doesn't exist, then we can probably
+  // continue parsing and semantic analysis, but should not perform any code
+  // generation.
+
+  def declarations (): AstNode =
+    val n = AstNode(AstNode.Kind.DECLARATIONS)
+    if lookahead.kind == Token.Kind.PACKAGE then
+      n.addChild(packageDeclaration())
+    else
+      println("error: missing package declaration.")
+    while lookahead.kind != Token.Kind.EOF do
+      // Infinite loop, need to consume
+      println(s"Sleeping for ${SLEEP_TIME} seconds in declarations...")
+      Thread.sleep(SLEEP_TIME)
+      n.addChild(declaration())
+    return n
+
+  // The package declaration doesn't serve much purpose after parsing, so we
+  // probably don't need an AST node for it. But we can create the AST node for
+  // now and just ignore it during semantic analysis and code generation stages.
+
+  def packageDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.PACKAGE_DECLARATION, lookahead)
+    val scope = Scope(Scope.Kind.PACKAGE)
+    scope.setEnclosingScope(currentScope)
+    currentScope = scope
+    n.setScope(currentScope)
+    match_(Token.Kind.PACKAGE)
+    n.addChild(packageName())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  def packageName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    // There should not be any need to define this in the symbol table. Any
+    // ambiguous unqualified names are assumed to be from this package.
+    return n
+
+  // For now, template must come first before any modifiers. However, it is
+  // possible that even templates may have modifiers. For example, templates may
+  // use 'extern' in C++. So this needs to be researched.
 
   def declaration (): AstNode =
     var n: AstNode = null
-    val spec = accessSpecifier()
-    if lookahead.kind == Token.Kind.TEMPLATE then
-      n = templateDeclaration(spec)
+    if lookahead.kind == Token.Kind.IMPORT then
+      n = importDeclaration()
+    else if lookahead.kind == Token.Kind.USE then
+      n = useDeclaration()
     else
-      val mods = modifiers()
-      n = lookahead.kind match
-        case Token.Kind.CLASS => classDeclaration(spec, mods)
-        case Token.Kind.ENUM  => enumerationDeclaration(spec, mods)
-        case Token.Kind.DEF   => routineDeclaration(spec, mods)
-        case Token.Kind.VAL   => variableDeclaration(spec, mods)
-        case Token.Kind.VAR   => variableDeclaration(spec, mods)
-        case _ =>
-          // We REALLY need to start some real error handling...
-          println(s"Found something else! ${lookahead.kind}")
-          null
+      val spec = accessSpecifier()
+      if lookahead.kind == Token.Kind.TEMPLATE then
+        n = templateDeclaration(spec)
+      else
+        val mods = modifiers()
+        n = lookahead.kind match
+          case Token.Kind.CLASS => classDeclaration(spec, mods)
+          case Token.Kind.ENUM  => enumerationDeclaration(spec, mods)
+          case Token.Kind.DEF   => routineDeclaration(spec, mods)
+          case Token.Kind.VAL   => variableDeclaration(spec, mods)
+          case Token.Kind.VAR   => variableDeclaration(spec, mods)
+          case _ =>
+            // We REALLY need to start some real error handling...
+            println(s"Found something else! ${lookahead.kind}")
+            null
+    return n
+
+  // Import declarations may only exist at global scope. They must appear after
+  // the package declaration and before any other kinds of declarations, (e.g.
+  // variables, routines, classes, modules).
+
+  // Imported package names may have dots in them, representing a package
+  // hierarchy, where each package comprises a subdirectory of source files.
+
+  // In C++, packages are called modules. Dots are supported in their names, but
+  // they have no intrinsic meaning. However, they may informally represent a
+  // hierarchy, which aligns with their use in Cobalt.
+
+  def importDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.IMPORT_DECLARATION, lookahead)
+    match_(Token.Kind.IMPORT)
+    n.addChild(importName())
+    if lookahead.kind == Token.Kind.AS then
+      n.addChild(asClause())
+    match_(Token.Kind.SEMICOLON)
+    return n
+
+  // It isn't clear that we need to build the name hierarchy into the AST, but
+  // we'll do so for now. We can reconstruct the dotted name later.
+
+  def importName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = PackageSymbol(n.getToken().lexeme)
+    // Do we need to define the name in the symbol table? I think so, because it
+    // is referenced as a namespace.
+    currentScope.define(s)
+    if lookahead.kind == Token.Kind.PERIOD then
+      match_(Token.Kind.PERIOD)
+      n.addChild(importName())
+    return n
+
+  def asClause (): AstNode =
+    val n = AstNode(AstNode.Kind.AS_CLAUSE, lookahead)
+    match_(Token.Kind.AS)
+    n.addChild(asName())
+    return n
+
+  def asName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    val s = PackageSymbol(n.getToken().lexeme)
+    currentScope.define(s)
+    return n
+
+  def useDeclaration (): AstNode =
+    val n = AstNode(AstNode.Kind.USE_DECLARATION, lookahead)
+    match_(Token.Kind.USE)
+    n.addChild(useName())
+    return n
+
+  def useName (): AstNode =
+    val n = AstNode(AstNode.Kind.NAME, lookahead)
+    match_(Token.Kind.IDENTIFIER)
+    // Unclear what the symbol type should be, if any. It actually depends on
+    // the type of the thing that it is referencing.
+    val s = PackageSymbol(n.getToken().lexeme)
+    // Do we need to define the name in the symbol table? I think so, because it
+    // is referenced as a namespace.
+    currentScope.define(s)
+    if lookahead.kind == Token.Kind.PERIOD then
+      match_(Token.Kind.PERIOD)
+      n.addChild(useName())
+    match_(Token.Kind.SEMICOLON)
     return n
 
   // Callers can explicitly request an empty access specifier. This is useful
@@ -177,7 +303,7 @@ class Parser {
       lookahead.kind == Token.Kind.VIRTUAL   ||
       lookahead.kind == Token.Kind.VOLATILE
     do
-      println(s"Sleeping for ${SLEEP_TIME} seconds in translationUnit...")
+      println(s"Sleeping for ${SLEEP_TIME} seconds in modifiers...")
       Thread.sleep(SLEEP_TIME)
       val modifier = lookahead.kind match
         case Token.Kind.ABSTRACT  => abstractModifier()
@@ -301,7 +427,7 @@ class Parser {
     val n = AstNode(AstNode.Kind.NAME)
     n.setToken(lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.CLASS, n.getToken().lexeme)
+    val s = ClassSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -393,10 +519,13 @@ class Parser {
   // Todo: Should symbols point to AST node, and/or vice versa? This might come
   // in handy later on, but wait until its needed before adding the code.
 
+  // We may need a separate member routine symbol or some way to mark this as
+  // a symbol for a member routine.
+
   def memberRoutineName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.METHOD, n.getToken().lexeme)
+    val s = RoutineSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -501,6 +630,10 @@ class Parser {
 
   def routineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION, lookahead)
+    val scope = Scope(Scope.Kind.LOCAL)
+    scope.setEnclosingScope(currentScope)
+    currentScope = scope
+    n.setScope(currentScope)
     match_(Token.Kind.DEF)
     n.addChild(accessSpecifier)
     n.addChild(modifiers)
@@ -508,6 +641,7 @@ class Parser {
     n.addChild(routineParameters())
     n.addChild(routineReturnType())
     n.addChild(routineBody())
+    currentScope = scope.getEnclosingScope()
     return n
 
   // Todo: Should symbols point to AST node, and/or vice versa? This might come
@@ -516,7 +650,7 @@ class Parser {
   def routineName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.ROUTINE, n.getToken().lexeme)
+    val s = RoutineSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -543,7 +677,7 @@ class Parser {
   def routineParameterName (): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_PARAMETER_NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    val s = RoutineParameterSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -603,7 +737,7 @@ class Parser {
   def variableName (): AstNode =
     val n = AstNode(AstNode.Kind.NAME, lookahead)
     match_(Token.Kind.IDENTIFIER)
-    val s = Symbol(Symbol.Kind.VARIABLE, n.getToken().lexeme)
+    val s = VariableSymbol(n.getToken().lexeme)
     currentScope.define(s)
     return n
 
@@ -1501,17 +1635,20 @@ class Parser {
       // class template parameters.
 
       // Todo: Hard-coded "Token here". This needs to be fixed.
-      currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
+      // COMMENTED WHEN DOING SCOPES - NEEDS FIX
+      // currentScope.define(Symbol(Symbol.Kind.CLASS_TEMPLATE, "Token"))
       val symbol = currentScope.resolve(lookahead.lexeme)
-      if symbol == null then
-        // Nominal types include classes and enums. They do NOT include
-        // primitive types or template types.
-        centerFragment = nominalType()
-      else
-        if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
-          centerFragment = templateType()
-        else
-          centerFragment = nominalType()
+      // COMMENTED WHEN DOING SCOPES - NEEDS FIX
+      // if symbol == null then
+      //   // Nominal types include classes and enums. They do NOT include
+      //   // primitive types or template types.
+      //   centerFragment = nominalType()
+      // else
+      //   if symbol.getKind() == Symbol.Kind.CLASS_TEMPLATE then
+      //     centerFragment = templateType()
+      //   else
+      //     centerFragment = nominalType()
+      centerFragment = nominalType()
     else if lookahead.kind == Token.Kind.L_PARENTHESIS then
       match_(Token.Kind.L_PARENTHESIS)
       directType()

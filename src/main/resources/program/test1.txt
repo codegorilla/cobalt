@@ -1,0 +1,7 @@
+package main;
+
+import stdlib;
+
+def main () {
+  // Do something
+}

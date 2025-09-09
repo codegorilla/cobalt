@@ -4,21 +4,32 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
 
 import java.util.LinkedList
+import org.json.JSONObject
 
 import scala.jdk.CollectionConverters._
+
+// The purpose of this pass is to generate a package interface unit.
+
+// Question: What formats should the interface unit be created in? Cobalt source
+// code? JSON? BSON? XML? YAML? For now, just produce JSON.
+
+// I do *NOT* think we need string template for this unless we plan to produce
+// Cobalt source code. For now, leave this here.
 
 // If something goes wrong, and this is underlined in red, check that there are
 // a bunch of libraries in metals. If not, use metals doctor. Might need to
 // delete .bloop and .metals and re-import project.
 
 import org.stringtemplate.v4.*
+import scala.compiletime.ops.double
+import org.json.JSONArray
 
 // The code generator converts the AST into the target language. Pass 1 handles
 // mostly interface concerns.
 
-class Generator1 {
+class Generator0 {
 
-  var input: AstNode = null
+  private var input: ListBuffer[AstNode] = null
 
   // Load template group from template directory
   val templateDir = this.getClass().getClassLoader().getResource("templates")
@@ -42,12 +53,20 @@ class Generator1 {
   // Used to pass string templates up and down during tree traversal
   val stack = Stack[ST]()
 
-  def setInput (input: AstNode) =
+  def setInput (input: ListBuffer[AstNode]) =
     this.input = input
 
-  def process (): ST =
-    val st = translationUnit(input)
-    return st
+  // We have a list of implementation units. We need to produce an interface
+  // unit from the combined list. I don't think we necessarily need to
+  // explicitly combine the implementation units because these are basically
+  // just forward declarations rather than definitions. As such, they can be in
+  // any order.
+
+  def process (): String =
+    for unit <- input do
+      val str = translationUnit(unit)
+    // return str
+    return "hello"
 
   // We synthesize our own package declaration at the beginning, while ignoring
   // any package declarations found inside the AST. One way to do this is to
@@ -57,12 +76,53 @@ class Generator1 {
   // Note that packages are called "modules" in C++. To avoid confusion, we will
   // still refer to them as packages in their string templates.
 
-  def translationUnit (current: AstNode): ST =
-    var st = group.getInstanceOf("translationUnit")
-    st.add("packageDeclaration", packageDeclaration(current.getChild(0)))
+  // Templates really complicate things because the body of the template must
+  // be embedded in the JSON. Perhaps this isn't a huge deal because we can just
+  // embed the original source code. But even that is still somewhat painful.
+
+  // By the time we are ready to create this package interface unit, we will
+  // have needed to perform all type inference, type checking, etc. For now,
+  // assume no type inference is required or has been accomplished.
+
+  def translationUnit (current: AstNode): String =
+    val jo = JSONObject()
+    // Package declaration is a special declaration that must appear before
+    // any other declarations. In the interface file, it must be lifted into its
+    // own field.
+    jo.put("package", packageDeclaration(current.getChild(0).getChild(0)))
+    jo.put("declarations", declarations(current.getChild(0)))
+    println(jo)
+    return "hello"
+
+  def declarations (current: AstNode): JSONArray =
+    val ja = JSONArray()
     for child <- current.getChildren() do
-      st.add("declaration", declaration(child))
-    return st
+      val kind = child.getKind()
+      if kind == AstNode.Kind.VARIABLE_DECLARATION then
+       ja.put(variableDeclaration(child))
+    return ja
+
+  def variableDeclaration (current: AstNode): JSONObject =
+    val jo = JSONObject()
+    jo.put("kind", "variableDeclaration")
+    jo.put("name", variableName1(current.getChild(2)))
+    // For now just use type name as written in source. Research how to
+    // serialize a type into a file.
+    jo.put("type", "int")
+    return jo
+
+  def variableName1 (current: AstNode): String =
+    return current.getToken().lexeme
+
+
+
+  // def declarations (current: AstNode): JSONArray =
+  //   val ja = new JSONArray()
+  //   for child <- current.getChildren() do
+  //     ja.put("hello")
+  //     // ja.put("declaration", declaration(child))
+  //   return ja
+
 
   // C++ does not have a main package and the standard main function cannot be
   // declared inside of a package. Instead, it is declared in the global scope.
@@ -72,10 +132,10 @@ class Generator1 {
   // and this "real" main function will be the actual entrypoint of the program
   // and will call the main function inside the package.
 
-  def packageDeclaration (current: AstNode): ST =
-    var st = group.getInstanceOf("declarations/packageDeclaration")
-    st.add("name", packageName(current.getChild(0)))
-    return st
+  def packageDeclaration (current: AstNode): JSONObject =
+    val jo = JSONObject()
+    jo.put("name", packageName(current.getChild(0)))
+    return jo
 
   def packageName (current: AstNode): String =
     return current.getToken().lexeme
@@ -96,24 +156,24 @@ class Generator1 {
   // parsing and/or semantic analysis, so they don't necessarily need to be
   // enforced during code generation.
 
-  def declaration (current: AstNode): ST =
-    val kind = current.getKind()
-    val st = kind match
-      case AstNode.Kind.CLASS_DECLARATION =>
-        classDeclaration(current)
-      case AstNode.Kind.IMPORT_DECLARATION =>
-        importDeclaration(current)
-      case AstNode.Kind.PACKAGE_DECLARATION =>
-        // Ignore all package declarations after first occurence
-        null
-      case AstNode.Kind.ROUTINE_DECLARATION =>
-        routineDeclaration(current)
-      case AstNode.Kind.VARIABLE_DECLARATION =>
-        variableDeclaration(current)
-      case _ =>
-        println("No match in generator/declaration.")
-        null
-    return st
+  // def declaration1 (current: AstNode): ST =
+  //   val kind = current.getKind()
+  //   val st = kind match
+  //     case AstNode.Kind.CLASS_DECLARATION =>
+  //       classDeclaration(current)
+  //     case AstNode.Kind.IMPORT_DECLARATION =>
+  //       importDeclaration(current)
+  //     case AstNode.Kind.PACKAGE_DECLARATION =>
+  //       // Ignore all package declarations after first occurence
+  //       null
+  //     case AstNode.Kind.ROUTINE_DECLARATION =>
+  //       routineDeclaration(current)
+  //     case AstNode.Kind.VARIABLE_DECLARATION =>
+  //       variableDeclaration(current)
+  //     case _ =>
+  //       println("No match in generator/declaration.")
+  //       null
+  //   return st
 
   // CLASS DECLARATION
 
@@ -469,7 +529,7 @@ class Generator1 {
   // then it might be placed in an interface file or implementation file,
   // depending on whether or not it is exported.
 
-  def variableDeclaration (current: AstNode): ST =
+  def variableDeclaration1 (current: AstNode): ST =
     val st = group.getInstanceOf("declarations/variableDeclaration")
     st.add("variableAccessSpecifier", variableAccessSpecifier(current.getChild(0)))
     // StringTemplate can only work with Java collections for aggregates so we
@@ -586,7 +646,7 @@ class Generator1 {
       case AstNode.Kind.IF_STATEMENT =>
         ifStatement(current)
       case AstNode.Kind.VARIABLE_DECLARATION =>
-        variableDeclaration(current)
+        variableDeclaration1(current)
       case AstNode.Kind.RETURN_STATEMENT =>
         returnStatement(current)
       case AstNode.Kind.UNTIL_STATEMENT =>
