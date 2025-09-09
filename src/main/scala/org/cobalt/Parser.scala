@@ -6,16 +6,22 @@ import scala.collection.mutable.Stack
 import org.cobalt.symbol.*
 
 // Thie parser needs to create a symbol table so we know if certain
-// productions are classes or not. We also need to be able to follow
+// productions are classes, templates, etc. We also need to be able to follow
 // typealiases to their target types.
 
 // We need to be able to tell if X[Y].z() is a template instantiation
 // or an array subscript operation. To do that, we need to know if X
-// is a class or not. If it is a class, then this must be an attempt
+// is a template or not. If it is a template, then this must be an attempt
 // to instantiate a template because types cannot be subscripted --
-// only values can. If it is not a class, then it must be an attempt
+// only values can. If it is not a template, then it must be an attempt
 // to perform a subscript operation. (Similar issue arises with
 // List<int>, so switching to that syntax doesn't help.)
+
+// How to do this? I initially thought it could be done automatically. However,
+// I now think that forward declarations of templates are necessary. Due to
+// nesting, I believe we need to keep a symbol table of some kind during
+// parsing. We can either start the actual symbol table, or we can use a special
+// symbol table that is built just for the parsing phase.
 
 // First pass parser just looks for classes
 
@@ -624,6 +630,10 @@ class Parser {
 
   def routineDeclaration (accessSpecifier: AstNode, modifiers: AstNode): AstNode =
     val n = AstNode(AstNode.Kind.ROUTINE_DECLARATION, lookahead)
+    val scope = Scope(Scope.Kind.LOCAL)
+    scope.setEnclosingScope(currentScope)
+    currentScope = scope
+    n.setScope(currentScope)
     match_(Token.Kind.DEF)
     n.addChild(accessSpecifier)
     n.addChild(modifiers)
@@ -631,6 +641,7 @@ class Parser {
     n.addChild(routineParameters())
     n.addChild(routineReturnType())
     n.addChild(routineBody())
+    currentScope = scope.getEnclosingScope()
     return n
 
   // Todo: Should symbols point to AST node, and/or vice versa? This might come
